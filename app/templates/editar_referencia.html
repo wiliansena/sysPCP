@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h2>Editar Referência</h2>
+    <form method="POST" enctype="multipart/form-data">
+        {{ form.hidden_tag() }}
+
+        <div class="mb-3">
+            {{ form.codigo_referencia.label(class="form-label") }}
+            {{ form.codigo_referencia(class="form-control") }}
+        </div>
+
+        <div class="mb-3">
+            {{ form.descricao.label(class="form-label") }}
+            {{ form.descricao(class="form-control") }}
+        </div>
+
+        <div class="mb-3">
+            {{ form.imagem.label(class="form-label") }}
+            {{ form.imagem(class="form-control") }}
+        </div>
+
+        <button type="submit" class="btn btn-success">Salvar</button>
+        <a href="{{ url_for('routes.listar_referencias') }}" class="btn btn-secondary">Cancelar</a>
+    </form>
+{% endblock %}

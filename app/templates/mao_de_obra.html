@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h2>Mão de Obra</h2>
+    <a href="{{ url_for('routes.nova_mao_de_obra') }}" class="btn btn-primary">Nova Mão de Obra (Mensal)</a>
+
+    <table class="table table-striped mt-3">
+        <thead>
+            <tr>
+                <th>Descrição</th>
+                <th>Salário</th>
+                <th>Multiplicador</th>
+                <th>Preço Líquido</th>
+                <th>Preço Bruto</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for mao in mao_de_obra %}
+                <tr>
+                    <td>{{ mao.descricao }}</td>
+                    <td>R$ {{ "%.2f"|format(mao.salario.preco if mao.salario else 0) }}</td>
+                    <td>{{ mao.multiplicador }}</td>
+                    <td>R$ {{ "%.2f"|format(mao.preco_liquido) }}</td>
+                    <td>R$ {{ "%.2f"|format(mao.preco_bruto) }}</td>
+                    <td>
+                        <a href="{{ url_for('routes.editar_mao_de_obra', id=mao.id) }}" class="btn btn-warning btn-sm">Editar</a>
+                        <form action="{{ url_for('routes.excluir_mao_de_obra', id=mao.id) }}" method="post" style="display:inline;">
+                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Tem certeza que deseja excluir?')">Excluir</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

@@ -1,0 +1,9 @@
+# Ignorar o ambiente virtual
+venv/
+
+# Arquivos desnecessários do Python
+*.pyc
+__pycache__/
+
+# Arquivos de configuração locais
+*.env
