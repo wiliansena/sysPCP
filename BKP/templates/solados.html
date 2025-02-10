@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Lista de Solados</h2>
+    <a href="{{ url_for('routes.novo_solado') }}" class="btn btn-primary mb-3">Novo Solado</a>
+
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Referência</th>
+                <th>Descrição</th>
+                <th>Imagem</th>
+                <th>Tamanhos</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for solado in solados %}
+            <tr>
+                <td>{{ solado.referencia }}</td>
+                <td>{{ solado.descricao }}</td>
+                <td>
+                    {% if solado.imagem %}
+                        <img src="{{ url_for('static', filename='uploads/' + solado.imagem) }}" width="100">
+                    {% else %}
+                        Sem imagem
+                    {% endif %}
+                </td>
+                <td>
+                    {% for tamanho in solado.tamanhos %}
+                        <b>{{ tamanho.nome }}</b>: {{ tamanho.quantidade }} pares<br>
+                    {% endfor %}
+                </td>
+                <td>
+                    <a href="{{ url_for('routes.editar_solado', id=solado.id) }}" class="btn btn-warning btn-sm">Editar</a>
+                    <form action="{{ url_for('routes.excluir_solado', id=solado.id) }}" method="POST" style="display:inline;">
+                        <button type="submit" class="btn btn-danger btn-sm">Excluir</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

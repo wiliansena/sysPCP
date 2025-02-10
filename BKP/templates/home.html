@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-center vh-100">
+    <div class="text-center">
+        <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="Logo da Empresa" class="img-fluid mb-4" style="max-width: 300px;">
+        <h1>Bem-vindo ao sysPCP</h1>
+        <p class="text-muted">Sistema de Planejamento e Controle de Custos</p>
+        
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Editar Solado</h2>
+    
+    <form method="POST" enctype="multipart/form-data">
+        {{ form.hidden_tag() }}
+
+        <div class="form-group">
+            <label>Referência</label>
+            {{ form.referencia(class="form-control") }}
+        </div>
+
+        <div class="form-group">
+            <label>Descrição</label>
+            {{ form.descricao(class="form-control") }}
+        </div>
+
+        <div class="form-group">
+            <label>Imagem do Solado</label>
+            {{ form.imagem(class="form-control-file") }}
+            {% if solado.imagem %}
+                <div class="mt-2">
+                    <img src="{{ url_for('static', filename='uploads/' + solado.imagem) }}" width="150">
+                </div>
+            {% endif %}
+        </div>
+
+        <h4>Ficha Técnica</h4>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Tamanho</th>
+                    <th>Quantidade</th>
+                    <th>Peso Médio</th>
+                    <th>Peso Médio Friso</th>
+                    <th>Peso Médio sem Friso</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tamanho in form.tamanhos %}
+                <tr>
+                    {{ tamanho.hidden_tag() }}  <!-- ✅ Adicionando CSRF Token -->
+                    <td>{{ tamanho.nome(class="form-control") }}</td>
+                    <td>{{ tamanho.quantidade(class="form-control") }}</td>
+                    <td>{{ tamanho.peso_medio(class="form-control") }}</td>
+                    <td>{{ tamanho.peso_friso(class="form-control") }}</td>
+                    <td>{{ tamanho.peso_sem_friso(class="form-control") }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <button type="submit" class="btn btn-success">Salvar</button>
+        <a href="{{ url_for('routes.listar_solados') }}" class="btn btn-secondary">Cancelar</a>
+    </form>
+</div>
+{% endblock %}

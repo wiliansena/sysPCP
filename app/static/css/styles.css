@@ -1,0 +1,6 @@
+
+/* Garantir que o texto dentro do campo fique em negrito */
+.grade-input {
+    font-weight: bold !important;  /* Forçar negrito */
+    text-align: center;  /* Centralizar o texto */
+}

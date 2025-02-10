@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h2>Salários</h2>
+    <a href="{{ url_for('routes.novo_salario') }}" class="btn btn-primary">Novo Salário</a>
+
+    <table class="table table-striped mt-3">
+        <thead>
+            <tr>
+                <th>Salário</th>
+                <th>Encargos</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for salario in salarios %}
+                <tr>
+                    <td>R$ {{ "%.2f"|format(salario.preco) }}</td>
+                    <td>{{ salario.encargos }}%</td>
+                    <td>
+                        <a href="{{ url_for('routes.editar_salario', id=salario.id) }}" class="btn btn-warning btn-sm">Editar</a>
+                        <form action="{{ url_for('routes.excluir_salario', id=salario.id) }}" method="post" style="display:inline;">
+                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Tem certeza?')">Excluir</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

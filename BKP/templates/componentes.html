@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h2>Componentes</h2>
+    <a href="{{ url_for('routes.novo_componente') }}" class="btn btn-primary">Novo Componente</a>
+
+    <table class="table table-striped mt-3">
+        <thead>
+            <tr>
+                <th>Código</th>
+                <th>Tipo</th>
+                <th>Descrição</th>
+                <th>Unidade</th>
+                <th>Consumo</th>
+                <th>Preço Unitário</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for componente in componentes %}
+                <tr>
+                    <td>{{ componente.codigo }}</td>
+                    <td>{{ componente.tipo }}</td>
+                    <td>{{ componente.descricao }}</td>
+                    <td>{{ componente.unidade_medida }}</td>
+                    <td>{{ componente.consumo }}</td>
+                    <td>R$ {{ "%.2f"|format(componente.preco_unitario) }}</td>
+                    <td>
+                        <a href="{{ url_for('routes.editar_componente', id=componente.id) }}" class="btn btn-warning btn-sm">Editar</a>
+                        <form action="{{ url_for('routes.excluir_componente', id=componente.id) }}" method="post" style="display:inline;">
+                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Tem certeza que deseja excluir?')">Excluir</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

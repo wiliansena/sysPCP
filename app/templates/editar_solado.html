@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Editar Solado</h2>
+    
+    <form method="POST" enctype="multipart/form-data">
+        {{ form.hidden_tag() }}  <!-- CSRF Token principal -->
+
+        <div class="form-group">
+            <label>Referência</label>
+            {{ form.referencia(class="form-control") }}
+        </div>
+
+        <div class="form-group">
+            <label>Descrição</label>
+            {{ form.descricao(class="form-control") }}
+        </div>
+
+        <div class="form-group">
+            <label>Imagem do Solado</label>
+            {{ form.imagem(class="form-control-file") }}
+            {% if solado.imagem %}
+                <div class="mt-2">
+                    <img src="{{ url_for('static', filename='uploads/' + solado.imagem) }}" width="150">
+                </div>
+            {% endif %}
+        </div>
+
+        <h4>Ficha Técnica</h4>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Tamanhos</th>
+                    {% for tamanho in form.tamanhos %}
+                        <th>{{ tamanho.nome(class="form-control") }}</th>  <!-- Agora editável -->
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><b>GRADE</b></td>
+                    {% for tamanho in form.tamanhos %}
+                        {{ tamanho.hidden_tag() }}  <!-- ✅ CSRF Token para cada tamanho -->
+                        <td>{{ tamanho.quantidade(class="form-control") }}</td>
+                    {% endfor %}
+                </tr>
+                <tr>
+                    <td><b>Peso Médio</b></td>
+                    {% for tamanho in form.tamanhos %}
+                        <td>{{ tamanho.peso_medio(class="form-control") }}</td>
+                    {% endfor %}
+                </tr>
+                <tr>
+                    <td><b>Peso Médio Friso</b></td>
+                    {% for tamanho in form.tamanhos %}
+                        <td>{{ tamanho.peso_friso(class="form-control") }}</td>
+                    {% endfor %}
+                </tr>
+                <tr>
+                    <td><b>Peso Médio sem Friso</b></td>
+                    {% for tamanho in form.tamanhos %}
+                        <td>{{ tamanho.peso_sem_friso(class="form-control") }}</td>
+                    {% endfor %}
+                </tr>
+            </tbody>
+        </table>
+
+        <button type="submit" class="btn btn-success">Salvar</button>
+        <a href="{{ url_for('routes.listar_solados') }}" class="btn btn-secondary">Cancelar</a>
+        <button class="btn btn-primary" onclick="window.print()">Imprimir</button>
+    </form>
+</div>
+{% endblock %}
