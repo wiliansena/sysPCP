@@ -303,6 +303,21 @@ def listar_solados():
     return render_template('solados.html', solados=solados)
 
 
+@bp.route('/solado/<int:id>')
+def ver_solado(id):
+    solado = Solado.query.get_or_404(id)
+
+    # capturamos os 4 valores
+    total_quantidade, peso_medio_total, peso_friso_total, peso_sem_friso_total = solado.calcular_totais()
+
+    return render_template('ver_solado.html', solado=solado,
+                           total_quantidade=total_quantidade,
+                           peso_medio_total=peso_medio_total,
+                           peso_friso_total=peso_friso_total,
+                           peso_sem_friso_total=peso_sem_friso_total)
+
+
+
 @bp.route('/solado/novo', methods=['GET', 'POST'])
 def novo_solado():
     form = SoladoForm()

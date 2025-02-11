@@ -44,7 +44,6 @@ class MaoDeObra(db.Model):
 
     #SOLADO
 
-
 class Solado(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     referencia = db.Column(db.String(50), nullable=False)
@@ -54,12 +53,16 @@ class Solado(db.Model):
 
     def calcular_totais(self):
         total_quantidade = sum(tamanho.quantidade for tamanho in self.tamanhos)
+
         if total_quantidade == 0:
-            return 0, 0, 0
-        peso_medio_total = sum(tamanho.peso_medio * tamanho.quantidade for tamanho in self.tamanhos) / total_quantidade
-        peso_friso_total = sum(tamanho.peso_friso * tamanho.quantidade for tamanho in self.tamanhos) / total_quantidade
-        peso_sem_friso_total = sum(tamanho.peso_sem_friso * tamanho.quantidade for tamanho in self.tamanhos) / total_quantidade
-        return peso_medio_total, peso_friso_total, peso_sem_friso_total
+            return 0, 0, 0, 0  # Retorna QUATRO valores para evitar erro de índice
+
+        peso_medio_total = sum((tamanho.peso_medio or 0) * tamanho.quantidade for tamanho in self.tamanhos) / total_quantidade
+        peso_friso_total = sum((tamanho.peso_friso or 0) * tamanho.quantidade for tamanho in self.tamanhos) / total_quantidade
+        peso_sem_friso_total = sum((tamanho.peso_sem_friso or 0) * tamanho.quantidade for tamanho in self.tamanhos) / total_quantidade
+
+        return total_quantidade, peso_medio_total, peso_friso_total, peso_sem_friso_total
+
 
 class Tamanho(db.Model):
     id = db.Column(db.Integer, primary_key=True)

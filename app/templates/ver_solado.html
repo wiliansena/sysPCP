@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="text-center">Ficha Técnica do Solado</h2>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="form-group">
+                <label for="referencia"><b>Referência</b></label>
+                <input type="text" id="referencia" class="form-control" value="{{ solado.referencia }}" readonly>
+            </div>
+            <div class="form-group">
+                <label for="descricao"><b>Descrição</b></label>
+                <input type="text" id="descricao" class="form-control" value="{{ solado.descricao }}" readonly>
+            </div>
+        </div>
+        <div class="col-md-6 text-center">
+            <label><b>Imagem do Solado</b></label>
+            <div>
+                {% if solado.imagem %}
+                    <img src="{{ url_for('static', filename='uploads/' + solado.imagem) }}" class="img-thumbnail">
+                {% else %}
+                    <p><i>Sem imagem disponível</i></p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <h4 class="mt-4">Ficha Técnica</h4>
+    <table class="table table-bordered table-striped">
+        <thead class="thead-dark">
+            <tr>
+                <th class="bg-dark text-white">Tamanhos</th>
+                {% for tamanho in solado.tamanhos %}
+                    <th class="bg-dark text-white">{{ tamanho.nome }}</th>
+                {% endfor %}
+                <th class="bg-primary text-white">TOTAIS</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><b>GRADE</b></td>
+                {% for tamanho in solado.tamanhos %}
+                    <td><input type="text" class="form-control" value="{{ tamanho.quantidade }}" readonly></td>
+                {% endfor %}
+                <td><b>{{ total_quantidade }}</b></td>
+            </tr>
+            <tr>
+                <td><b>Peso Médio</b></td>
+                {% for tamanho in solado.tamanhos %}
+                    <td><input type="text" class="form-control" value="{{ tamanho.peso_medio }}" readonly></td>
+                {% endfor %}
+                <td><b>{{ "%.3f"|format(peso_medio_total) }}</b></td>
+            </tr>
+            <tr>
+                <td><b>Peso Médio Friso</b></td>
+                {% for tamanho in solado.tamanhos %}
+                    <td><input type="text" class="form-control" value="{{ tamanho.peso_friso }}" readonly></td>
+                {% endfor %}
+                <td><b>{{ "%.3f"|format(peso_friso_total) }}</b></td>
+            </tr>
+            <tr>
+                <td><b>Peso Médio sem Friso</b></td>
+                {% for tamanho in solado.tamanhos %}
+                    <td><input type="text" class="form-control" value="{{ tamanho.peso_sem_friso }}" readonly></td>
+                {% endfor %}
+                <td><b>{{ "%.3f"|format(peso_sem_friso_total) }}</b></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="text-center mt-4">
+        <a href="{{ url_for('routes.listar_solados') }}" class="btn btn-secondary">Voltar</a>
+        <a href="{{ url_for('routes.editar_solado', id=solado.id) }}" class="btn btn-warning">Editar</a>
+        <button class="btn btn-primary" onclick="window.print()">Imprimir</button>
+        <form action="{{ url_for('routes.excluir_solado', id=solado.id) }}" method="POST" style="display:inline;">
+            <button type="submit" class="btn btn-danger" onclick="return confirm('Tem certeza que deseja excluir este solado?');">Excluir</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

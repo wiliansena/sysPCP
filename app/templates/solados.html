@@ -3,7 +3,7 @@
 {% block content %}
 <div class="container mt-4">
     <h2>Lista de Solados</h2>
-    <a href="{{ url_for('routes.novo_solado') }}" class="btn btn-primary mb-3">Novo Solado</a>
+    <a href="{{ url_for('routes.novo_solado') }}" class="btn btn-success mb-3">Novo Solado</a>
 
     <table class="table table-bordered">
         <thead>
@@ -11,7 +11,6 @@
                 <th>Referência</th>
                 <th>Descrição</th>
                 <th>Imagem</th>
-                <th>Tamanhos</th>
                 <th>Ações</th>
             </tr>
         </thead>
@@ -28,14 +27,10 @@
                     {% endif %}
                 </td>
                 <td>
-                    {% for tamanho in solado.tamanhos %}
-                        <b>{{ tamanho.nome }}</b>: {{ tamanho.quantidade }} pares<br>
-                    {% endfor %}
-                </td>
-                <td>
+                    <a href="{{ url_for('routes.ver_solado', id=solado.id) }}" class="btn btn-primary btn-sm">Abrir</a>
                     <a href="{{ url_for('routes.editar_solado', id=solado.id) }}" class="btn btn-warning btn-sm">Editar</a>
                     <form action="{{ url_for('routes.excluir_solado', id=solado.id) }}" method="POST" style="display:inline;">
-                        <button type="submit" class="btn btn-danger btn-sm">Excluir</button>
+                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Tem certeza que deseja excluir este solado?')">Excluir</button>
                     </form>
                 </td>
             </tr>
