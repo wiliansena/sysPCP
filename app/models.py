@@ -10,12 +10,14 @@ class Referencia(db.Model):
 
 class Componente(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    codigo = db.Column(db.String(20), unique=True, nullable=False)
-    tipo = db.Column(db.String(50), nullable=False)
-    descricao = db.Column(db.String(100), nullable=False)
-    unidade_medida = db.Column(db.String(10), nullable=False)
-    consumo = db.Column(db.Float, nullable=False)
-    preco_unitario = db.Column(db.Float, nullable=False)
+    codigo = db.Column(db.String(50), unique=True, nullable=False)
+    tipo = db.Column(db.String(50), nullable=False)  # PINTURA, EMBALAGEM, ETC.
+    descricao = db.Column(db.String(255), nullable=False)
+    unidade_medida = db.Column(db.String(10), nullable=False)  # KQ, L, M, UND
+    preco = db.Column(db.Float, nullable=False)  # Alterado de preco_unitario para preco
+
+    def __repr__(self):
+        return f'<Componente {self.descricao}>'
 
 class CustoOperacional(db.Model):
     id = db.Column(db.Integer, primary_key=True)

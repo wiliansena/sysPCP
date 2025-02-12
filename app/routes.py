@@ -91,8 +91,7 @@ def novo_componente():
             tipo=form.tipo.data,
             descricao=form.descricao.data,
             unidade_medida=form.unidade_medida.data,
-            consumo=form.consumo.data,
-            preco_unitario=form.preco_unitario.data
+            preco=form.preco.data
         )
         db.session.add(componente)
         db.session.commit()
@@ -110,8 +109,7 @@ def editar_componente(id):
         componente.tipo = form.tipo.data
         componente.descricao = form.descricao.data
         componente.unidade_medida = form.unidade_medida.data
-        componente.consumo = form.consumo.data
-        componente.preco_unitario = form.preco_unitario.data
+        componente.preco = form.preco.data
         
         db.session.commit()
         flash('Componente atualizado com sucesso!', 'success')

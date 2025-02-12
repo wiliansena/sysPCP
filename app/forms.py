@@ -20,8 +20,7 @@ class ComponenteForm(FlaskForm):
                                         ('EMBALAGENS', 'EMBALAGENS')], validators=[DataRequired()])
     descricao = StringField('Descrição', validators=[DataRequired()])
     unidade_medida = SelectField('Unidade de Medida', choices=[('KQ', 'KQ'), ('L', 'L'), ('M', 'M'), ('UND', 'UND')], validators=[DataRequired()])
-    consumo = FloatField('Consumo', validators=[DataRequired()])
-    preco_unitario = FloatField('Preço Unitário', validators=[DataRequired()])
+    preco = FloatField('Preço', validators=[DataRequired()])
     submit = SubmitField('Salvar')
 
 class CustoOperacionalForm(FlaskForm):
