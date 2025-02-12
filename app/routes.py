@@ -1,20 +1,31 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask import Blueprint, jsonify, render_template, redirect, url_for, flash, request
 from app import db
-from app.models import Referencia, Componente, CustoOperacional, Salario, MaoDeObra
+from app.models import FormulacaoSolado, Referencia, Componente, CustoOperacional, Salario, MaoDeObra
 from app.forms import ReferenciaForm, ComponenteForm, CustoOperacionalForm, SalarioForm, MaoDeObraForm
 import os
 #SOLADO
 from flask import render_template, redirect, url_for, flash, request
 from app import db
-from app.models import Solado, Tamanho
+from app.models import Solado, Tamanho, Componente, FormulacaoSolado
 from app.forms import SoladoForm
+from flask import Blueprint
 import os
+from werkzeug.utils import secure_filename  # 🔹 Para salvar o nome do arquivo corretamente
+from flask import current_app  # 🔹 Para acessar a configuração da aplicação
+from flask_wtf import FlaskForm
+from wtforms import HiddenField
+from app import db, csrf  # 🔹 Importando o `csrf` que foi definido no __init__.py
+from flask.views import MethodView
+
 
 bp = Blueprint('routes', __name__)
 
 UPLOAD_FOLDER = 'app/static/uploads'
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
+
+class DeleteForm(FlaskForm):
+    csrf_token = HiddenField()
 
 @bp.route('/')
 def home():
@@ -67,6 +78,7 @@ def editar_referencia(id):
     
     return render_template('editar_referencia.html', form=form, referencia=referencia)
 
+
 @bp.route('/referencia/excluir/<int:id>', methods=['POST'])
 def excluir_referencia(id):
     referencia = Referencia.query.get_or_404(id)
@@ -117,7 +129,9 @@ def editar_componente(id):
     
     return render_template('editar_componente.html', form=form, componente=componente)
 
+
 @bp.route('/componente/excluir/<int:id>', methods=['POST'])
+@csrf.exempt  # 🔹 Desativa CSRF apenas para essa rota
 def excluir_componente(id):
     componente = Componente.query.get_or_404(id)
     db.session.delete(componente)
@@ -295,13 +309,15 @@ def excluir_mao_de_obra(id):
 
 UPLOAD_FOLDER = 'app/static/uploads'
 
+
 @bp.route('/solados')
 def listar_solados():
-    solados = Solado.query.options(db.joinedload(Solado.tamanhos)).all()
-    return render_template('solados.html', solados=solados)
+    solados = Solado.query.all()
+    form = DeleteForm()  # Criar instância do formulário
+    return render_template('solados.html', solados=solados, form=form)
 
 
-@bp.route('/solado/<int:id>')
+"""@bp.route('/solado/<int:id>')
 def ver_solado(id):
     solado = Solado.query.get_or_404(id)
 
@@ -312,75 +328,94 @@ def ver_solado(id):
                            total_quantidade=total_quantidade,
                            peso_medio_total=peso_medio_total,
                            peso_friso_total=peso_friso_total,
-                           peso_sem_friso_total=peso_sem_friso_total)
+                           peso_sem_friso_total=peso_sem_friso_total)"""
 
+@bp.route('/solado/<int:id>', methods=['GET'])
+def ver_solado(id):
+    solado = Solado.query.options(
+        db.joinedload(Solado.tamanhos),
+        db.joinedload(Solado.formulacao).joinedload(FormulacaoSolado.componente)
+    ).get_or_404(id)
+
+    # 🔹 Calcular totais antes de exibir a página
+    total_quantidade, peso_medio_total, peso_friso_total, peso_sem_friso_total = solado.calcular_totais()
+
+    return render_template(
+        'ver_solado.html',
+        solado=solado,
+        total_quantidade=total_quantidade,
+        peso_medio_total=peso_medio_total,
+        peso_friso_total=peso_friso_total,
+        peso_sem_friso_total=peso_sem_friso_total
+    )
 
 
 @bp.route('/solado/novo', methods=['GET', 'POST'])
 def novo_solado():
     form = SoladoForm()
-    
+
+    # 🔹 Buscar os componentes para exibir no modal
+    componentes = Componente.query.all()
+
     if form.validate_on_submit():
-        print("🚀 Formulário validado! Processando os dados...")
-
-        # Salvar a imagem do solado
-        imagem_filename = None
-        if form.imagem.data:
-            imagem_filename = form.imagem.data.filename
-            form.imagem.data.save(os.path.join(UPLOAD_FOLDER, imagem_filename))
-
-        # Criar o Solado no banco
-        solado = Solado(
+        # 🔹 Criar um novo solado com os dados do formulário
+        novo_solado = Solado(
             referencia=form.referencia.data,
-            descricao=form.descricao.data,
-            imagem=imagem_filename
+            descricao=form.descricao.data
         )
-        db.session.add(solado)
-        db.session.flush()  # Para obter o ID antes de salvar os tamanhos
 
-        print(f"✅ Solado criado com ID: {solado.id}, Referência: {solado.referencia}")
+        # 🔹 Se houver imagem, salvar o arquivo
+        if form.imagem.data:
+            imagem = form.imagem.data
+            nome_arquivo = secure_filename(imagem.filename)
+            caminho_arquivo = os.path.join(current_app.config['UPLOAD_FOLDER'], nome_arquivo)
+            imagem.save(caminho_arquivo)
+            novo_solado.imagem = nome_arquivo  # 🔹 Salva o nome do arquivo no banco
 
-        # Criar e associar os tamanhos ao Solado
+        # 🔹 Criar os tamanhos e pesos
         for tamanho_data in form.tamanhos.data:
-            print(f"📝 Adicionando tamanho: {tamanho_data}")
-            
-            tamanho = Tamanho(
+            novo_tamanho = Tamanho(
                 nome=tamanho_data['nome'],
                 quantidade=tamanho_data['quantidade'],
                 peso_medio=tamanho_data['peso_medio'],
                 peso_friso=tamanho_data['peso_friso'],
-                peso_sem_friso=tamanho_data['peso_sem_friso'],
-                solado_id=solado.id
+                peso_sem_friso=tamanho_data['peso_sem_friso']
             )
-            db.session.add(tamanho)
+            novo_solado.tamanhos.append(novo_tamanho)
 
+        # 🔹 Adicionar os componentes da formulação
+        componentes_ids = request.form.getlist("componentes[]")
+        cargas = request.form.getlist("carga[]")
+
+        for componente_id, carga in zip(componentes_ids, cargas):
+            componente = Componente.query.get(int(componente_id))
+            if componente:
+                nova_formula = FormulacaoSolado(
+                    componente_id=componente.id,
+                    solado=novo_solado,
+                    carga=float(carga) if carga else 0
+                )
+                novo_solado.formulacao.append(nova_formula)
+
+        # 🔹 Salvar tudo no banco
+        db.session.add(novo_solado)
         db.session.commit()
-        flash('Solado cadastrado com sucesso!', 'success')
-        print("✅ Solado e tamanhos cadastrados com sucesso!")
-        return redirect(url_for('routes.listar_solados'))
-    
-    else:
-        print("❌ O formulário não foi validado!")
-        print("🛑 Erros no formulário:", form.errors)  # Exibe os erros no terminal
 
-    return render_template('novo_solado.html', form=form)
+        flash("Solado cadastrado com sucesso!", "success")
+        return redirect(url_for('routes.listar_solados'))
+
+    return render_template('novo_solado.html', form=form, componentes=componentes)
 
 @bp.route('/solado/editar/<int:id>', methods=['GET', 'POST'])
 def editar_solado(id):
     solado = Solado.query.get_or_404(id)
     form = SoladoForm(obj=solado)
+    componentes = Componente.query.all()
 
     if form.validate_on_submit():
-        # Atualiza os dados do solado
         solado.referencia = form.referencia.data
         solado.descricao = form.descricao.data
 
-        if form.imagem.data:
-            imagem_filename = form.imagem.data.filename
-            form.imagem.data.save(os.path.join(UPLOAD_FOLDER, imagem_filename))
-            solado.imagem = imagem_filename
-
-        # Atualiza os tamanhos
         for tamanho, tamanho_data in zip(solado.tamanhos, form.tamanhos.data):
             tamanho.nome = tamanho_data['nome']
             tamanho.quantidade = tamanho_data['quantidade']
@@ -388,11 +423,46 @@ def editar_solado(id):
             tamanho.peso_friso = tamanho_data['peso_friso']
             tamanho.peso_sem_friso = tamanho_data['peso_sem_friso']
 
+        # Salvando os componentes da formulação
+        solado.formulacao = []
+        for componente_id, carga in zip(request.form.getlist("componentes[]"), request.form.getlist("carga[]")):
+            componente = Componente.query.get(int(componente_id))
+            if componente:
+                nova_formula = FormulacaoSolado(
+                    solado_id=solado.id,
+                    componente_id=componente.id,
+                    carga=float(carga) if carga else 0
+                )
+                solado.formulacao.append(nova_formula)
+
         db.session.commit()
         flash("Solado atualizado com sucesso!", "success")
         return redirect(url_for('routes.listar_solados'))
 
-    return render_template('editar_solado.html', form=form, solado=solado)
+    return render_template('editar_solado.html', form=form, solado=solado, componentes=componentes)
+
+@bp.route('/solado/salvar_componentes/<int:id>', methods=['POST'])
+def salvar_componentes(id):
+    solado = Solado.query.get_or_404(id)
+    data = request.get_json()
+
+    if "componentes" in data:
+        solado.formulacao = []  # Remove os componentes antigos antes de salvar os novos
+        for item in data["componentes"]:
+            componente = Componente.query.get(int(item["componente_id"]))
+            if componente:
+                nova_formula = FormulacaoSolado(
+                    solado_id=solado.id,
+                    componente_id=componente.id,
+                    carga=float(item["carga"])
+                )
+                solado.formulacao.append(nova_formula)
+
+        db.session.commit()
+        return jsonify({"success": True})
+
+    return jsonify({"success": False})
+
 
 @bp.route('/solado/excluir/<int:id>', methods=['POST'])
 def excluir_solado(id):

@@ -8,8 +8,8 @@
         <thead>
             <tr>
                 <th>Código</th>
-                <th>Tipo</th>
                 <th>Descrição</th>
+                <th>Tipo</th>
                 <th>Unidade</th>
                 <th>Preço</th>
                 <th>Ações</th>
@@ -19,8 +19,8 @@
             {% for componente in componentes %}
                 <tr>
                     <td>{{ componente.codigo }}</td>
-                    <td>{{ componente.tipo }}</td>
                     <td>{{ componente.descricao }}</td>
+                    <td>{{ componente.tipo }}</td>
                     <td>{{ componente.unidade_medida }}</td>
                     <td>R$ {{ "%.2f"|format(componente.preco) }}</td>
                     <td>

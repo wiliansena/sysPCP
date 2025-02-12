@@ -3,9 +3,10 @@
 {% block content %}
 <div class="container mt-4">
     <h2>Cadastro de Solado</h2>
-    
-    <form method="POST" enctype="multipart/form-data">
-        {{ form.hidden_tag() }}  <!-- Token CSRF principal -->
+
+    <!-- 🔹 Adicionado action na form -->
+    <form method="POST" action="{{ url_for('routes.novo_solado') }}" enctype="multipart/form-data">
+        {{ form.hidden_tag() }}
 
         <div class="form-group">
             <label>Referência</label>
@@ -28,7 +29,7 @@
                 <tr>
                     <th>Tamanhos</th>
                     {% for tamanho in form.tamanhos %}
-                        <th>{{ tamanho.nome(class="form-control") }}</th>  <!-- Agora editável -->
+                    <th>{{ tamanho.nome(class="form-control") }}</th>
                     {% endfor %}
                 </tr>
             </thead>
@@ -36,28 +37,58 @@
                 <tr>
                     <td><b>GRADE</b></td>
                     {% for tamanho in form.tamanhos %}
-                        {{ tamanho.hidden_tag() }}  <!-- ✅ Adicionando CSRF Token aqui -->
-                        <td>{{ tamanho.quantidade(class="form-control") }}</td>
+                    {{ tamanho.hidden_tag() }}
+                    <td>{{ tamanho.quantidade(class="form-control") }}</td>
                     {% endfor %}
                 </tr>
                 <tr>
                     <td><b>Peso Médio</b></td>
                     {% for tamanho in form.tamanhos %}
-                        <td>{{ tamanho.peso_medio(class="form-control") }}</td>
+                    <td>{{ tamanho.peso_medio(class="form-control") }}</td>
                     {% endfor %}
                 </tr>
                 <tr>
                     <td><b>Peso Médio Friso</b></td>
                     {% for tamanho in form.tamanhos %}
-                        <td>{{ tamanho.peso_friso(class="form-control") }}</td>
+                    <td>{{ tamanho.peso_friso(class="form-control") }}</td>
                     {% endfor %}
                 </tr>
                 <tr>
                     <td><b>Peso Médio sem Friso</b></td>
                     {% for tamanho in form.tamanhos %}
-                        <td>{{ tamanho.peso_sem_friso(class="form-control") }}</td>
+                    <td>{{ tamanho.peso_sem_friso(class="form-control") }}</td>
                     {% endfor %}
                 </tr>
+            </tbody>
+        </table>
+
+        <h4>Formulação do Solado</h4>
+        <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalComponentes">
+            Adicionar Componente
+        </button>
+
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Cód</th>
+                    <th>Descrição</th>
+                    <th>Valor do Componente</th>
+                    <th>Carga (Kg)</th>
+                    <th>Ação</th>
+                </tr>
+            </thead>
+            <tbody id="tabela-formulacao">
+                {% for item in form.formulacao %}
+                <tr>
+                    <td><input type="hidden" name="componentes[]" value="{{ item.componente_id.data }}">{{ item.componente_id.data }}</td>
+                    <td>{{ item.descricao.data }}</td>
+                    <td>R$ {{ item.preco.data }}</td>
+                    <td><input type="number" name="carga[]" class="form-control" value="{{ item.carga.data }}" step="0.01" min="0"></td>
+                    <td>
+                        <button type="button" class="btn btn-danger btn-sm remover-componente">Remover</button>
+                    </td>
+                </tr>
+                {% endfor %}
             </tbody>
         </table>
 
@@ -65,4 +96,82 @@
         <a href="{{ url_for('routes.listar_solados') }}" class="btn btn-secondary">Cancelar</a>
     </form>
 </div>
+
+<!-- Modal para selecionar componentes -->
+<div class="modal fade" id="modalComponentes" tabindex="-1" aria-labelledby="modalComponentesLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Selecionar Componentes</h5>
+                <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Descrição</th>
+                            <th>Preço</th>
+                            <th>Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for componente in componentes %}
+                        <tr>
+                            <td>{{ componente.id }}</td>
+                            <td>{{ componente.descricao }}</td>
+                            <td>R$ {{ "%.2f"|format(componente.preco) }}</td>
+                            <td>
+                                <button type="button" class="btn btn-success btn-sm selecionar-componente"
+                                    data-id="{{ componente.id }}"
+                                    data-descricao="{{ componente.descricao }}"
+                                    data-preco="{{ "%.2f"|format(componente.preco) }}">
+                                    Selecionar
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).on("click", ".selecionar-componente", function () {
+        let id = $(this).data("id");
+        let descricao = $(this).data("descricao");
+        let preco = $(this).data("preco");
+
+        let tabela = $("#tabela-formulacao");
+
+        // Verifica se o componente já foi adicionado
+        let existe = tabela.find(`tr[data-id="${id}"]`).length > 0;
+        if (existe) {
+            alert("Este componente já foi adicionado!");
+            return;
+        }
+
+        let novaLinha = `
+            <tr data-id="${id}">
+                <td><input type="hidden" name="componentes[]" value="${id}">${id}</td>
+                <td>${descricao}</td>
+                <td>R$ ${preco}</td>
+                <td><input type="number" name="carga[]" class="form-control carga-input" step="0.01" min="0"></td>
+                <td><button type="button" class="btn btn-danger btn-sm remover-componente">Remover</button></td>
+            </tr>
+        `;
+
+        tabela.append(novaLinha);
+        $("#modalComponentes").modal("hide");
+    });
+
+    $(document).on("click", ".remover-componente", function () {
+        $(this).closest("tr").remove();
+    });
+</script>
+
 {% endblock %}

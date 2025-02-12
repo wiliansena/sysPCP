@@ -1,74 +1,193 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container mt-4">
+<div class="container">
     <h2>Editar Solado</h2>
-    
-    <form method="POST" enctype="multipart/form-data">
-        {{ form.hidden_tag() }}  <!-- CSRF Token principal -->
 
-        <div class="form-group">
-            <label>Referência</label>
-            {{ form.referencia(class="form-control") }}
+    <form method="POST" enctype="multipart/form-data">
+        {{ form.hidden_tag() }}
+
+        <!-- Referência e Descrição -->
+        <div class="mb-3">
+            <label class="form-label">Referência</label>
+            {{ form.referencia(class="form-control", readonly=True) }}
         </div>
 
-        <div class="form-group">
-            <label>Descrição</label>
+        <div class="mb-3">
+            <label class="form-label">Descrição</label>
             {{ form.descricao(class="form-control") }}
         </div>
 
-        <div class="form-group">
-            <label>Imagem do Solado</label>
-            {{ form.imagem(class="form-control-file") }}
+        <!-- Imagem do Solado -->
+        <div class="mb-3">
+            <label class="form-label">Imagem do Solado</label><br>
             {% if solado.imagem %}
-                <div class="mt-2">
-                    <img src="{{ url_for('static', filename='uploads/' + solado.imagem) }}" width="150">
-                </div>
+                <img src="{{ url_for('static', filename='uploads/' + solado.imagem) }}" alt="Imagem do Solado" class="img-thumbnail" style="max-width: 150px;">
+            {% else %}
+                <p><i>Sem imagem disponível</i></p>
             {% endif %}
+            {{ form.imagem(class="form-control") }}
         </div>
 
-        <h4>Ficha Técnica</h4>
+        <!-- Tamanhos e Pesos -->
+        <h3>Tamanhos</h3>
         <table class="table table-bordered">
-            <thead>
+            <thead class="table-dark">
                 <tr>
-                    <th>Tamanhos</th>
-                    {% for tamanho in form.tamanhos %}
-                        <th>{{ tamanho.nome(class="form-control") }}</th>  <!-- Agora editável -->
+                    <th>Tamanho</th>
+                    {% for tamanho in solado.tamanhos %}
+                        <th>{{ tamanho.nome }}</th>
                     {% endfor %}
+                    <th class="bg-primary text-white">Totais</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
                     <td><b>GRADE</b></td>
-                    {% for tamanho in form.tamanhos %}
-                        {{ tamanho.hidden_tag() }}  <!-- ✅ CSRF Token para cada tamanho -->
-                        <td>{{ tamanho.quantidade(class="form-control") }}</td>
+                    {% for tamanho in solado.tamanhos %}
+                        <td>{{ tamanho.quantidade }}</td>
                     {% endfor %}
+                    <td><b>{{ total_quantidade }}</b></td>
                 </tr>
                 <tr>
                     <td><b>Peso Médio</b></td>
-                    {% for tamanho in form.tamanhos %}
-                        <td>{{ tamanho.peso_medio(class="form-control") }}</td>
+                    {% for tamanho in solado.tamanhos %}
+                        <td>{{ tamanho.peso_medio }}</td>
                     {% endfor %}
+                    <td><b>{{ peso_medio_total }}</b></td>
                 </tr>
                 <tr>
                     <td><b>Peso Médio Friso</b></td>
-                    {% for tamanho in form.tamanhos %}
-                        <td>{{ tamanho.peso_friso(class="form-control") }}</td>
+                    {% for tamanho in solado.tamanhos %}
+                        <td>{{ tamanho.peso_friso }}</td>
                     {% endfor %}
+                    <td><b>{{ peso_friso_total }}</b></td>
                 </tr>
                 <tr>
-                    <td><b>Peso Médio sem Friso</b></td>
-                    {% for tamanho in form.tamanhos %}
-                        <td>{{ tamanho.peso_sem_friso(class="form-control") }}</td>
+                    <td><b>Peso Médio Sem Friso</b></td>
+                    {% for tamanho in solado.tamanhos %}
+                        <td>{{ tamanho.peso_sem_friso }}</td>
                     {% endfor %}
+                    <td><b>{{ peso_sem_friso_total }}</b></td>
                 </tr>
             </tbody>
         </table>
 
+        <!-- Formulação do Solado -->
+        <h3>Formulação do Solado</h3>
+        <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalComponentes">
+            Adicionar Componente
+        </button>
+
+        <table class="table table-bordered">
+            <thead class="table-dark">
+                <tr>
+                    <th>Código</th>
+                    <th>Descrição</th>
+                    <th>Preço (R$)</th>
+                    <th>Carga (Kg)</th>
+                    <th>Porcentagem (%)</th>
+                    <th>Pares por Carga</th>
+                    <th>Consumo</th>
+                    <th>Preço Unitário (R$)</th>
+                    <th>Remover</th>
+                </tr>
+            </thead>
+            <tbody id="formulacao-body">
+                {% for item in solado.formulacao %}
+                <tr>
+                    <td>{{ item.componente.id }}</td>
+                    <td>{{ item.componente.descricao }}</td>
+                    <td>R$ {{ "%.2f"|format(item.componente.preco) }}</td>
+                    <td><input type="number" name="carga_{{ item.componente.id }}" class="form-control carga-input" value="{{ item.carga }}"></td>
+                    <td>{{ "%.2f"|format(item.porcentagem) }}%</td>
+                    <td>{{ "%.1f"|format(item.pares_por_carga) }}</td>
+                    <td>{{ "%.6f"|format(item.consumo) }}</td>
+                    <td>R$ {{ "%.2f"|format(item.preco_unitario) }}</td>
+                    <td>
+                        <button type="button" class="btn btn-danger btn-sm remove-component" data-id="{{ item.componente.id }}">X</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="mb-3">
+            <label><b>Custo Total:</b> R$ <span id="custo-total">{{ "%.2f"|format(solado.calcular_total_formula()) }}</span></label>
+        </div>
+
         <button type="submit" class="btn btn-success">Salvar</button>
         <a href="{{ url_for('routes.listar_solados') }}" class="btn btn-secondary">Cancelar</a>
-        <button class="btn btn-primary" onclick="window.print()">Imprimir</button>
     </form>
 </div>
+
+<!-- Modal de Seleção de Componentes -->
+<div class="modal fade" id="modalComponentes" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Selecionar Componentes</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table table-bordered">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Selecionar</th>
+                            <th>Código</th>
+                            <th>Descrição</th>
+                            <th>Valor</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for componente in componentes %}
+                        <tr>
+                            <td><input type="checkbox" class="componente-checkbox" data-id="{{ componente.id }}" data-desc="{{ componente.descricao }}" data-preco="{{ componente.preco }}"></td>
+                            <td>{{ componente.id }}</td>
+                            <td>{{ componente.descricao }}</td>
+                            <td>R$ {{ "%.2f"|format(componente.preco) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" id="addComponentes">Adicionar</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Script -->
+<script>
+document.getElementById("addComponentes").addEventListener("click", function() {
+    let checkboxes = document.querySelectorAll(".componente-checkbox:checked");
+    let tableBody = document.getElementById("formulacao-body");
+
+    checkboxes.forEach(checkbox => {
+        let id = checkbox.dataset.id;
+        let desc = checkbox.dataset.desc;
+        let preco = parseFloat(checkbox.dataset.preco).toFixed(2);
+
+        let newRow = `
+        <tr>
+            <td>${id}</td>
+            <td>${desc}</td>
+            <td>R$ ${preco}</td>
+            <td><input type="number" name="carga_${id}" class="form-control carga-input"></td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td><button type="button" class="btn btn-danger btn-sm remove-component">X</button></td>
+        </tr>`;
+        tableBody.innerHTML += newRow;
+    });
+
+    document.querySelectorAll(".componente-checkbox").forEach(checkbox => checkbox.checked = false);
+    let modal = new bootstrap.Modal(document.getElementById('modalComponentes'));
+    modal.hide();
+});
+</script>
 {% endblock %}
