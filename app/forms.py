@@ -45,17 +45,17 @@ class MaoDeObraForm(FlaskForm):
     submit = SubmitField('Salvar')
 
 class TamanhoForm(FlaskForm):
-    nome = StringField('Tamanho', validators=[DataRequired()])
-    quantidade = IntegerField('Quantidade', validators=[DataRequired()])
-    peso_medio = FloatField('Peso Médio', default=0.0)
-    peso_friso = FloatField('Peso Friso', default=0.0)
-    peso_sem_friso = FloatField('Peso Sem Friso', default=0.0)
+    nome = StringField('Tamanho')
+    quantidade = IntegerField('Quantidade')
+    peso_medio = FloatField('Peso Médio')
+    peso_friso = FloatField('Peso Friso')
+    peso_sem_friso = FloatField('Peso Sem Friso')
 
 class SoladoForm(FlaskForm):
     referencia = StringField('Referência', validators=[DataRequired()])
     descricao = StringField('Descrição', validators=[DataRequired()])
     imagem = FileField('Imagem do Solado')
-    tamanhos = FieldList(FormField(TamanhoForm), min_entries=4)  # Inicialmente 4 tamanhos
+    tamanhos = FieldList(FormField(TamanhoForm), min_entries=8, max_entries=8)  # Permite até 8 tamanhos
     submit = SubmitField('Salvar')
 
 class FormulacaoSoladoForm(FlaskForm):

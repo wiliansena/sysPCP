@@ -353,58 +353,58 @@ def ver_solado(id):
 @bp.route('/solado/novo', methods=['GET', 'POST'])
 def novo_solado():
     form = SoladoForm()
-
-    # 🔹 Buscar os componentes para exibir no modal
-    componentes = Componente.query.all()
+    componentes = Componente.query.all()  # Obtém todos os componentes para exibir no modal
 
     if form.validate_on_submit():
-        # 🔹 Criar um novo solado com os dados do formulário
+        # Criar um novo objeto Solado
         novo_solado = Solado(
             referencia=form.referencia.data,
             descricao=form.descricao.data
         )
 
-        # 🔹 Se houver imagem, salvar o arquivo
+        # Salvar imagem
         if form.imagem.data:
-            imagem = form.imagem.data
-            nome_arquivo = secure_filename(imagem.filename)
-            caminho_arquivo = os.path.join(current_app.config['UPLOAD_FOLDER'], nome_arquivo)
-            imagem.save(caminho_arquivo)
-            novo_solado.imagem = nome_arquivo  # 🔹 Salva o nome do arquivo no banco
+            imagem_filename = secure_filename(form.imagem.data.filename)
+            caminho_imagem = os.path.join(current_app.config['UPLOAD_FOLDER'], imagem_filename)
+            form.imagem.data.save(caminho_imagem)
+            novo_solado.imagem = imagem_filename
 
-        # 🔹 Criar os tamanhos e pesos
+        db.session.add(novo_solado)
+        db.session.flush()  # Garante que o ID do solado está disponível
+
+        # Adiciona os tamanhos preenchidos
         for tamanho_data in form.tamanhos.data:
-            novo_tamanho = Tamanho(
-                nome=tamanho_data['nome'],
-                quantidade=tamanho_data['quantidade'],
-                peso_medio=tamanho_data['peso_medio'],
-                peso_friso=tamanho_data['peso_friso'],
-                peso_sem_friso=tamanho_data['peso_sem_friso']
-            )
-            novo_solado.tamanhos.append(novo_tamanho)
+            if tamanho_data["nome"]:  # Apenas adiciona se houver um nome
+                tamanho = Tamanho(
+                    solado_id=novo_solado.id,
+                    nome=tamanho_data["nome"],
+                    quantidade=tamanho_data["quantidade"],
+                    peso_medio=tamanho_data["peso_medio"],
+                    peso_friso=tamanho_data["peso_friso"],
+                    peso_sem_friso=tamanho_data["peso_sem_friso"]
+                )
+                db.session.add(tamanho)
 
-        # 🔹 Adicionar os componentes da formulação
+        # Adiciona os componentes da formulação
         componentes_ids = request.form.getlist("componentes[]")
         cargas = request.form.getlist("carga[]")
 
         for componente_id, carga in zip(componentes_ids, cargas):
             componente = Componente.query.get(int(componente_id))
             if componente:
-                nova_formula = FormulacaoSolado(
+                nova_formulacao = FormulacaoSolado(
+                    solado_id=novo_solado.id,
                     componente_id=componente.id,
-                    solado=novo_solado,
                     carga=float(carga) if carga else 0
                 )
-                novo_solado.formulacao.append(nova_formula)
+                db.session.add(nova_formulacao)
 
-        # 🔹 Salvar tudo no banco
-        db.session.add(novo_solado)
         db.session.commit()
-
         flash("Solado cadastrado com sucesso!", "success")
         return redirect(url_for('routes.listar_solados'))
 
     return render_template('novo_solado.html', form=form, componentes=componentes)
+
 
 @bp.route('/solado/editar/<int:id>', methods=['GET', 'POST'])
 def editar_solado(id):

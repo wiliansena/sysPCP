@@ -68,11 +68,12 @@ class Solado(db.Model):
 
 class Tamanho(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    nome = db.Column(db.String(20), nullable=False)  # Nome do tamanho
-    quantidade = db.Column(db.Integer, nullable=False)  # Grade
-    peso_medio = db.Column(db.Float, nullable=False)
-    peso_friso = db.Column(db.Float, nullable=False)
-    peso_sem_friso = db.Column(db.Float, nullable=False)
+    nome = db.Column(db.String(20), nullable=True)  # Nome do tamanho
+    quantidade = db.Column(db.Integer, nullable=True)  # GRADE
+    peso_medio = db.Column(db.Float, nullable=True)
+    peso_friso = db.Column(db.Float, nullable=True)
+    peso_sem_friso = db.Column(db.Float, nullable=True)
+
 
     solado_id = db.Column(db.Integer, db.ForeignKey("solado.id"), nullable=False)
 

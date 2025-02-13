@@ -28,39 +28,39 @@
             <thead>
                 <tr>
                     <th>Tamanhos</th>
-                    {% for tamanho in form.tamanhos %}
-                    <th>{{ tamanho.nome(class="form-control") }}</th>
+                    {% for i in range(8) %}
+                    <th>{{ form.tamanhos[i].nome(class="form-control") }}</th>
                     {% endfor %}
                 </tr>
             </thead>
             <tbody>
                 <tr>
                     <td><b>GRADE</b></td>
-                    {% for tamanho in form.tamanhos %}
-                    {{ tamanho.hidden_tag() }}
-                    <td>{{ tamanho.quantidade(class="form-control") }}</td>
+                    {% for i in range(8) %}
+                    <td>{{ form.tamanhos[i].quantidade(class="form-control") }}</td>
                     {% endfor %}
                 </tr>
                 <tr>
                     <td><b>Peso Médio</b></td>
-                    {% for tamanho in form.tamanhos %}
-                    <td>{{ tamanho.peso_medio(class="form-control") }}</td>
+                    {% for i in range(8) %}
+                    <td>{{ form.tamanhos[i].peso_medio(class="form-control") }}</td>
                     {% endfor %}
                 </tr>
                 <tr>
                     <td><b>Peso Médio Friso</b></td>
-                    {% for tamanho in form.tamanhos %}
-                    <td>{{ tamanho.peso_friso(class="form-control") }}</td>
+                    {% for i in range(8) %}
+                    <td>{{ form.tamanhos[i].peso_friso(class="form-control") }}</td>
                     {% endfor %}
                 </tr>
                 <tr>
                     <td><b>Peso Médio sem Friso</b></td>
-                    {% for tamanho in form.tamanhos %}
-                    <td>{{ tamanho.peso_sem_friso(class="form-control") }}</td>
+                    {% for i in range(8) %}
+                    <td>{{ form.tamanhos[i].peso_sem_friso(class="form-control") }}</td>
                     {% endfor %}
                 </tr>
             </tbody>
         </table>
+
 
         <h4>Formulação do Solado</h4>
         <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalComponentes">
@@ -79,11 +79,23 @@
             </thead>
             <tbody id="tabela-formulacao">
                 {% for item in form.formulacao %}
-                <tr>
-                    <td><input type="hidden" name="componentes[]" value="{{ item.componente_id.data }}">{{ item.componente_id.data }}</td>
-                    <td>{{ item.descricao.data }}</td>
-                    <td>R$ {{ item.preco.data }}</td>
-                    <td><input type="number" name="carga[]" class="form-control" value="{{ item.carga.data }}" step="0.01" min="0"></td>
+                <tr data-id="{{ item.componente_id.data }}">
+                    <td>
+                        <input type="hidden" name="componentes[]" value="{{ item.componente_id.data }}">
+                        {{ item.componente_id.data }}
+                    </td>
+                    <td>
+                        <input type="hidden" name="descricao[]" value="{{ item.descricao.data }}">
+                        {{ item.descricao.data }}
+                    </td>
+                    <td>
+                        <input type="hidden" name="preco[]" value="{{ item.preco.data }}">
+                        R$ {{ item.preco.data }}
+                    </td>
+                    <td>
+                        <input type="number" name="carga[]" class="form-control carga-input"
+                            value="{{ item.carga.data }}" step="0.01" min="0">
+                    </td>
                     <td>
                         <button type="button" class="btn btn-danger btn-sm remover-componente">Remover</button>
                     </td>
@@ -97,6 +109,7 @@
     </form>
 </div>
 
+<!-- Modal para selecionar componentes -->
 <!-- Modal para selecionar componentes -->
 <div class="modal fade" id="modalComponentes" tabindex="-1" aria-labelledby="modalComponentesLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -125,9 +138,8 @@
                             <td>R$ {{ "%.2f"|format(componente.preco) }}</td>
                             <td>
                                 <button type="button" class="btn btn-success btn-sm selecionar-componente"
-                                    data-id="{{ componente.id }}"
-                                    data-descricao="{{ componente.descricao }}"
-                                    data-preco="{{ "%.2f"|format(componente.preco) }}">
+                                    data-id="{{ componente.id }}" data-descricao="{{ componente.descricao }}"
+                                    data-preco="{{ " %.2f"|format(componente.preco) }}">
                                     Selecionar
                                 </button>
                             </td>
@@ -148,15 +160,8 @@
 
         let tabela = $("#tabela-formulacao");
 
-        // Verifica se o componente já foi adicionado
-        let existe = tabela.find(`tr[data-id="${id}"]`).length > 0;
-        if (existe) {
-            alert("Este componente já foi adicionado!");
-            return;
-        }
-
         let novaLinha = `
-            <tr data-id="${id}">
+            <tr>
                 <td><input type="hidden" name="componentes[]" value="${id}">${id}</td>
                 <td>${descricao}</td>
                 <td>R$ ${preco}</td>
@@ -171,6 +176,33 @@
 
     $(document).on("click", ".remover-componente", function () {
         $(this).closest("tr").remove();
+    });
+
+    // 🔹 Antes de enviar o formulário, preenche automaticamente os campos vazios
+    $("form").on("submit", function () {
+        // Preenche os campos de número (quantidade, pesos, carga) com "0" se estiverem vazios
+        $("input[type='number']").each(function () {
+            if ($(this).val().trim() === "" || isNaN($(this).val())) {
+                $(this).val(0);
+            }
+        });
+
+        // Preenche os campos de texto (tamanhos/nome) com "--" se estiverem vazios
+        $("input[name*='nome']").each(function () {
+            if ($(this).val().trim() === "") {
+                $(this).val("--");  // Substitua por qualquer valor padrão desejado
+            }
+        });
+
+        // 🔹 Preenche os campos de peso corretamente (peso_medio, peso_friso, peso_sem_friso)
+        $("input[name*='peso_medio'], input[name*='peso_friso'], input[name*='peso_sem_friso']").each(function () {
+            if ($(this).val().trim() === "" || isNaN($(this).val())) {
+                $(this).val(0);
+            }
+        });
+
+        // 🔹 Depuração (Opcional: Exibe os dados no console antes de enviar)
+        console.log("Campos preenchidos automaticamente:", $(this).serializeArray());
     });
 </script>
 
