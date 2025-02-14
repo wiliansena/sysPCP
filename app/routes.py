@@ -316,38 +316,29 @@ def listar_solados():
     form = DeleteForm()  # Criar instância do formulário
     return render_template('solados.html', solados=solados, form=form)
 
-
-"""@bp.route('/solado/<int:id>')
+@bp.route('/solado/ver/<int:id>')
 def ver_solado(id):
     solado = Solado.query.get_or_404(id)
 
-    # capturamos os 4 valores
-    total_quantidade, peso_medio_total, peso_friso_total, peso_sem_friso_total = solado.calcular_totais()
+    total_grade, peso_medio_total, peso_friso_total, peso_sem_friso_total = solado.calcular_totais()
+
+    if solado.formulacao:
+        carga_total = solado.formulacao[0].carga_total
+        pares_por_carga = solado.formulacao[0].pares_por_carga
+        preco_total = solado.formulacao[0].preco_total
+    else:
+        carga_total = 0
+        pares_por_carga = 0
+        preco_total = 0
 
     return render_template('ver_solado.html', solado=solado,
-                           total_quantidade=total_quantidade,
+                           total_grade=total_grade,
                            peso_medio_total=peso_medio_total,
                            peso_friso_total=peso_friso_total,
-                           peso_sem_friso_total=peso_sem_friso_total)"""
-
-@bp.route('/solado/<int:id>', methods=['GET'])
-def ver_solado(id):
-    solado = Solado.query.options(
-        db.joinedload(Solado.tamanhos),
-        db.joinedload(Solado.formulacao).joinedload(FormulacaoSolado.componente)
-    ).get_or_404(id)
-
-    # 🔹 Calcular totais antes de exibir a página
-    total_quantidade, peso_medio_total, peso_friso_total, peso_sem_friso_total = solado.calcular_totais()
-
-    return render_template(
-        'ver_solado.html',
-        solado=solado,
-        total_quantidade=total_quantidade,
-        peso_medio_total=peso_medio_total,
-        peso_friso_total=peso_friso_total,
-        peso_sem_friso_total=peso_sem_friso_total
-    )
+                           peso_sem_friso_total=peso_sem_friso_total,
+                           carga_total=carga_total,
+                           pares_por_carga=pares_por_carga,
+                           preco_total=preco_total)
 
 
 @bp.route('/solado/novo', methods=['GET', 'POST'])
@@ -405,35 +396,52 @@ def novo_solado():
 
     return render_template('novo_solado.html', form=form, componentes=componentes)
 
-
 @bp.route('/solado/editar/<int:id>', methods=['GET', 'POST'])
 def editar_solado(id):
     solado = Solado.query.get_or_404(id)
     form = SoladoForm(obj=solado)
-    componentes = Componente.query.all()
+    componentes = Componente.query.all()  # Para exibir os componentes no modal
 
     if form.validate_on_submit():
+        # Atualizar dados do solado
         solado.referencia = form.referencia.data
         solado.descricao = form.descricao.data
 
-        for tamanho, tamanho_data in zip(solado.tamanhos, form.tamanhos.data):
-            tamanho.nome = tamanho_data['nome']
-            tamanho.quantidade = tamanho_data['quantidade']
-            tamanho.peso_medio = tamanho_data['peso_medio']
-            tamanho.peso_friso = tamanho_data['peso_friso']
-            tamanho.peso_sem_friso = tamanho_data['peso_sem_friso']
+        # Atualizar imagem, se foi enviada uma nova
+        if form.imagem.data:
+            imagem_filename = secure_filename(form.imagem.data.filename)
+            caminho_imagem = os.path.join(current_app.config['UPLOAD_FOLDER'], imagem_filename)
+            form.imagem.data.save(caminho_imagem)
+            solado.imagem = imagem_filename
 
-        # Salvando os componentes da formulação
-        solado.formulacao = []
-        for componente_id, carga in zip(request.form.getlist("componentes[]"), request.form.getlist("carga[]")):
+        # Atualizar tamanhos (remover os antigos e adicionar os novos)
+        solado.tamanhos.clear()
+        for tamanho_data in form.tamanhos.data:
+            if tamanho_data["nome"]:
+                tamanho = Tamanho(
+                    solado_id=solado.id,
+                    nome=tamanho_data["nome"],
+                    quantidade=tamanho_data["quantidade"],
+                    peso_medio=tamanho_data["peso_medio"],
+                    peso_friso=tamanho_data["peso_friso"],
+                    peso_sem_friso=tamanho_data["peso_sem_friso"]
+                )
+                solado.tamanhos.append(tamanho)
+
+        # Atualizar formulação
+        solado.formulacao.clear()
+        componentes_ids = request.form.getlist("componentes[]")
+        cargas = request.form.getlist("carga[]")
+
+        for componente_id, carga in zip(componentes_ids, cargas):
             componente = Componente.query.get(int(componente_id))
             if componente:
-                nova_formula = FormulacaoSolado(
+                nova_formulacao = FormulacaoSolado(
                     solado_id=solado.id,
                     componente_id=componente.id,
                     carga=float(carga) if carga else 0
                 )
-                solado.formulacao.append(nova_formula)
+                solado.formulacao.append(nova_formulacao)
 
         db.session.commit()
         flash("Solado atualizado com sucesso!", "success")
@@ -441,7 +449,7 @@ def editar_solado(id):
 
     return render_template('editar_solado.html', form=form, solado=solado, componentes=componentes)
 
-@bp.route('/solado/salvar_componentes/<int:id>', methods=['POST'])
+"""@bp.route('/solado/salvar_componentes/<int:id>', methods=['POST'])
 def salvar_componentes(id):
     solado = Solado.query.get_or_404(id)
     data = request.get_json()
@@ -461,7 +469,7 @@ def salvar_componentes(id):
         db.session.commit()
         return jsonify({"success": True})
 
-    return jsonify({"success": False})
+    return jsonify({"success": False})"""
 
 
 @bp.route('/solado/excluir/<int:id>', methods=['POST'])

@@ -1,193 +1,203 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container">
+<div class="container mt-4">
     <h2>Editar Solado</h2>
 
     <form method="POST" enctype="multipart/form-data">
         {{ form.hidden_tag() }}
 
-        <!-- Referência e Descrição -->
-        <div class="mb-3">
-            <label class="form-label">Referência</label>
-            {{ form.referencia(class="form-control", readonly=True) }}
+        <div class="form-group">
+            <label>Referência</label>
+            {{ form.referencia(class="form-control") }}
         </div>
 
-        <div class="mb-3">
-            <label class="form-label">Descrição</label>
+        <div class="form-group">
+            <label>Descrição</label>
             {{ form.descricao(class="form-control") }}
         </div>
 
-        <!-- Imagem do Solado -->
-        <div class="mb-3">
-            <label class="form-label">Imagem do Solado</label><br>
+        <div class="form-group">
+            <label>Imagem do Solado</label>
+            {{ form.imagem(class="form-control-file") }}
             {% if solado.imagem %}
-                <img src="{{ url_for('static', filename='uploads/' + solado.imagem) }}" alt="Imagem do Solado" class="img-thumbnail" style="max-width: 150px;">
-            {% else %}
-                <p><i>Sem imagem disponível</i></p>
+            <img src="{{ url_for('static', filename='uploads/' ~ solado.imagem) }}" class="img-fluid mt-2" width="150">
             {% endif %}
-            {{ form.imagem(class="form-control") }}
         </div>
 
-        <!-- Tamanhos e Pesos -->
-        <h3>Tamanhos</h3>
+        <h4>Ficha Técnica</h4>
         <table class="table table-bordered">
-            <thead class="table-dark">
+            <thead>
                 <tr>
-                    <th>Tamanho</th>
-                    {% for tamanho in solado.tamanhos %}
-                        <th>{{ tamanho.nome }}</th>
+                    <th>Tamanhos</th>
+                    {% for tamanho in form.tamanhos %}
+                    <th>{{ tamanho.nome(class="form-control") }}</th>
                     {% endfor %}
-                    <th class="bg-primary text-white">Totais</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
                     <td><b>GRADE</b></td>
-                    {% for tamanho in solado.tamanhos %}
-                        <td>{{ tamanho.quantidade }}</td>
+                    {% for tamanho in form.tamanhos %}
+                    <td>{{ tamanho.quantidade(class="form-control") }}</td>
                     {% endfor %}
-                    <td><b>{{ total_quantidade }}</b></td>
                 </tr>
                 <tr>
                     <td><b>Peso Médio</b></td>
-                    {% for tamanho in solado.tamanhos %}
-                        <td>{{ tamanho.peso_medio }}</td>
+                    {% for tamanho in form.tamanhos %}
+                    <td>{{ tamanho.peso_medio(class="form-control") }}</td>
                     {% endfor %}
-                    <td><b>{{ peso_medio_total }}</b></td>
                 </tr>
                 <tr>
                     <td><b>Peso Médio Friso</b></td>
-                    {% for tamanho in solado.tamanhos %}
-                        <td>{{ tamanho.peso_friso }}</td>
+                    {% for tamanho in form.tamanhos %}
+                    <td>{{ tamanho.peso_friso(class="form-control") }}</td>
                     {% endfor %}
-                    <td><b>{{ peso_friso_total }}</b></td>
                 </tr>
                 <tr>
-                    <td><b>Peso Médio Sem Friso</b></td>
-                    {% for tamanho in solado.tamanhos %}
-                        <td>{{ tamanho.peso_sem_friso }}</td>
+                    <td><b>Peso Médio sem Friso</b></td>
+                    {% for tamanho in form.tamanhos %}
+                    <td>{{ tamanho.peso_sem_friso(class="form-control") }}</td>
                     {% endfor %}
-                    <td><b>{{ peso_sem_friso_total }}</b></td>
                 </tr>
             </tbody>
         </table>
 
-        <!-- Formulação do Solado -->
-        <h3>Formulação do Solado</h3>
+        <h4>Formulação do Solado</h4>
         <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalComponentes">
             Adicionar Componente
         </button>
 
         <table class="table table-bordered">
-            <thead class="table-dark">
+            <thead>
                 <tr>
-                    <th>Código</th>
+                    <th>Cód</th>
                     <th>Descrição</th>
-                    <th>Preço (R$)</th>
+                    <th>Valor do Componente</th>
                     <th>Carga (Kg)</th>
-                    <th>Porcentagem (%)</th>
-                    <th>Pares por Carga</th>
-                    <th>Consumo</th>
-                    <th>Preço Unitário (R$)</th>
-                    <th>Remover</th>
+                    <th>Ação</th>
                 </tr>
             </thead>
-            <tbody id="formulacao-body">
+            <tbody id="tabela-formulacao">
                 {% for item in solado.formulacao %}
-                <tr>
-                    <td>{{ item.componente.id }}</td>
+                <tr data-id="{{ item.componente.id }}">
+                    <td>
+                        <input type="hidden" name="componentes[]" value="{{ item.componente.id }}">
+                        {{ item.componente.id }}
+                    </td>
                     <td>{{ item.componente.descricao }}</td>
                     <td>R$ {{ "%.2f"|format(item.componente.preco) }}</td>
-                    <td><input type="number" name="carga_{{ item.componente.id }}" class="form-control carga-input" value="{{ item.carga }}"></td>
-                    <td>{{ "%.2f"|format(item.porcentagem) }}%</td>
-                    <td>{{ "%.1f"|format(item.pares_por_carga) }}</td>
-                    <td>{{ "%.6f"|format(item.consumo) }}</td>
-                    <td>R$ {{ "%.2f"|format(item.preco_unitario) }}</td>
                     <td>
-                        <button type="button" class="btn btn-danger btn-sm remove-component" data-id="{{ item.componente.id }}">X</button>
+                        <input type="number" name="carga[]" class="form-control carga-input"
+                            value="{{ item.carga }}" step="0.01" min="0">
+                    </td>
+                    <td>
+                        <button type="button" class="btn btn-danger btn-sm remover-componente">Remover</button>
                     </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
 
-        <div class="mb-3">
-            <label><b>Custo Total:</b> R$ <span id="custo-total">{{ "%.2f"|format(solado.calcular_total_formula()) }}</span></label>
-        </div>
-
         <button type="submit" class="btn btn-success">Salvar</button>
         <a href="{{ url_for('routes.listar_solados') }}" class="btn btn-secondary">Cancelar</a>
     </form>
 </div>
 
-<!-- Modal de Seleção de Componentes -->
-<div class="modal fade" id="modalComponentes" tabindex="-1">
+<!-- Modal para selecionar componentes -->
+<div class="modal fade" id="modalComponentes" tabindex="-1" aria-labelledby="modalComponentesLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Selecionar Componentes</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
             </div>
             <div class="modal-body">
-                <table class="table table-bordered">
-                    <thead class="table-dark">
+                <table class="table">
+                    <thead>
                         <tr>
-                            <th>Selecionar</th>
                             <th>Código</th>
                             <th>Descrição</th>
-                            <th>Valor</th>
+                            <th>Preço</th>
+                            <th>Ação</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for componente in componentes %}
                         <tr>
-                            <td><input type="checkbox" class="componente-checkbox" data-id="{{ componente.id }}" data-desc="{{ componente.descricao }}" data-preco="{{ componente.preco }}"></td>
                             <td>{{ componente.id }}</td>
                             <td>{{ componente.descricao }}</td>
                             <td>R$ {{ "%.2f"|format(componente.preco) }}</td>
+                            <td>
+                                <button type="button" class="btn btn-success btn-sm selecionar-componente"
+                                    data-id="{{ componente.id }}" data-descricao="{{ componente.descricao }}"
+                                    data-preco="{{ "%.2f"|format(componente.preco) }}">
+                                    Selecionar
+                                </button>
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-primary" id="addComponentes">Adicionar</button>
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
-            </div>
         </div>
     </div>
 </div>
 
-<!-- Script -->
 <script>
-document.getElementById("addComponentes").addEventListener("click", function() {
-    let checkboxes = document.querySelectorAll(".componente-checkbox:checked");
-    let tableBody = document.getElementById("formulacao-body");
+    $(document).on("click", ".selecionar-componente", function () {
+        let id = $(this).data("id");
+        let descricao = $(this).data("descricao");
+        let preco = $(this).data("preco");
 
-    checkboxes.forEach(checkbox => {
-        let id = checkbox.dataset.id;
-        let desc = checkbox.dataset.desc;
-        let preco = parseFloat(checkbox.dataset.preco).toFixed(2);
+        let tabela = $("#tabela-formulacao");
 
-        let newRow = `
-        <tr>
-            <td>${id}</td>
-            <td>${desc}</td>
-            <td>R$ ${preco}</td>
-            <td><input type="number" name="carga_${id}" class="form-control carga-input"></td>
-            <td>-</td>
-            <td>-</td>
-            <td>-</td>
-            <td>-</td>
-            <td><button type="button" class="btn btn-danger btn-sm remove-component">X</button></td>
-        </tr>`;
-        tableBody.innerHTML += newRow;
+        let novaLinha = `
+            <tr>
+                <td><input type="hidden" name="componentes[]" value="${id}">${id}</td>
+                <td>${descricao}</td>
+                <td>R$ ${preco}</td>
+                <td><input type="number" name="carga[]" class="form-control carga-input" step="0.01" min="0"></td>
+                <td><button type="button" class="btn btn-danger btn-sm remover-componente">Remover</button></td>
+            </tr>
+        `;
+
+        tabela.append(novaLinha);
+        $("#modalComponentes").modal("hide");
     });
 
-    document.querySelectorAll(".componente-checkbox").forEach(checkbox => checkbox.checked = false);
-    let modal = new bootstrap.Modal(document.getElementById('modalComponentes'));
-    modal.hide();
-});
+    $(document).on("click", ".remover-componente", function () {
+        $(this).closest("tr").remove();
+    });
+
+    // 🔹 Antes de enviar o formulário, preenche automaticamente os campos vazios
+    $("form").on("submit", function () {
+        // Preenche os campos de número (quantidade, pesos, carga) com "0" se estiverem vazios
+        $("input[type='number']").each(function () {
+            if ($(this).val().trim() === "" || isNaN($(this).val())) {
+                $(this).val(0);
+            }
+        });
+
+        // Preenche os campos de texto (tamanhos/nome) com "--" se estiverem vazios
+        $("input[name*='nome']").each(function () {
+            if ($(this).val().trim() === "") {
+                $(this).val("--");  // Substitua por qualquer valor padrão desejado
+            }
+        });
+
+        // 🔹 Preenche os campos de peso corretamente (peso_medio, peso_friso, peso_sem_friso)
+        $("input[name*='peso_medio'], input[name*='peso_friso'], input[name*='peso_sem_friso']").each(function () {
+            if ($(this).val().trim() === "" || isNaN($(this).val())) {
+                $(this).val(0);
+            }
+        });
+
+        // 🔹 Depuração (Opcional: Exibe os dados no console antes de enviar)
+        console.log("Campos preenchidos automaticamente:", $(this).serializeArray());
+    });
 </script>
+
 {% endblock %}

@@ -4,3 +4,33 @@
     font-weight: bold !important;  /* Forçar negrito */
     text-align: center;  /* Centralizar o texto */
 }
+
+@media print {
+    body {
+        font-size: 12px; /* Reduz o tamanho da fonte */
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    table th, table td {
+        padding: 4px; /* Reduz o espaçamento das células */
+        font-size: 10px; /* Fonte menor na tabela */
+        border: 1px solid #000;
+    }
+
+    h2, h3 {
+        font-size: 14px; /* Reduz o tamanho dos títulos */
+    }
+
+    .container {
+        width: 90%; /* Reduz a largura da impressão */
+        margin: 0 auto; /* Centraliza a impressão */
+    }
+
+    button, .no-print {
+        display: none; /* Oculta botões e elementos desnecessários */
+    }
+}

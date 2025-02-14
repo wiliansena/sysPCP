@@ -2,83 +2,80 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h2 class="text-center">Ficha Técnica do Solado</h2>
+    <h2>Ficha Técnica do Solado</h2>
 
-    <div class="row">
-        <div class="col-md-6">
-            <div class="form-group">
-                <label for="referencia"><b>Referência</b></label>
-                <input type="text" id="referencia" class="form-control" value="{{ solado.referencia }}" readonly>
-            </div>
-            <div class="form-group">
-                <label for="descricao"><b>Descrição</b></label>
-                <input type="text" id="descricao" class="form-control" value="{{ solado.descricao }}" readonly>
-            </div>
-        </div>
-        <div class="col-md-6 text-center">
-            <label><b>Imagem do Solado</b></label>
-            <div>
-                {% if solado.imagem %}
-                <img src="{{ url_for('static', filename='uploads/' + solado.imagem) }}" class="img-thumbnail">
-                {% else %}
-                <p><i>Sem imagem disponível</i></p>
-                {% endif %}
-            </div>
-        </div>
+    <div class="form-group">
+        <label><b>Referência:</b></label>
+        <input type="text" class="form-control" value="{{ solado.referencia }}" readonly>
     </div>
 
-    <h4 class="mt-4">Ficha Técnica</h4>
-    <table class="table table-bordered table-striped">
-        <thead class="thead-dark">
+    <div class="form-group">
+        <label><b>Descrição:</b></label>
+        <input type="text" class="form-control" value="{{ solado.descricao }}" readonly>
+    </div>
+
+    <div class="form-group">
+        <label><b>Imagem do Solado:</b></label><br>
+        {% if solado.imagem %}
+        <img src="{{ url_for('static', filename='uploads/' + solado.imagem) }}" alt="Imagem do Solado" class="img-fluid"
+            style="max-width: 200px;">
+        {% else %}
+        <p>Nenhuma imagem disponível</p>
+        {% endif %}
+    </div>
+
+    <h4>Ficha Técnica</h4>
+    <table class="table table-bordered">
+        <thead>
             <tr>
-                <th class="bg-dark text-white">Tamanhos</th>
+                <th>Tamanhos</th>
                 {% for tamanho in solado.tamanhos %}
-                <th class="bg-dark text-white">{{ tamanho.nome }}</th>
+                <th>{{ tamanho.nome }}</th>
                 {% endfor %}
-                <th class="bg-primary text-white">TOTAIS</th>
+                <th><b>TOTAIS</b></th>
             </tr>
         </thead>
         <tbody>
             <tr>
                 <td><b>GRADE</b></td>
                 {% for tamanho in solado.tamanhos %}
-                <td><input type="text" class="form-control" value="{{ tamanho.quantidade }}" readonly></td>
+                <td>{{ tamanho.quantidade }}</td>
                 {% endfor %}
-                <td><b>{{ total_quantidade }}</b></td>
+                <td><b>{{ total_grade }}</b></td>
             </tr>
             <tr>
-                <td><b>Peso Médio</b></td>
+                <td><b>PESO MÉDIO</b></td>
                 {% for tamanho in solado.tamanhos %}
-                <td><input type="text" class="form-control" value="{{ tamanho.peso_medio }}" readonly></td>
+                <td>{{ "%.3f"|format(tamanho.peso_medio) }}</td>
                 {% endfor %}
                 <td><b>{{ "%.3f"|format(peso_medio_total) }}</b></td>
             </tr>
             <tr>
-                <td><b>Peso Médio Friso</b></td>
+                <td><b>PESO MÉDIO FRISO</b></td>
                 {% for tamanho in solado.tamanhos %}
-                <td><input type="text" class="form-control" value="{{ tamanho.peso_friso }}" readonly></td>
+                <td>{{ "%.3f"|format(tamanho.peso_friso) }}</td>
                 {% endfor %}
                 <td><b>{{ "%.3f"|format(peso_friso_total) }}</b></td>
             </tr>
             <tr>
-                <td><b>Peso Médio sem Friso</b></td>
+                <td><b>PESO MÉDIO SEM FRISO</b></td>
                 {% for tamanho in solado.tamanhos %}
-                <td><input type="text" class="form-control" value="{{ tamanho.peso_sem_friso }}" readonly></td>
+                <td>{{ "%.3f"|format(tamanho.peso_sem_friso) }}</td>
                 {% endfor %}
                 <td><b>{{ "%.3f"|format(peso_sem_friso_total) }}</b></td>
             </tr>
         </tbody>
     </table>
-    <h3 class="mt-4">Formulação do Solado</h3>
+    
+    <h4>Formulação do Solado</h4>
     <table class="table table-bordered">
-        <thead class="table-dark">
+        <thead>
             <tr>
-                <th>CÓD</th>
+                <th>Código</th>
                 <th>Descrição</th>
-                <th>Valor do Componente</th>
-                <th>Carga (kg)</th>
-                <th>%</th>
-                <th>Pares/Carga</th>
+                <th>Carga (Kg)</th>
+                <th>Porcentagem (%)</th>
+                <th>Pares por Carga</th>
                 <th>Consumo</th>
                 <th>Preço Unitário</th>
             </tr>
@@ -88,28 +85,21 @@
             <tr>
                 <td>{{ item.componente.id }}</td>
                 <td>{{ item.componente.descricao }}</td>
-                <td>R$ {{ "%.2f"|format(item.componente.preco) }}</td>
-                <td>{{ "%.3f"|format(item.carga) }}</td>
-                <td>{{ "%.2f"|format(item.porcentagem * 100) }}%</td>
-                <td>{{ "%.1f"|format(item.pares_por_carga) }}</td>
+                <td>{{ "%.2f"|format(item.carga) }}</td>
+                <td>{{ "%.2f"|format(item.porcentagem) }}%</td>
+                <td>{{ "%.2f"|format(pares_por_carga) }}</td>
                 <td>{{ "%.6f"|format(item.consumo) }}</td>
                 <td>R$ {{ "%.2f"|format(item.preco_unitario) }}</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+    
+    <h4>Custo total: R$ {{ "%.2f"|format(preco_total) }}</h4>
+    <button class="btn btn-primary" onclick="window.print()">
+        <i class="fa fa-print"></i> Imprimir
+    </button>
+    <a href="{{ url_for('routes.listar_solados') }}" class="btn btn-secondary">Sair</a>    
 
-    <label><b>Custo Total:</b> R$ <span id="custo-total">{{ "%.2f"|format(solado.calcular_total_formula())
-            }}</span></label>
-
-    <div class="text-center mt-4">
-        <a href="{{ url_for('routes.listar_solados') }}" class="btn btn-secondary">Voltar</a>
-        <a href="{{ url_for('routes.editar_solado', id=solado.id) }}" class="btn btn-warning">Editar</a>
-        <button class="btn btn-primary" onclick="window.print()">Imprimir</button>
-        <form action="{{ url_for('routes.excluir_solado', id=solado.id) }}" method="POST" style="display:inline;">
-            <button type="submit" class="btn btn-danger"
-                onclick="return confirm('Tem certeza que deseja excluir este solado?');">Excluir</button>
-        </form>
-    </div>
 </div>
 {% endblock %}
