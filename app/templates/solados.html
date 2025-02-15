@@ -11,6 +11,9 @@
                 <th>Referência</th>
                 <th>Descrição</th>
                 <th>Imagem</th>
+                <th>Custo</th>
+                <th>Custo Friso</th>
+                <th>Custo Total</th>
                 <th>Ações</th>
             </tr>
         </thead>
@@ -26,6 +29,9 @@
                         Sem imagem
                     {% endif %}
                 </td>
+                <td>R$ {{ "%.2f"|format(solado.preco_total) }}</td>
+                <td>R$ {{ "%.2f"|format(solado.preco_total_friso) }}</td>
+                <td><strong>R$ {{ "%.2f"|format(solado.custo_total) }}</strong></td>
                 <td>
                     <a href="{{ url_for('routes.ver_solado', id=solado.id) }}" class="btn btn-primary btn-sm">Abrir</a>
                     <a href="{{ url_for('routes.editar_solado', id=solado.id) }}" class="btn btn-warning btn-sm">Editar</a>

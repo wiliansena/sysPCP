@@ -54,6 +54,7 @@ class Solado(db.Model):
 
     tamanhos = db.relationship("Tamanho", backref="solado", lazy="joined", cascade="all, delete-orphan")
     formulacao = db.relationship("FormulacaoSolado", backref="solado", lazy="joined", cascade="all, delete-orphan")
+    formulacao_friso = db.relationship("FormulacaoSoladoFriso", backref="solado", lazy="joined", cascade="all, delete-orphan")  # 🔹 Adicionada aqui!
 
     def calcular_totais(self):
         """ Calcula os valores totais de grade e pesos médios ponderados. """
@@ -71,6 +72,25 @@ class Solado(db.Model):
     def calcular_peso_sem_friso_total(self):
         """ Apenas retorna o peso médio sem friso total já calculado. """
         return self.calcular_totais()[3]  # O índice 3 corresponde ao peso_sem_friso_total
+    
+    def calcular_peso_friso_total(self):
+        """ Apenas retorna o peso médio sem friso total já calculado. """
+        return self.calcular_totais()[2]  # O índice 2 corresponde ao peso_friso_total
+    
+    @property
+    def preco_total(self):
+        """ Calcula o custo total da formulação sem friso. """
+        return sum(f.preco_unitario for f in self.formulacao) if self.formulacao else Decimal(0)
+
+    @property
+    def preco_total_friso(self):
+        """ Calcula o custo total da formulação com friso. """
+        return sum(f.preco_unitario for f in self.formulacao_friso) if self.formulacao_friso else Decimal(0)
+
+    @property
+    def custo_total(self):
+        """ Calcula o custo total da sola (com friso + sem friso). """
+        return self.preco_total + self.preco_total_friso
 
 
 class Tamanho(db.Model):
@@ -133,6 +153,61 @@ class FormulacaoSolado(db.Model):
             return Decimal(0)
 
         preco_total = sum(f.preco_unitario for f in self.solado.formulacao)
+
+        # 🔹 Arredondamento para cima
+        return preco_total.quantize(Decimal('0.01'), rounding=ROUND_CEILING)
+    
+    
+    #SOLADO FRISO
+    
+class FormulacaoSoladoFriso(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    solado_id = db.Column(db.Integer, db.ForeignKey('solado.id'), nullable=False)
+    componente_id = db.Column(db.Integer, db.ForeignKey('componente.id'), nullable=False)
+    carga = db.Column(db.Numeric(10, 4), nullable=False)  # 🔹 Numeric com 4 casas decimais
+
+    componente = db.relationship("Componente")
+
+    @property
+    def carga_total(self):
+        """Soma de todas as cargas dos componentes do solado."""
+        return sum(Decimal(f.carga) for f in self.solado.formulacao_friso) if self.solado.formulacao_friso else Decimal(0)
+
+    @property
+    def porcentagem(self):
+        carga_total = self.carga_total
+        return (Decimal(str(self.carga)) / carga_total) * 100 if carga_total > 0 else Decimal(0)
+    
+    @property
+    def pares_por_carga(self):
+        """ Calcula a quantidade de pares por carga usando peso_friso_total arredondado. """
+        peso_friso_total = Decimal(str(self.solado.calcular_peso_friso_total()))  # ✅ Pegamos já arredondado
+        carga_total = self.carga_total  # ✅ Já em Decimal
+
+        if peso_friso_total > 0:
+            pares_por_carga = carga_total / peso_friso_total
+            return pares_por_carga.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)  # 🔹 Arredondamos o resultado
+
+        return Decimal(0)
+
+    @property
+    def consumo(self):
+        """ Calcula o consumo baseado na carga e pares por carga. """
+        return Decimal(str(self.carga)) / self.pares_por_carga if self.pares_por_carga > 0 else Decimal(0)
+
+    @property
+    def preco_unitario(self):
+        """ Calcula o preço unitário do componente. """
+        return self.consumo * Decimal(str(self.componente.preco))  # ✅ Convertemos para Decimal
+
+    
+    @property
+    def preco_total(self):
+        """Calcula o preço total arredondando para cima."""
+        if not self.solado.formulacao_friso:
+            return Decimal(0)
+
+        preco_total = sum(f.preco_unitario for f in self.solado.formulacao_friso)
 
         # 🔹 Arredondamento para cima
         return preco_total.quantize(Decimal('0.01'), rounding=ROUND_CEILING)

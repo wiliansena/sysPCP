@@ -67,12 +67,13 @@
         </tbody>
     </table>
     
-    <h4>Formulação do Solado</h4>
+    <h4>Formulação do Solado (Sem Friso)</h4>
     <table class="table table-bordered">
         <thead>
             <tr>
                 <th>Código</th>
                 <th>Descrição</th>
+                <th>Preço</th>  <!-- 🟢 Nova coluna -->
                 <th>Carga (Kg)</th>
                 <th>Porcentagem (%)</th>
                 <th>Pares por Carga</th>
@@ -85,6 +86,7 @@
             <tr>
                 <td>{{ item.componente.id }}</td>
                 <td>{{ item.componente.descricao }}</td>
+                <td>R$ {{ "%.2f"|format(item.componente.preco) }}</td> <!-- 🟢 Nova célula exibindo o preço -->
                 <td>{{ "%.2f"|format(item.carga) }}</td>
                 <td>{{ "%.2f"|format(item.porcentagem) }}%</td>
                 <td>{{ "%.2f"|format(pares_por_carga) }}</td>
@@ -95,7 +97,49 @@
         </tbody>
     </table>
     
-    <h4>Custo total: R$ {{ "%.2f"|format(preco_total) }}</h4>
+    <h4><strong>Custo Total Sola Sem Friso: R$ {{ "%.2f"|format(preco_total) }}</strong></h4>
+
+    {% if solado.formulacao_friso %}
+    <h4>Formulação do Solado (Com Friso)</h4>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Código</th>
+                <th>Descrição</th>
+                <th>Preço</th>  <!-- 🟢 Nova coluna -->
+                <th>Carga (Kg)</th>
+                <th>Porcentagem (%)</th>
+                <th>Pares por Carga</th>
+                <th>Consumo</th>
+                <th>Preço Unitário</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in solado.formulacao_friso %}
+            <tr>
+                <td>{{ item.componente.codigo }}</td>
+                <td>{{ item.componente.descricao }}</td>
+                <td>R$ {{ "%.2f"|format(item.componente.preco) }}</td> <!-- 🟢 Nova célula exibindo o preço -->
+                <td>{{ "%.2f"|format(item.carga) }}</td>
+                <td>{{ "%.2f"|format(item.porcentagem) }}%</td>
+                <td>{{ "%.2f"|format(pares_por_carga_friso) }}</td>
+                <td>{{ "%.6f"|format(item.consumo) }}</td>
+                <td>R$ {{ "%.2f"|format(item.preco_unitario) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <h4><strong>Custo Total Sola Com Friso: R$ {{ "%.2f"|format(preco_total_friso) }}</strong></h4>
+{% else %}
+    <h4>Formulação do Solado (Com Friso)</h4>
+    <p class="text-danger"><strong>⚠️ Nenhum componente foi adicionado à formulação com friso.</strong></p>
+{% endif %}
+
+<h4><strong>Custo Total da Sola Sem Friso: R$ {{ "%.2f"|format(preco_total) }}</strong></h4>
+<h4><strong>Custo Total da Sola Com Friso: R$ {{ "%.2f"|format(preco_total_friso) }}</strong></h4>
+
+<h3 class="text-primary"><strong>CUSTO TOTAL DA SOLA: R$ {{ "%.2f"|format(custo_total) }}</strong></h3>
+
     <button class="btn btn-primary" onclick="window.print()">
         <i class="fa fa-print"></i> Imprimir
     </button>

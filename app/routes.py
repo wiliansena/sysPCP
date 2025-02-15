@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, render_template, redirect, url_for, flash, request
 from app import db
-from app.models import FormulacaoSolado, Referencia, Componente, CustoOperacional, Salario, MaoDeObra
+from app.models import FormulacaoSolado, FormulacaoSoladoFriso, Referencia, Componente, CustoOperacional, Salario, MaoDeObra
 from app.forms import ReferenciaForm, ComponenteForm, CustoOperacionalForm, SalarioForm, MaoDeObraForm
 import os
 #SOLADO
@@ -16,7 +16,7 @@ from flask_wtf import FlaskForm
 from wtforms import HiddenField
 from app import db, csrf  # 🔹 Importando o `csrf` que foi definido no __init__.py
 from flask.views import MethodView
-
+from decimal import Decimal
 
 bp = Blueprint('routes', __name__)
 
@@ -320,16 +320,49 @@ def listar_solados():
 def ver_solado(id):
     solado = Solado.query.get_or_404(id)
 
+    # 🟢 Calcular totais da ficha técnica
     total_grade, peso_medio_total, peso_friso_total, peso_sem_friso_total = solado.calcular_totais()
 
+    # 🟢 Calcular valores da formulação SEM friso
     if solado.formulacao:
         carga_total = solado.formulacao[0].carga_total
         pares_por_carga = solado.formulacao[0].pares_por_carga
         preco_total = solado.formulacao[0].preco_total
     else:
-        carga_total = 0
-        pares_por_carga = 0
-        preco_total = 0
+        carga_total = Decimal(0)
+        pares_por_carga = Decimal(0)
+        preco_total = Decimal(0)
+
+    # 🟢 Calcular valores da formulação COM friso
+    if solado.formulacao_friso:
+        carga_total_friso = solado.formulacao_friso[0].carga_total
+        pares_por_carga_friso = solado.formulacao_friso[0].pares_por_carga
+        preco_total_friso = solado.formulacao_friso[0].preco_total  # ✅ Agora usa peso_friso_total
+    else:
+        carga_total_friso = Decimal(0)
+        pares_por_carga_friso = Decimal(0)
+        preco_total_friso = Decimal(0)
+    
+    custo_total = solado.custo_total  # Novo cálculo
+
+    # 🔹 Logs para depuração
+    print("\n===== DEPURAÇÃO =====")
+    print(f"Total Grade: {total_grade}")
+    print(f"Peso Médio Total: {peso_medio_total}")
+    print(f"Peso Friso Total: {peso_friso_total}")
+    print(f"Peso Sem Friso Total: {peso_sem_friso_total}")
+
+    print(f"\nFormulação SEM Friso:")
+    print(f"Carga Total: {carga_total}")
+    print(f"Pares por Carga: {pares_por_carga}")
+    print(f"Preço Total: R$ {preco_total}")
+
+    print(f"\nFormulação COM Friso:")
+    print(f"Carga Total Friso: {carga_total_friso}")
+    print(f"Pares por Carga Friso: {pares_por_carga_friso}")
+    print(f"Preço Total Friso: R$ {preco_total_friso}")
+    print(f"Preço Custo total: R$ {custo_total}")
+    print("=====================\n")
 
     return render_template('ver_solado.html', solado=solado,
                            total_grade=total_grade,
@@ -338,15 +371,21 @@ def ver_solado(id):
                            peso_sem_friso_total=peso_sem_friso_total,
                            carga_total=carga_total,
                            pares_por_carga=pares_por_carga,
-                           preco_total=preco_total)
+                           preco_total=preco_total,
+                           carga_total_friso=carga_total_friso,
+                           pares_por_carga_friso=pares_por_carga_friso,
+                           preco_total_friso=preco_total_friso, custo_total=custo_total)
+
 
 
 @bp.route('/solado/novo', methods=['GET', 'POST'])
 def novo_solado():
     form = SoladoForm()
-    componentes = Componente.query.all()  # Obtém todos os componentes para exibir no modal
+    componentes = Componente.query.all()
 
     if form.validate_on_submit():
+        print(request.form)  # <-- Adicionado para debug
+
         # Criar um novo objeto Solado
         novo_solado = Solado(
             referencia=form.referencia.data,
@@ -362,8 +401,8 @@ def novo_solado():
 
         db.session.add(novo_solado)
         db.session.flush()  # Garante que o ID do solado está disponível
-
-        # Adiciona os tamanhos preenchidos
+        
+                # Adiciona os tamanhos preenchidos
         for tamanho_data in form.tamanhos.data:
             if tamanho_data["nome"]:  # Apenas adiciona se houver um nome
                 tamanho = Tamanho(
@@ -376,25 +415,50 @@ def novo_solado():
                 )
                 db.session.add(tamanho)
 
-        # Adiciona os componentes da formulação
-        componentes_ids = request.form.getlist("componentes[]")
-        cargas = request.form.getlist("carga[]")
+        # 🔹 Debug: Verifica se os dados chegaram corretamente
+        print("Componentes Sem Friso:", request.form.getlist("componentes_sem_friso[]"))
+        print("Cargas Sem Friso:", request.form.getlist("carga_sem_friso[]"))
+        print("Componentes Com Friso:", request.form.getlist("componentes_friso[]"))
+        print("Cargas Com Friso:", request.form.getlist("carga_friso[]"))
+
+        # Adiciona os componentes da formulação (Sem Friso)
+        componentes_ids = request.form.getlist("componentes_sem_friso[]")
+        cargas = request.form.getlist("carga_sem_friso[]")
 
         for componente_id, carga in zip(componentes_ids, cargas):
             componente = Componente.query.get(int(componente_id))
+            carga_valor = float(carga) if carga else 0.0  # Preenchendo vazio com 0.0
+
             if componente:
                 nova_formulacao = FormulacaoSolado(
                     solado_id=novo_solado.id,
                     componente_id=componente.id,
-                    carga=float(carga) if carga else 0
+                    carga=carga_valor
                 )
                 db.session.add(nova_formulacao)
+
+        # Adiciona os componentes da formulação (Com Friso)
+        componentes_friso_ids = request.form.getlist("componentes_friso[]")
+        cargas_friso = request.form.getlist("carga_friso[]")
+
+        for componente_id, carga in zip(componentes_friso_ids, cargas_friso):
+            componente = Componente.query.get(int(componente_id))
+            carga_valor_friso = float(carga) if carga else 0.0  # Preenchendo vazio com 0.0
+
+            if componente:
+                nova_formulacao_friso = FormulacaoSoladoFriso(
+                    solado_id=novo_solado.id,
+                    componente_id=componente.id,
+                    carga=carga_valor_friso
+                )
+                db.session.add(nova_formulacao_friso)
 
         db.session.commit()
         flash("Solado cadastrado com sucesso!", "success")
         return redirect(url_for('routes.listar_solados'))
 
     return render_template('novo_solado.html', form=form, componentes=componentes)
+
 
 @bp.route('/solado/editar/<int:id>', methods=['GET', 'POST'])
 def editar_solado(id):

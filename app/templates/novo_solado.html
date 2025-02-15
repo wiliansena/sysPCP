@@ -72,7 +72,7 @@
                 <tr>
                     <th>Cód</th>
                     <th>Descrição</th>
-                    <th>Valor do Componente</th>
+                    <th>Preço</th>
                     <th>Carga (Kg)</th>
                     <th>Ação</th>
                 </tr>
@@ -103,6 +103,49 @@
                 {% endfor %}
             </tbody>
         </table>
+        <h4>Formulação do Solado (Com Friso)</h4>
+        <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal"
+            data-bs-target="#modalComponentesFriso">
+            Adicionar Componente
+        </button>
+
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Cód</th>
+                    <th>Descrição</th>
+                    <th>Valor do Componente</th>
+                    <th>Carga (Kg)</th>
+                    <th>Ação</th>
+                </tr>
+            </thead>
+            <tbody id="tabela-formulacao-friso">
+                {% for item in form.formulacao %}
+                <tr data-id="{{ item.componente_id.data }}">
+                    <td>
+                        <input type="hidden" name="componentes[]" value="{{ item.componente_id.data }}">
+                        {{ item.componente_id.data }}
+                    </td>
+                    <td>
+                        <input type="hidden" name="descricao[]" value="{{ item.descricao.data }}">
+                        {{ item.descricao.data }}
+                    </td>
+                    <td>
+                        <input type="hidden" name="preco[]" value="{{ item.preco.data }}">
+                        R$ {{ item.preco.data }}
+                    </td>
+                    <td>
+                        <input type="number" name="carga[]" class="form-control carga-input"
+                            value="{{ item.carga.data }}" step="0.01" min="0">
+                    </td>
+                    <td>
+                        <button type="button" class="btn btn-danger btn-sm remover-componente">Remover</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
 
         <button type="submit" class="btn btn-success">Salvar</button>
         <a href="{{ url_for('routes.listar_solados') }}" class="btn btn-secondary">Cancelar</a>
@@ -110,7 +153,7 @@
 </div>
 
 <!-- Modal para selecionar componentes -->
-<!-- Modal para selecionar componentes -->
+<!-- 🔹 Modal para selecionar componentes (Sem Friso) -->
 <div class="modal fade" id="modalComponentes" tabindex="-1" aria-labelledby="modalComponentesLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -139,7 +182,50 @@
                             <td>
                                 <button type="button" class="btn btn-success btn-sm selecionar-componente"
                                     data-id="{{ componente.id }}" data-descricao="{{ componente.descricao }}"
-                                    data-preco="{{ " %.2f"|format(componente.preco) }}">
+                                    data-preco="{{ " %.2f"|format(componente.preco) }}" data-tipo="sem_friso">
+                                    Selecionar
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 🔹 Modal para selecionar componentes (Com Friso) -->
+<div class="modal fade" id="modalComponentesFriso" tabindex="-1" aria-labelledby="modalComponentesFrisoLabel"
+    aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Selecionar Componentes (Com Friso)</h5>
+                <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Descrição</th>
+                            <th>Preço</th>
+                            <th>Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for componente in componentes %}
+                        <tr>
+                            <td>{{ componente.id }}</td>
+                            <td>{{ componente.descricao }}</td>
+                            <td>R$ {{ "%.2f"|format(componente.preco) }}</td>
+                            <td>
+                                <button type="button" class="btn btn-success btn-sm selecionar-componente"
+                                    data-id="{{ componente.id }}" data-descricao="{{ componente.descricao }}"
+                                    data-preco="{{ " %.2f"|format(componente.preco) }}" data-tipo="friso">
                                     Selecionar
                                 </button>
                             </td>
@@ -153,57 +239,77 @@
 </div>
 
 <script>
-    $(document).on("click", ".selecionar-componente", function () {
-        let id = $(this).data("id");
-        let descricao = $(this).data("descricao");
-        let preco = $(this).data("preco");
+    $(document).ready(function () {
+        $(".selecionar-componente").click(function () {
+            let id = $(this).data("id");
+            let descricao = $(this).data("descricao");
+            let preco = $(this).data("preco");
+            let tipo = $(this).data("tipo");  // Identifica se é sem friso ou com friso
 
-        let tabela = $("#tabela-formulacao");
+            console.log("Selecionando componente - ID:", id, "Tipo:", tipo);
 
-        let novaLinha = `
+            // Define a tabela correta com base no tipo do componente
+            let tabela;
+            if (tipo === "friso") {
+                tabela = $("#tabela-formulacao-friso");
+            } else {
+                tabela = $("#tabela-formulacao");
+            }
+
+            // Garante que a tabela foi identificada corretamente
+            if (tabela.length === 0) {
+                console.error("Erro: Tabela não encontrada para o tipo", tipo);
+                return;
+            }
+
+            let novaLinha = `
             <tr>
-                <td><input type="hidden" name="componentes[]" value="${id}">${id}</td>
+                <td><input type="hidden" name="componentes_${tipo}[]" value="${id}">${id}</td>
                 <td>${descricao}</td>
                 <td>R$ ${preco}</td>
-                <td><input type="number" name="carga[]" class="form-control carga-input" step="0.01" min="0"></td>
+                <td><input type="number" name="carga_${tipo}[]" class="form-control carga-input" step="0.01" min="0"></td>
                 <td><button type="button" class="btn btn-danger btn-sm remover-componente">Remover</button></td>
             </tr>
         `;
 
-        tabela.append(novaLinha);
-        $("#modalComponentes").modal("hide");
-    });
-
-    $(document).on("click", ".remover-componente", function () {
-        $(this).closest("tr").remove();
-    });
-
-    // 🔹 Antes de enviar o formulário, preenche automaticamente os campos vazios
-    $("form").on("submit", function () {
-        // Preenche os campos de número (quantidade, pesos, carga) com "0" se estiverem vazios
-        $("input[type='number']").each(function () {
-            if ($(this).val().trim() === "" || isNaN($(this).val())) {
-                $(this).val(0);
-            }
+            tabela.append(novaLinha);
+            $("#modalComponentes, #modalComponentesFriso").modal("hide");  // Fecha os modais corretamente
         });
 
-        // Preenche os campos de texto (tamanhos/nome) com "--" se estiverem vazios
-        $("input[name*='nome']").each(function () {
-            if ($(this).val().trim() === "") {
-                $(this).val("--");  // Substitua por qualquer valor padrão desejado
-            }
+        $(document).on("click", ".remover-componente", function () {
+            $(this).closest("tr").remove();
         });
 
-        // 🔹 Preenche os campos de peso corretamente (peso_medio, peso_friso, peso_sem_friso)
-        $("input[name*='peso_medio'], input[name*='peso_friso'], input[name*='peso_sem_friso']").each(function () {
-            if ($(this).val().trim() === "" || isNaN($(this).val())) {
-                $(this).val(0);
-            }
-        });
+        // 🔹 Antes de enviar o formulário, preenche automaticamente os campos vazios
+        $("form").on("submit", function () {
+            console.log("Preenchendo valores vazios antes de enviar...");
 
-        // 🔹 Depuração (Opcional: Exibe os dados no console antes de enviar)
-        console.log("Campos preenchidos automaticamente:", $(this).serializeArray());
+            // 🔹 Garante que todos os campos de número (carga, pesos, quantidade) sejam preenchidos corretamente
+            $("input[type='number']").each(function () {
+                if ($(this).val().trim() === "" || isNaN($(this).val())) {
+                    $(this).val(0); // Define 0 como valor padrão para quantidade e carga
+                }
+            });
+
+            // 🔹 Preenche campos de texto (nomes dos tamanhos) com um valor padrão "--" se estiverem vazios
+            $("input[name*='nome']").each(function () {
+                if ($(this).val().trim() === "") {
+                    $(this).val("--");  // Define "--" para indicar um valor padrão
+                }
+            });
+
+            // 🔹 Garante que os campos de peso (peso_medio, peso_friso, peso_sem_friso) sejam preenchidos com 0.0
+            $("input[name*='peso_medio'], input[name*='peso_friso'], input[name*='peso_sem_friso']").each(function () {
+                if ($(this).val().trim() === "" || isNaN($(this).val())) {
+                    $(this).val(0.0);  // Define 0.0 para os pesos
+                }
+            });
+
+            // 🔹 Depuração (Opcional: Exibe os dados no console antes de enviar)
+            console.log("Campos preenchidos automaticamente:", $(this).serializeArray());
+        });
     });
+
 </script>
 
 {% endblock %}
