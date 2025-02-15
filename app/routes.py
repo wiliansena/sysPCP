@@ -16,7 +16,7 @@ from flask_wtf import FlaskForm
 from wtforms import HiddenField
 from app import db, csrf  # 🔹 Importando o `csrf` que foi definido no __init__.py
 from flask.views import MethodView
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP  # Importa Decimal para cálculos precisos
 
 bp = Blueprint('routes', __name__)
 
@@ -249,29 +249,48 @@ def listar_mao_de_obra():
     mao_de_obra = MaoDeObra.query.all()
     return render_template('mao_de_obra.html', mao_de_obra=mao_de_obra)
 
+
+
+from decimal import Decimal, ROUND_HALF_UP  # Importa Decimal para cálculos precisos
+
 @bp.route('/mao_de_obra/nova', methods=['GET', 'POST'])
 def nova_mao_de_obra():
     form = MaoDeObraForm()
     form.salario_id.choices = [(s.id, f"R$ {s.preco}") for s in Salario.query.all()]
-    
+
     if form.validate_on_submit():
         salario = Salario.query.get(form.salario_id.data)
-        preco_liquido = form.multiplicador.data * salario.preco
-        preco_bruto = preco_liquido * (1 + salario.encargos / 100)
 
+        # 🔹 Convertendo os valores para Decimal para cálculos precisos
+        multiplicador = Decimal(str(form.multiplicador.data))
+        preco_liquido = multiplicador * salario.preco  # ✅ Calcula o Preço Líquido
+
+        # 🔹 Pegando o encargo da tabela Salario e garantindo que seja Decimal
+        encargos = Decimal(str(salario.encargos)) if salario.encargos else Decimal(1)
+
+        # 🔹 Ccálculo do Preço Bruto
+        preco_bruto = preco_liquido * encargos
+
+        # 🔹 Arredondando os valores para evitar casas decimais excessivas
+        preco_liquido = preco_liquido.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        preco_bruto = preco_bruto.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
+        # 🔹 Criando o objeto MaoDeObra com os valores já convertidos corretamente
         mao_de_obra = MaoDeObra(
             descricao=form.descricao.data,
             salario_id=form.salario_id.data,
-            multiplicador=form.multiplicador.data,
-            preco_liquido=preco_liquido,
-            preco_bruto=preco_bruto
+            multiplicador=multiplicador,  
+            preco_liquido=preco_liquido,  
+            preco_bruto=preco_bruto  
         )
+
         db.session.add(mao_de_obra)
         db.session.commit()
         flash('Mão de obra adicionada com sucesso!', 'success')
         return redirect(url_for('routes.listar_mao_de_obra'))
     
     return render_template('nova_mao_de_obra.html', form=form)
+
 
 @bp.route('/mao_de_obra/editar/<int:id>', methods=['GET', 'POST'])
 def editar_mao_de_obra(id):
@@ -462,40 +481,38 @@ def novo_solado():
 
 @bp.route('/solado/editar/<int:id>', methods=['GET', 'POST'])
 def editar_solado(id):
-    solado = Solado.query.get_or_404(id)
-    form = SoladoForm(obj=solado)
+    solado = Solado.query.get_or_404(id)  # Busca o solado no banco
+    form = SoladoForm(obj=solado)  # Preenche o formulário com os dados existentes
     componentes = Componente.query.all()  # Para exibir os componentes no modal
 
     if form.validate_on_submit():
-        # Atualizar dados do solado
-        solado.referencia = form.referencia.data
+        # 🔹 Atualizar os dados do solado
         solado.descricao = form.descricao.data
 
-        # Atualizar imagem, se foi enviada uma nova
+        # 🔹 Atualizar imagem, se foi enviada uma nova
         if form.imagem.data:
             imagem_filename = secure_filename(form.imagem.data.filename)
             caminho_imagem = os.path.join(current_app.config['UPLOAD_FOLDER'], imagem_filename)
             form.imagem.data.save(caminho_imagem)
             solado.imagem = imagem_filename
 
-        # Atualizar tamanhos (remover os antigos e adicionar os novos)
-        solado.tamanhos.clear()
+        # 🔹 Atualizar tamanhos (remove os antigos e insere os novos)
+        Tamanho.query.filter_by(solado_id=solado.id).delete()
         for tamanho_data in form.tamanhos.data:
-            if tamanho_data["nome"]:
-                tamanho = Tamanho(
-                    solado_id=solado.id,
-                    nome=tamanho_data["nome"],
-                    quantidade=tamanho_data["quantidade"],
-                    peso_medio=tamanho_data["peso_medio"],
-                    peso_friso=tamanho_data["peso_friso"],
-                    peso_sem_friso=tamanho_data["peso_sem_friso"]
-                )
-                solado.tamanhos.append(tamanho)
+            tamanho = Tamanho(
+                solado_id=solado.id,
+                nome=tamanho_data["nome"],
+                quantidade=tamanho_data["quantidade"],
+                peso_medio=tamanho_data["peso_medio"],
+                peso_friso=tamanho_data["peso_friso"],
+                peso_sem_friso=tamanho_data["peso_sem_friso"]
+            )
+            db.session.add(tamanho)
 
-        # Atualizar formulação
-        solado.formulacao.clear()
-        componentes_ids = request.form.getlist("componentes[]")
-        cargas = request.form.getlist("carga[]")
+        # 🔹 Remover e atualizar formulação SEM friso
+        FormulacaoSolado.query.filter_by(solado_id=solado.id).delete()
+        componentes_ids = request.form.getlist("componentes_sem_friso[]")
+        cargas = request.form.getlist("carga_sem_friso[]")
 
         for componente_id, carga in zip(componentes_ids, cargas):
             componente = Componente.query.get(int(componente_id))
@@ -505,13 +522,30 @@ def editar_solado(id):
                     componente_id=componente.id,
                     carga=float(carga) if carga else 0
                 )
-                solado.formulacao.append(nova_formulacao)
+                db.session.add(nova_formulacao)
 
+        # 🔹 Remover e atualizar formulação COM friso
+        FormulacaoSoladoFriso.query.filter_by(solado_id=solado.id).delete()
+        componentes_friso_ids = request.form.getlist("componentes_friso[]")
+        cargas_friso = request.form.getlist("carga_friso[]")
+
+        for componente_id, carga in zip(componentes_friso_ids, cargas_friso):
+            componente = Componente.query.get(int(componente_id))
+            if componente:
+                nova_formulacao_friso = FormulacaoSoladoFriso(
+                    solado_id=solado.id,
+                    componente_id=componente.id,
+                    carga=float(carga) if carga else 0
+                )
+                db.session.add(nova_formulacao_friso)
+
+        # 🔹 Commitando as alterações no banco
         db.session.commit()
         flash("Solado atualizado com sucesso!", "success")
         return redirect(url_for('routes.listar_solados'))
 
     return render_template('editar_solado.html', form=form, solado=solado, componentes=componentes)
+
 
 """@bp.route('/solado/salvar_componentes/<int:id>', methods=['POST'])
 def salvar_componentes(id):
