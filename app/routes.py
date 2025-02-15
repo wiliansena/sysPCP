@@ -31,10 +31,19 @@ class DeleteForm(FlaskForm):
 def home():
     return render_template('home.html')
 
-    #REFERENCIAS OK
-@bp.route('/referencias')
+    #REFERENCIAS
+
+@bp.route('/referencias', methods=['GET'])
 def listar_referencias():
-    referencias = Referencia.query.all()
+    filtro = request.args.get('filtro', '')
+
+    if filtro == "TODAS":
+        referencias = Referencia.query.all()  # Retorna todas as REF
+    elif filtro:
+        referencias = Referencia.query.filter(Referencia.codigo_referencia.ilike(f"{filtro}%")).all()
+    else:
+        referencias = []  # Inicialmente, mantém a lista vazia até um filtro ser selecionado
+
     return render_template('referencias.html', referencias=referencias)
 
 @bp.route('/referencia/nova', methods=['GET', 'POST'])
@@ -329,11 +338,20 @@ def excluir_mao_de_obra(id):
 UPLOAD_FOLDER = 'app/static/uploads'
 
 
-@bp.route('/solados')
+@bp.route('/solados', methods=['GET'])
 def listar_solados():
-    solados = Solado.query.all()
-    form = DeleteForm()  # Criar instância do formulário
-    return render_template('solados.html', solados=solados, form=form)
+    filtro = request.args.get('filtro', '')
+
+    if filtro == "TODAS":
+        solados = Solado.query.all()  # Retorna todos os solados
+    elif filtro:
+        solados = Solado.query.filter(Solado.referencia.ilike(f"{filtro}%")).all()
+    else:
+        solados = []  # Inicialmente, mantém a lista vazia até um filtro ser selecionado
+
+    return render_template('solados.html', solados=solados)
+
+
 
 @bp.route('/solado/ver/<int:id>')
 def ver_solado(id):

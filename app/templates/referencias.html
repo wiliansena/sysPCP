@@ -2,7 +2,14 @@
 
 {% block content %}
     <h2>Referências</h2>
+    <br>
     <a href="{{ url_for('routes.nova_referencia') }}" class="btn btn-primary">Nova Referência</a>
+    <h5>Filtrar Referência</h5>
+    <a href="{{ url_for('routes.listar_referencias', filtro='TODAS') }}" class="btn btn-dark">TODAS</a>
+    <a href="{{ url_for('routes.listar_referencias', filtro='VZ') }}" class="btn btn-dark">VZ</a>
+    <a href="{{ url_for('routes.listar_referencias', filtro='BK') }}" class="btn btn-dark">BK</a>
+    <a href="{{ url_for('routes.listar_referencias', filtro='MAC') }}" class="btn btn-dark">MAC</a>
+    <a href="{{ url_for('routes.listar_referencias', filtro='DULT') }}" class="btn btn-dark">DULT</a>
 
     <div class="table-responsive">
         <table class="table table-striped">

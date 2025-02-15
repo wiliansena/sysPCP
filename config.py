@@ -10,4 +10,4 @@ class Config:
     UPLOAD_FOLDER = os.path.join(BASE_DIR, 'app', 'static', 'uploads')
 
     # 🔹 Configurações para CSRF
-    WTF_CSRF_ENABLED = True
+    WTF_CSRF_ENABLED = False

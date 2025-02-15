@@ -3,11 +3,17 @@
 {% block content %}
 <div class="container mt-4">
     <h2>Lista de Solados</h2>
-    <a href="{{ url_for('routes.novo_solado') }}" class="btn btn-success mb-3">Novo Solado</a>
-
+    <a href="{{ url_for('routes.novo_solado') }}" class="btn btn-success mb-3">Novo Solado</a><br>
+    <h5>Filtrar Referência</h5>
+    <a href="{{ url_for('routes.listar_solados', filtro='TODAS') }}" class="btn btn-dark">TODAS</a>
+    <a href="{{ url_for('routes.listar_solados', filtro='SOL') }}" class="btn btn-dark">SOL</a>
+    <a href="{{ url_for('routes.listar_solados', filtro='ALC') }}" class="btn btn-dark">ALC</a>
+    <a href="{{ url_for('routes.listar_solados', filtro='VZ') }}" class="btn btn-dark">VZ</a>
+    <a href="{{ url_for('routes.listar_solados', filtro='KIT') }}" class="btn btn-dark">KIT</a>
+    
     <table class="table table-bordered">
         <thead>
-            <tr>
+            <tr><br>
                 <th>Referência</th>
                 <th>Descrição</th>
                 <th>Imagem</th>
@@ -37,7 +43,6 @@
                     <a href="{{ url_for('routes.editar_solado', id=solado.id) }}" class="btn btn-warning btn-sm">Editar</a>
                     
                     <form action="{{ url_for('routes.excluir_solado', id=solado.id) }}" method="POST" style="display:inline;">
-                        {{ form.hidden_tag() }}  {# Adicionando o token CSRF #}
                         <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Tem certeza que deseja excluir este solado?')">Excluir</button>
                     </form>
                 </td>
