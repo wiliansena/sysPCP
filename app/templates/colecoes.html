@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h2>Coleções</h2>
+    <a href="{{ url_for('routes.nova_colecao') }}" class="btn btn-primary">Nova Coleção</a>
+
+    <table class="table table-striped mt-3">
+        <thead>
+            <tr>
+                <th>Coleção</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for colecao in colecoes %}
+                <tr>
+                    <td>{{ "%.1f"|format(colecao.codigo) }}</td>
+                    <td>
+                        <a href="{{ url_for('routes.editar_colecao', id=colecao.id) }}" class="btn btn-warning btn-sm">Editar</a>
+                        <form action="{{ url_for('routes.excluir_colecao', id=colecao.id) }}" method="post" style="display:inline;">
+                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Tem certeza?')">Excluir</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

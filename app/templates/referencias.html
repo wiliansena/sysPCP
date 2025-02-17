@@ -29,6 +29,7 @@
                 <tr>
                     <th>Código</th>
                     <th>Descrição</th>
+                    <th>Linha</th>
                     <th>Imagem</th>
                     <th>Ações</th>
                 </tr>
@@ -38,6 +39,7 @@
                     <tr>
                         <td>{{ referencia.codigo_referencia }}</td>
                         <td>{{ referencia.descricao }}</td>
+                        <td>{{ referencia.linha }}</td>
                         <td>
                             {% if referencia.imagem %}
                                 <img src="{{ url_for('static', filename='uploads/' + referencia.imagem) }}" width="80">

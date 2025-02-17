@@ -1,4 +1,5 @@
 from decimal import Decimal
+from enum import Enum
 from sqlalchemy.orm import relationship
 from app import db
 from decimal import Decimal, ROUND_HALF_UP, ROUND_CEILING
@@ -8,8 +9,14 @@ class Referencia(db.Model):
     codigo_referencia = db.Column(db.String(20), unique=True, nullable=False)
     descricao = db.Column(db.String(100), nullable=False)
     imagem = db.Column(db.String(200))
+    linha = db.Column(db.String(50), nullable=True)
     total_componentes = db.Column(db.Numeric(10,4), default=Decimal(0))
     total_operacional = db.Column(db.Numeric(10,4), default=Decimal(0))
+
+class Colecao(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    codigo = db.Column(db.Numeric(10,1), unique=True, nullable=False)
+    
 
 class CustoOperacional(db.Model):
     id = db.Column(db.Integer, primary_key=True)

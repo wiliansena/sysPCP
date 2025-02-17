@@ -10,7 +10,16 @@ from wtforms.validators import DataRequired
 class ReferenciaForm(FlaskForm):
     codigo_referencia = StringField('Código de Referência', validators=[DataRequired()])
     descricao = StringField('Descrição', validators=[DataRequired()])
+    linha = SelectField('Linha', choices=[('BABY', 'BABY'),
+                                        ('INFANTIL', 'INFANTIL'),
+                                        ('ADULTO MASCULINO', 'ADULTO MASCULINO'),
+                                        ('ADULTO FEMININO', 'ADULTO FEMININO')
+                                        ], validators=[DataRequired()])
     imagem = FileField('Imagem do Produto')
+    submit = SubmitField('Salvar')
+
+class ColecaoForm(FlaskForm):
+    codigo = StringField('Código', validators=[DataRequired()])
     submit = SubmitField('Salvar')
 
 class ComponenteForm(FlaskForm):

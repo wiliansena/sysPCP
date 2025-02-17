@@ -6,8 +6,8 @@ import os
 #SOLADO
 from flask import render_template, redirect, url_for, flash, request
 from app import db
-from app.models import Solado, Tamanho, Componente, FormulacaoSolado, Alca, TamanhoAlca, FormulacaoAlca
-from app.forms import SoladoForm, AlcaForm
+from app.models import Solado, Tamanho, Componente, FormulacaoSolado, Alca, TamanhoAlca, FormulacaoAlca, Colecao
+from app.forms import SoladoForm, AlcaForm, ColecaoForm
 from flask import Blueprint
 import os
 from werkzeug.utils import secure_filename  # 🔹 Para salvar o nome do arquivo corretamente
@@ -58,6 +58,7 @@ def nova_referencia():
         referencia = Referencia(
             codigo_referencia=form.codigo_referencia.data,
             descricao=form.descricao.data,
+            linha=form.linha.data,
             imagem=imagem_filename
         )
         db.session.add(referencia)
@@ -75,6 +76,7 @@ def editar_referencia(id):
     if form.validate_on_submit():
         referencia.codigo_referencia = form.codigo_referencia.data
         referencia.descricao = form.descricao.data
+        referencia.linha = form.linha.data
         
         if form.imagem.data:
             imagem_filename = form.imagem.data.filename
@@ -96,12 +98,52 @@ def excluir_referencia(id):
     flash('Referência excluída com sucesso!', 'danger')
     return redirect(url_for('routes.listar_referencias'))
 
+@bp.route('/colecoes')
+def listar_colecoes():
+    colecoes = Colecao.query.all()
+    return render_template('colecoes.html', colecoes=colecoes)
+
+@bp.route('/colecao/novo', methods=['GET', 'POST'])
+def nova_colecao():
+    form = ColecaoForm()
+    if form.validate_on_submit():
+        colecao = Colecao(
+            codigo=form.codigo.data
+        )
+        db.session.add(colecao)
+        db.session.commit()
+        flash('Coleção adicionada com sucesso!', 'success')
+        return redirect(url_for('routes.listar_colecoes'))
+    return render_template('nova_colecao.html', form=form)
+
+@bp.route('/colecao/editar/<int:id>', methods=['GET', 'POST'])
+def editar_colecao(id):
+    colecao = Colecao.query.get_or_404(id)
+    form = ColecaoForm(obj=colecao)
+    
+    if form.validate_on_submit():
+        colecao.codigo = form.codigo.data
+        db.session.commit()
+        flash('Coleção atualizada com sucesso!', 'success')
+        return redirect(url_for('routes.listar_colecoes'))
+    
+    return render_template('editar_colecao.html', form=form, colecao=colecao)
+
+@bp.route('/colecao/excluir/<int:id>', methods=['POST'])
+def excluir_colecao(id):
+    colecao = Colecao.query.get_or_404(id)
+    db.session.delete(colecao)
+    db.session.commit()
+    flash('Coleção excluída com sucesso!', 'danger')
+    return redirect(url_for('routes.listar_colecoes'))
+
 
         #COMPONENTES OK
 @bp.route('/componentes')
 def listar_componentes():
     componentes = Componente.query.all()
     return render_template('componentes.html', componentes=componentes)
+
 
 @bp.route('/componente/novo', methods=['GET', 'POST'])
 def novo_componente():
