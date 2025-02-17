@@ -10,6 +10,18 @@
     <a href="{{ url_for('routes.listar_referencias', filtro='BK') }}" class="btn btn-dark">BK</a>
     <a href="{{ url_for('routes.listar_referencias', filtro='MAC') }}" class="btn btn-dark">MAC</a>
     <a href="{{ url_for('routes.listar_referencias', filtro='DULT') }}" class="btn btn-dark">DULT</a>
+    <hr>
+
+    <!-- 🔎 Campo de busca -->
+    <div class="row mb-3">
+        <div class="col-md-4"> <!-- Define um tamanho menor para o campo -->
+            <form method="GET" action="{{ url_for('routes.listar_referencias') }}" class="d-flex">
+                <input type="text" name="filtro" class="form-control form-control-sm" placeholder="Buscar referência"
+                    value="{{ request.args.get('filtro', '') }}">
+                <button type="submit" class="btn btn-primary btn-sm ms-2">Buscar</button>
+            </form>
+        </div>
+    </div>
 
     <div class="table-responsive">
         <table class="table table-striped">

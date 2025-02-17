@@ -211,3 +211,37 @@ class FormulacaoSoladoFriso(db.Model):
 
         # 🔹 Arredondamento para cima
         return preco_total.quantize(Decimal('0.01'), rounding=ROUND_CEILING)
+
+ #ALCAS
+
+class Alca(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    referencia = db.Column(db.String(50), unique=True, nullable=False)
+    descricao = db.Column(db.String(200), nullable=False)
+    imagem = db.Column(db.String(200), nullable=True)
+
+    tamanhos = db.relationship('TamanhoAlca', backref='alca', cascade="all, delete-orphan")
+    formulacao = db.relationship('FormulacaoAlca', backref='alca', cascade="all, delete-orphan")
+
+    def calcular_peso_total(self):
+        """Retorna o peso médio total da alça"""
+        return sum(t.peso_medio for t in self.tamanhos)
+    
+    def calcular_preco_total(self):
+        """Retorna o custo total da formulação da alça"""
+        return sum(f.carga * f.componente.preco for f in self.formulacao)
+
+class TamanhoAlca(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    alca_id = db.Column(db.Integer, db.ForeignKey('alca.id', ondelete='CASCADE'), nullable=False)
+    nome = db.Column(db.String(50), nullable=False)
+    quantidade = db.Column(db.Integer, nullable=False, default=0)
+    peso_medio = db.Column(db.Numeric(10,4), nullable=False, default=Decimal(0))
+
+class FormulacaoAlca(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    alca_id = db.Column(db.Integer, db.ForeignKey('alca.id', ondelete='CASCADE'), nullable=False)
+    componente_id = db.Column(db.Integer, db.ForeignKey('componente.id', ondelete='CASCADE'), nullable=False)
+    carga = db.Column(db.Numeric(10,4), nullable=False, default=Decimal(0))
+
+    componente = db.relationship('Componente')

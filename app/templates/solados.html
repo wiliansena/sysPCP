@@ -10,6 +10,18 @@
     <a href="{{ url_for('routes.listar_solados', filtro='ALC') }}" class="btn btn-dark">ALC</a>
     <a href="{{ url_for('routes.listar_solados', filtro='VZ') }}" class="btn btn-dark">VZ</a>
     <a href="{{ url_for('routes.listar_solados', filtro='KIT') }}" class="btn btn-dark">KIT</a>
+    <hr>
+
+    <!-- 🔎 Campo de busca -->
+    <div class="row mb-3">
+        <div class="col-md-4"> <!-- Define um tamanho menor para o campo -->
+            <form method="GET" action="{{ url_for('routes.listar_solados') }}" class="d-flex">
+                <input type="text" name="filtro" class="form-control form-control-sm" placeholder="Buscar referência"
+                    value="{{ request.args.get('filtro', '') }}">
+                <button type="submit" class="btn btn-primary btn-sm ms-2">Buscar</button>
+            </form>
+        </div>
+    </div>
     
     <table class="table table-bordered">
         <thead>

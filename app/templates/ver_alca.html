@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Ficha Técnica da Alça</h2>
+
+    <div class="form-group">
+        <label><b>Referência:</b></label>
+        <input type="text" class="form-control" value="{{ alca.referencia }}" readonly>
+    </div>
+
+    <div class="form-group">
+        <label><b>Descrição:</b></label>
+        <input type="text" class="form-control" value="{{ alca.descricao }}" readonly>
+    </div>
+
+    <div class="form-group">
+        <label><b>Imagem da Alça:</b></label><br>
+        {% if alca.imagem %}
+        <img src="{{ url_for('static', filename='uploads/' + alca.imagem) }}" alt="Imagem da Alça" class="img-fluid"
+            style="max-width: 200px;">
+        {% else %}
+        <p>Nenhuma imagem disponível</p>
+        {% endif %}
+    </div>
+
+    <h4>Ficha Técnica</h4>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Tamanhos</th>
+                {% for tamanho in alca.tamanhos %}
+                <th>{{ tamanho.nome }}</th>
+                {% endfor %}
+                <th><b>TOTAIS</b></th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><b>GRADE</b></td>
+                {% for tamanho in alca.tamanhos %}
+                <td>{{ tamanho.quantidade }}</td>
+                {% endfor %}
+                <td><b>{{ total_grade }}</b></td>
+            </tr>
+            <tr>
+                <td><b>PESO MÉDIO</b></td>
+                {% for tamanho in alca.tamanhos %}
+                <td>{{ "%.3f"|format(tamanho.peso_medio) }}</td>
+                {% endfor %}
+                <td><b>{{ "%.3f"|format(peso_medio_total) }}</b></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h4>Formulação da Alça</h4>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Código</th>
+                <th>Descrição</th>
+                <th>Carga (Kg)</th>
+                <th>Porcentagem (%)</th>
+                <th>Pares por Carga</th>
+                <th>Consumo</th>
+                <th>Preço Unitário</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in alca.formulacao %}
+            <tr>
+                <td>{{ item.componente.id }}</td>
+                <td>{{ item.componente.descricao }}</td>
+                <td>{{ "%.2f"|format(item.carga) }}</td>
+                <td>{{ "%.2f"|format(item.porcentagem) }}%</td>
+                <td>{{ "%.2f"|format(pares_por_carga) }}</td>
+                <td>{{ "%.6f"|format(item.consumo) }}</td>
+                <td>R$ {{ "%.2f"|format(item.preco_unitario) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h4><strong>Custo Total da Alça: R$ {{ "%.2f"|format(preco_total) }}</strong></h4>
+
+    <button class="btn btn-primary" onclick="window.print()">
+        <i class="fa fa-print"></i> Imprimir
+    </button>
+    <a href="{{ url_for('routes.listar_alcas') }}" class="btn btn-secondary">Sair</a>    
+</div>
+{% endblock %}

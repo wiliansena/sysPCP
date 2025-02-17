@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField, FloatField, FileField
+from wtforms import DecimalField, SelectMultipleField, StringField, SubmitField, FloatField, FileField
 from wtforms.validators import DataRequired
 from wtforms import SelectField
 #SOLADO
@@ -61,3 +61,34 @@ class SoladoForm(FlaskForm):
 class FormulacaoSoladoForm(FlaskForm):
     componente_id = IntegerField('ID do Componente', validators=[DataRequired()])
     carga = FloatField('Carga (kg)', default=0.0)
+
+
+    #ALCAS
+
+class TamanhoAlcaForm(FlaskForm):
+    nome = StringField('Nome')
+    quantidade = IntegerField('Quantidade')
+    peso_medio = FloatField('Peso Médio')
+    
+    
+class AlcaForm(FlaskForm):
+    referencia = StringField('Referência', validators=[DataRequired()])
+    descricao = StringField('Descrição', validators=[DataRequired()])
+    imagem = FileField('Imagem da Alça')
+
+    tamanhos = FieldList(FormField(TamanhoAlcaForm), min_entries=8)
+    componentes = SelectMultipleField('Componentes', coerce=int)
+
+    submit = SubmitField('Salvar')
+
+class FormulacaoAlcaForm(FlaskForm):
+    componente_id = SelectField('Componente', coerce=int)
+    carga = DecimalField('Carga (Kg)', default=0.0)
+
+
+
+
+
+
+
+

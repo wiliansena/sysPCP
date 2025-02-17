@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Cadastro de Alça</h2>
+
+    <form method="POST" action="{{ url_for('routes.nova_alca') }}" enctype="multipart/form-data">
+        {{ form.hidden_tag() }}
+
+        <div class="form-group">
+            <label>Referência</label>
+            {{ form.referencia(class="form-control") }}
+        </div>
+
+        <div class="form-group">
+            <label>Descrição</label>
+            {{ form.descricao(class="form-control") }}
+        </div>
+
+        <div class="form-group">
+            <label>Imagem da Alça</label>
+            {{ form.imagem(class="form-control-file") }}
+        </div>
+
+        <h4>Ficha Técnica</h4>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Tamanhos</th>
+                    {% for i in range(8) %}
+                    <th>{{ form.tamanhos[i].nome(class="form-control") }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><b>GRADE</b></td>
+                    {% for i in range(8) %}
+                    <td>{{ form.tamanhos[i].quantidade(class="form-control") }}</td>
+                    {% endfor %}
+                </tr>
+                <tr>
+                    <td><b>Peso Médio</b></td>
+                    {% for i in range(8) %}
+                    <td>{{ form.tamanhos[i].peso_medio(class="form-control") }}</td>
+                    {% endfor %}
+                </tr>
+            </tbody>
+        </table>
+
+        <h4>Formulação da Alça</h4>
+        <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalComponentes">
+            Adicionar Componente
+        </button>
+
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Cód</th>
+                    <th>Descrição</th>
+                    <th>Preço</th>
+                    <th>Carga (Kg)</th>
+                    <th>Ação</th>
+                </tr>
+            </thead>
+            <tbody id="tabela-formulacao">
+            </tbody>
+        </table>
+
+        <button type="submit" class="btn btn-success">Salvar</button>
+        <a href="{{ url_for('routes.listar_alcas') }}" class="btn btn-secondary">Cancelar</a>
+    </form>
+</div>
+
+<!-- 🔹 Modal para selecionar componentes -->
+<div class="modal fade" id="modalComponentes" tabindex="-1" aria-labelledby="modalComponentesLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Selecionar Componentes</h5>
+                <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Descrição</th>
+                            <th>Preço</th>
+                            <th>Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for componente in componentes %}
+                        <tr>
+                            <td>{{ componente.id }}</td>
+                            <td>{{ componente.descricao }}</td>
+                            <td>R$ {{ "%.2f"|format(componente.preco) }}</td>
+                            <td>
+                                <button type="button" class="btn btn-success btn-sm selecionar-componente"
+                                    data-id="{{ componente.id }}" data-descricao="{{ componente.descricao }}"
+                                    data-preco="{{ "%.2f"|format(componente.preco) }}">
+                                    Selecionar
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+        // Seleção de componentes
+        $(".selecionar-componente").click(function () {
+            let id = $(this).data("id");
+            let descricao = $(this).data("descricao");
+            let preco = $(this).data("preco");
+
+            let tabela = $("#tabela-formulacao");
+
+            let novaLinha = `
+                <tr>
+                    <td><input type="hidden" name="componentes[]" value="${id}">${id}</td>
+                    <td>${descricao}</td>
+                    <td>R$ ${preco}</td>
+                    <td><input type="number" name="carga[]" class="form-control carga-input" step="0.01" min="0"></td>
+                    <td><button type="button" class="btn btn-danger btn-sm remover-componente">Remover</button></td>
+                </tr>
+            `;
+
+            tabela.append(novaLinha);
+            $("#modalComponentes").modal("hide");
+        });
+
+        $(document).on("click", ".remover-componente", function () {
+            $(this).closest("tr").remove();
+        });
+
+        // 🔹 Antes de enviar o formulário, preenche automaticamente os campos vazios
+        $("form").on("submit", function () {
+            console.log("Preenchendo valores vazios antes de enviar...");
+
+            // Garante que todos os campos de número sejam preenchidos corretamente
+            $("input[type='number']").each(function () {
+                if ($(this).val().trim() === "" || isNaN($(this).val())) {
+                    $(this).val(0); // Define 0 como valor padrão para quantidade e carga
+                }
+            });
+
+            // Preenche campos de texto (nomes dos tamanhos) com um valor padrão "--" se estiverem vazios
+            $("input[name*='nome']").each(function () {
+                if ($(this).val().trim() === "") {
+                    $(this).val("--");  // Define "--" para indicar um valor padrão
+                }
+            });
+
+            // Garante que os campos de peso sejam preenchidos com 0.0
+            $("input[name*='peso_medio']").each(function () {
+                if ($(this).val().trim() === "" || isNaN($(this).val())) {
+                    $(this).val(0.0);  // Define 0.0 para os pesos
+                }
+            });
+
+            console.log("Campos preenchidos automaticamente:", $(this).serializeArray());
+        });
+    });
+</script>
+
+
+{% endblock %}

@@ -6,8 +6,8 @@ import os
 #SOLADO
 from flask import render_template, redirect, url_for, flash, request
 from app import db
-from app.models import Solado, Tamanho, Componente, FormulacaoSolado
-from app.forms import SoladoForm
+from app.models import Solado, Tamanho, Componente, FormulacaoSolado, Alca, TamanhoAlca, FormulacaoAlca
+from app.forms import SoladoForm, AlcaForm
 from flask import Blueprint
 import os
 from werkzeug.utils import secure_filename  # 🔹 Para salvar o nome do arquivo corretamente
@@ -565,29 +565,6 @@ def editar_solado(id):
     return render_template('editar_solado.html', form=form, solado=solado, componentes=componentes)
 
 
-"""@bp.route('/solado/salvar_componentes/<int:id>', methods=['POST'])
-def salvar_componentes(id):
-    solado = Solado.query.get_or_404(id)
-    data = request.get_json()
-
-    if "componentes" in data:
-        solado.formulacao = []  # Remove os componentes antigos antes de salvar os novos
-        for item in data["componentes"]:
-            componente = Componente.query.get(int(item["componente_id"]))
-            if componente:
-                nova_formula = FormulacaoSolado(
-                    solado_id=solado.id,
-                    componente_id=componente.id,
-                    carga=float(item["carga"])
-                )
-                solado.formulacao.append(nova_formula)
-
-        db.session.commit()
-        return jsonify({"success": True})
-
-    return jsonify({"success": False})"""
-
-
 @bp.route('/solado/excluir/<int:id>', methods=['POST'])
 def excluir_solado(id):
     solado = Solado.query.get_or_404(id)
@@ -607,3 +584,195 @@ def excluir_solado(id):
     
     flash('Solado excluído com sucesso!', 'danger')
     return redirect(url_for('routes.listar_solados'))
+
+    #ALCA
+
+#@bp.route('/alcas', methods=['GET'])
+#def listar_alcas():
+#    filtro = request.args.get('filtro', '')
+#    if filtro:
+#        alcas = Alca.query.filter(Alca.referencia.startswith(filtro)).all()
+#   else:
+#       alcas = Alca.query.all()
+#   
+#   return render_template('alcas.html', alcas=alcas)
+
+@bp.route('/alcas', methods=['GET'])
+def listar_alcas():
+    filtro = request.args.get('filtro', '')
+
+    if filtro == "TODAS":
+        alcas = Alca.query.all()  # Retorna todas as alcas
+    elif filtro:
+        alcas = Alca.query.filter(Alca.referencia.ilike(f"{filtro}%")).all()
+    else:
+        alcas = []  # Inicialmente, mantém a lista vazia até um filtro ser selecionado
+
+    return render_template('alcas.html', alcas=alcas)
+
+
+@bp.route('/alca/nova', methods=['GET', 'POST'])
+def nova_alca():
+    form = AlcaForm()
+    componentes = Componente.query.all()
+
+    if form.validate_on_submit():
+        nova_alca = Alca(
+            referencia=form.referencia.data,
+            descricao=form.descricao.data
+        )
+
+        # Salvar imagem, se for enviada
+        if form.imagem.data:
+            imagem_filename = secure_filename(form.imagem.data.filename)
+            caminho_imagem = os.path.join(current_app.config['UPLOAD_FOLDER'], imagem_filename)
+            form.imagem.data.save(caminho_imagem)
+            nova_alca.imagem = imagem_filename
+
+        db.session.add(nova_alca)
+        db.session.flush()  # Garante que o ID da alça está disponível
+
+        # Adiciona os tamanhos e pesos preenchidos
+        for tamanho_data in form.tamanhos.data:
+            nome = tamanho_data["nome"] if tamanho_data["nome"] else "--"
+            quantidade = (tamanho_data["quantidade"]) if tamanho_data["quantidade"] else 0
+            peso_medio = (tamanho_data["peso_medio"]) if tamanho_data["peso_medio"] else 0.0
+
+            tamanho = TamanhoAlca(
+                alca_id=nova_alca.id,
+                nome=nome,
+                quantidade=quantidade,
+                peso_medio=peso_medio
+            )
+            db.session.add(tamanho)
+
+        # Adiciona os componentes da formulação
+        componentes_ids = request.form.getlist("componentes[]")
+        cargas = request.form.getlist("carga[]")
+
+        for componente_id, carga in zip(componentes_ids, cargas):
+            componente = Componente.query.get(int(componente_id))
+            carga_valor = float(carga) if carga else 0.0  # Se vier vazio, preenche com 0.0
+
+            if componente:
+                nova_formulacao = FormulacaoAlca(
+                    alca_id=nova_alca.id,
+                    componente_id=componente.id,
+                    carga=carga_valor
+                )
+                db.session.add(nova_formulacao)
+
+        db.session.commit()
+        flash("Alça cadastrada com sucesso!", "success")
+        return redirect(url_for('routes.listar_alcas'))
+
+    return render_template('nova_alca.html', form=form, componentes=componentes)
+
+@bp.route('/alca/editar/<int:id>', methods=['GET', 'POST'])
+def editar_alca(id):
+    alca = Alca.query.get_or_404(id)
+    form = AlcaForm(obj=alca)
+    componentes = Componente.query.all()  # Para exibir os componentes no modal
+
+    if form.validate_on_submit():
+        # Atualizar dados da alça
+        alca.descricao = form.descricao.data
+
+        # Atualizar imagem, se foi enviada uma nova
+        if form.imagem.data:
+            imagem_filename = secure_filename(form.imagem.data.filename)
+            caminho_imagem = os.path.join(current_app.config['UPLOAD_FOLDER'], imagem_filename)
+            form.imagem.data.save(caminho_imagem)
+            alca.imagem = imagem_filename
+
+        # Atualizar tamanhos (remover os antigos e adicionar os novos)
+        alca.tamanhos.clear()
+        for tamanho_data in form.tamanhos.data:
+            nome = tamanho_data["nome"] if tamanho_data["nome"] else "--"
+            quantidade = (tamanho_data["quantidade"]) if tamanho_data["quantidade"] else 0
+            peso_medio = (tamanho_data["peso_medio"]) if tamanho_data["peso_medio"] else 0.0
+
+            tamanho = TamanhoAlca(
+                alca_id=alca.id,
+                nome=nome,
+                quantidade=quantidade,
+                peso_medio=peso_medio
+            )
+            alca.tamanhos.append(tamanho)
+
+        # Atualizar formulação (remover os antigos e adicionar os novos)
+        alca.formulacao.clear()
+        componentes_ids = request.form.getlist("componentes[]")
+        cargas = request.form.getlist("carga[]")
+
+        for componente_id, carga in zip(componentes_ids, cargas):
+            componente = Componente.query.get(int(componente_id))
+            carga_valor = float(carga) if carga else 0.0  # Se vier vazio, preenche com 0.0
+
+            if componente:
+                nova_formulacao = FormulacaoAlca(
+                    alca_id=alca.id,
+                    componente_id=componente.id,
+                    carga=carga_valor
+                )
+                alca.formulacao.append(nova_formulacao)
+
+        db.session.commit()
+        flash("Alça atualizada com sucesso!", "success")
+        return redirect(url_for('routes.listar_alcas'))
+
+    return render_template('editar_alca.html', form=form, alca=alca, componentes=componentes)
+
+@bp.route('/alca/ver/<int:id>', methods=['GET'])
+def ver_alca(id):
+    alca = Alca.query.get_or_404(id)
+
+    # Calcula total da grade
+    total_grade = sum(tamanho.quantidade for tamanho in alca.tamanhos)
+
+    # Calcula o peso médio total
+    peso_medio_total = sum(tamanho.peso_medio for tamanho in alca.tamanhos)
+
+    # Calcula formulação da alça
+    carga_total = sum(item.carga for item in alca.formulacao)
+    preco_total = sum(item.carga * item.componente.preco for item in alca.formulacao)
+
+    # Evita divisão por zero no cálculo de pares por carga
+    pares_por_carga = (total_grade / carga_total) if carga_total > 0 else 0
+
+    # Calcula o consumo e a porcentagem de cada componente
+    for item in alca.formulacao:
+        item.consumo = (item.carga / total_grade) if total_grade > 0 else 0
+        item.porcentagem = (item.carga / carga_total * 100) if carga_total > 0 else 0
+        item.preco_unitario = item.componente.preco  # Preço unitário do componente
+
+    return render_template(
+        'ver_alca.html', 
+        alca=alca, 
+        total_grade=total_grade, 
+        peso_medio_total=peso_medio_total, 
+        pares_por_carga=pares_por_carga, 
+        preco_total=preco_total
+    )
+
+
+
+@bp.route('/alca/excluir/<int:id>', methods=['POST'])
+def excluir_alca(id):
+    alca = Alca.query.get_or_404(id)
+
+    try:
+        # Remover todas as referências antes de excluir
+        FormulacaoAlca.query.filter_by(alca_id=id).delete()
+        TamanhoAlca.query.filter_by(alca_id=id).delete()
+
+        db.session.delete(alca)
+        db.session.commit()
+        flash("Alça excluída com sucesso!", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Erro ao excluir a alça: {str(e)}", "danger")
+
+    return redirect(url_for('routes.listar_alcas'))
+
+
