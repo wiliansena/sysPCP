@@ -769,24 +769,19 @@ def editar_alca(id):
 def ver_alca(id):
     alca = Alca.query.get_or_404(id)
 
-    # Calcula total da grade
-    total_grade = sum(tamanho.quantidade for tamanho in alca.tamanhos)
+    # 🟢 Calcular totais da ficha técnica
+    total_grade, peso_medio_total = alca.calcular_totais()
+    
+        # 🟢 Calcular valores da formulação SEM friso
+    if alca.formulacao:
+        carga_total = alca.formulacao[0].carga_total
+        pares_por_carga = alca.formulacao[0].pares_por_carga
+        preco_total = alca.formulacao[0].preco_total
+    else:
+        carga_total = Decimal(0)
+        pares_por_carga = Decimal(0)
+        preco_total = Decimal(0)
 
-    # Calcula o peso médio total
-    peso_medio_total = sum(tamanho.peso_medio for tamanho in alca.tamanhos)
-
-    # Calcula formulação da alça
-    carga_total = sum(item.carga for item in alca.formulacao)
-    preco_total = sum(item.carga * item.componente.preco for item in alca.formulacao)
-
-    # Evita divisão por zero no cálculo de pares por carga
-    pares_por_carga = (total_grade / carga_total) if carga_total > 0 else 0
-
-    # Calcula o consumo e a porcentagem de cada componente
-    for item in alca.formulacao:
-        item.consumo = (item.carga / total_grade) if total_grade > 0 else 0
-        item.porcentagem = (item.carga / carga_total * 100) if carga_total > 0 else 0
-        item.preco_unitario = item.componente.preco  # Preço unitário do componente
 
     return render_template(
         'ver_alca.html', 
@@ -794,7 +789,7 @@ def ver_alca(id):
         total_grade=total_grade, 
         peso_medio_total=peso_medio_total, 
         pares_por_carga=pares_por_carga, 
-        preco_total=preco_total
+        preco_total=preco_total, carga_total=carga_total
     )
 
 
