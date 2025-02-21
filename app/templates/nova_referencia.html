@@ -1,31 +1,180 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <h2>Nova Referência</h2>
-    <form method="POST" enctype="multipart/form-data">
+<div class="container mt-4">
+    <h2>Cadastro de Referência</h2>
+
+    <form method="POST" action="{{ url_for('routes.nova_referencia') }}" enctype="multipart/form-data">
         {{ form.hidden_tag() }}
-        
-        <div class="mb-3">
-            {{ form.codigo_referencia.label(class="form-label") }}
+
+        <div class="form-group">
+            <label>Código da Referência</label>
             {{ form.codigo_referencia(class="form-control") }}
         </div>
 
-        <div class="mb-3">
-            {{ form.linha.label(class="form-label") }}
-            {{ form.linha(class="form-control") }}
-        </div>
-
-        <div class="mb-3">
-            {{ form.descricao.label(class="form-label") }}
+        <div class="form-group">
+            <label>Descrição</label>
             {{ form.descricao(class="form-control") }}
         </div>
 
-        <div class="mb-3">
-            {{ form.imagem.label(class="form-label") }}
-            {{ form.imagem(class="form-control") }}
+        <div class="form-group">
+            <label>Imagem</label>
+            {{ form.imagem(class="form-control-file") }}
         </div>
 
-        <button type="submit" class="btn btn-success">{{ form.submit.label.text }}</button>
+        <h4>Ficha Técnica</h4>
+
+        <!-- Botões para abrir os modais -->
+
+
+
+
+
+
+        <!-- Tabelas para exibir os itens selecionados -->
+        <h4>Itens Selecionados</h4>
+
+        <h4> Solados </h4>
+        <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalSolado">
+            Adicionar Solado
+        </button>
+        <table class="table table-bordered" id="tabela-solado">
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Descrição</th>
+                    <th>Preço</th>
+                    <th>Consumo</th>
+                    <th>Preço Unitário</th>
+                    <th>Ação</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+        <h4>Alças</h4>
+        <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalAlca">
+            Adicionar Alça
+        </button>
+        <table class="table table-bordered" id="tabela-alca">
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Descrição</th>
+                    <th>Preço</th>
+                    <th>Consumo</th>
+                    <th>Preço Unitário</th>
+                    <th>Ação</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+        <h4>Componentes</h4>
+        <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalComponentes">
+            Adicionar Componente
+        </button>
+        <table class="table table-bordered" id="tabela-componente">
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Descrição</th>
+                    <th>Preço</th>
+                    <th>Consumo</th>
+                    <th>Preço Unitário</th>
+                    <th>Ação</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+        <h4>Custos Operacionais( FIXOS/INDIRETOS ) </h4>
+        <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalCustos">
+            Adicionar Custos
+        </button>
+        <table class="table table-bordered" id="tabela-custo">
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Descrição</th>
+                    <th>Preço</th>
+                    <th>Consumo</th>
+                    <th>Preço Unitário</th>
+                    <th>Ação</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+        <h4> Custo Mão de Obra</h4>
+        <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalMaoObra">
+            Adicionar Mão de Obra
+        </button>
+        <h4>Custo Mão de Obra</h4>
+        <table class="table table-bordered" id="tabela-mao_obra">
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Descrição</th>
+                    <th>Diária</th>
+                    <th>Consumo</th>
+                    <th>Produção</th>
+                    <th>Preço Unitário</th>
+                    <th>Ação</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Itens adicionados dinamicamente aqui -->
+            </tbody>
+        </table>
+
+
+        <!-- Tabela de Resumo dos Custos -->
+        <h4>Resumo de Custos</h4>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Categoria</th>
+                    <th>Total (R$)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Solado</td>
+                    <td id="total_solado">0.00</td>
+                </tr>
+                <tr>
+                    <td>Alças</td>
+                    <td id="total_alcas">0.00</td>
+                </tr>
+                <tr>
+                    <td>Componentes</td>
+                    <td id="total_componentes">0.00</td>
+                </tr>
+                <tr>
+                    <td>Custos Operacionais</td>
+                    <td id="total_custos">0.00</td>
+                </tr>
+                <tr>
+                    <td>Mão de Obra</td>
+                    <td id="total_mao_obra">0.00</td>
+                </tr>
+            </tbody>
+        </table>
+
+
+        <button type="submit" class="btn btn-success">Salvar</button>
         <a href="{{ url_for('routes.listar_referencias') }}" class="btn btn-secondary">Cancelar</a>
     </form>
+</div>
+
+<p>Solados carregados: {{ solados }}</p>
+<p>Alças carregadas: {{ alcas }}</p>
+<p>Componentes carregados: {{ componentes }}</p>
+<p>Custos carregados: {{ custos_operacionais }}</p>
+
+<!-- 🔹 Modais para seleção de itens -->
+{% include 'modais_referencia.html' %}
+
+<script src="{{ url_for('static', filename='js/referencia.js') }}"></script>
+
 {% endblock %}

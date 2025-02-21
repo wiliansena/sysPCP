@@ -1,0 +1,352 @@
+<!-- Modal para selecionar Solado -->
+<div class="modal fade" id="modalSolado" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Selecionar Solado</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Referência</th>
+                            <th>Descrição</th>
+                            <th>Preço Total</th>
+                            <th>Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for solado in solados %}
+                        <tr>
+                            <td>{{ solado.referencia }}</td>
+                            <td>{{ solado.descricao }}</td>
+                            <td>R$ {{ "%.2f"|format(solado.preco_total) }}</td>
+                            <td>
+                                <button type="button" class="btn btn-success selecionar-solado"
+                                    data-id="{{solado.id}}"
+                                    data-referencia="{{solado.referencia}}"
+                                    data-descricao="{{ solado.descricao }}"
+                                    data-preco="{{ solado.preco_total }}">
+                                    Selecionar
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Modal para Selecionar Alças -->
+<div class="modal fade" id="modalAlca" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Selecionar Alças (Máx. 3)</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Referência</th>
+                            <th>Descrição</th>
+                            <th>Preço Total</th>
+                            <th>Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for alca in alcas %}
+                        <tr>
+                            <td>{{ alca.referencia }}</td>
+                            <td>{{ alca.descricao }}</td>
+                            <td>R$ {{ "%.2f"|format(alca.preco_total) }}</td>
+                            <td>
+                                <button type="button" class="btn btn-success selecionar-alca"
+                                    data-id="{{ alca.id }}"
+                                    data-referencia="{{ alca.referencia }}"
+                                    data-descricao="{{ alca.descricao }}"
+                                    data-preco="{{ alca.preco_total }}">
+                                    Selecionar
+                                </button>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center">Nenhuma alça disponível</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Modal para Selecionar Componentes -->
+<div class="modal fade" id="modalComponentes" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Selecionar Componentes</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Descrição</th>
+                            <th>Unidade</th>
+                            <th>Preço</th>
+                            <th>Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for componente in componentes %}
+                        <tr>
+                            <td>{{ componente.id }}</td>
+                            <td>{{ componente.descricao }}</td>
+                            <td>{{ componente.unidade }}</td>
+                            <td>R$ {{ "%.2f"|format(componente.preco) }}</td>
+                            <td>
+                                <button type="button" class="btn btn-success selecionar-componente"
+                                    data-id="{{ componente.id }}"
+                                    data-descricao="{{ componente.descricao }}"
+                                    data-unidade="{{ componente.unidade }}" 
+                                    data-preco="{{ "%.2f"|format(componente.preco) }}">
+                                    Selecionar
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Modal para Selecionar Embalagem 1 -->
+<div class="modal fade" id="modalEmbalagem1" tabindex="-1" aria-labelledby="modalEmbalagem1Label" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Selecionar Embalagem 1</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Descrição</th>
+                            <th>Unidade/Medida</th>
+                            <th>Preço</th>
+                            <th>Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for componente in componentes if componente.tipo == 'EMBALAGEM 1' %}
+                        <tr>
+                            <td>{{ componente.id }}</td>
+                            <td>{{ componente.descricao }}</td>
+                            <td>{{componente.unidade_medida}}</td>
+                            <td>R$ {{ "%.2f"|format(componente.preco) }}</td>
+                            <td>
+                                <button type="button" class="btn btn-success selecionar-embalagem"
+                                    data-id="{{ componente.id }}" 
+                                    data-descricao="{{ componente.descricao }}"
+                                    data-unidade="{{componente.unidade_medida}}"
+                                    data-preco="{{ componente.preco }}"
+                                    data-tipo="1">
+                                    Selecionar
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Selecionar Embalagem 2 -->
+<div class="modal fade" id="modalEmbalagem2" tabindex="-1" aria-labelledby="modalEmbalagem2Label" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Selecionar Embalagem 2</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Descrição</th>
+                            <th>Unidade/Medida</th>
+                            <th>Preço</th>
+                            <th>Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for componente in componentes if componente.tipo == 'EMBALAGEM 2' %}
+                        <tr>
+                            <td>{{ componente.id }}</td>
+                            <td>{{ componente.descricao }}</td>
+                            <td>{{componente.unidade_medida}}</td>
+                            <td>R$ {{ "%.2f"|format(componente.preco) }}</td>
+                            <td>
+                                <button type="button" class="btn btn-success selecionar-embalagem"
+                                    data-id="{{ componente.id }}" 
+                                    data-descricao="{{ componente.descricao }}"
+                                    data-unidade="{{componente.unidade_medida}}"
+                                    data-preco="{{ componente.preco }}"
+                                    data-tipo="2">
+                                    Selecionar
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Modal para Selecionar Embalagem 3 -->
+<div class="modal fade" id="modalEmbalagem3" tabindex="-1" aria-labelledby="modalEmbalagem3Label" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Selecionar Embalagem 3</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Descrição</th>
+                            <th>Unidade/Medida</th>
+                            <th>Preço</th>
+                            <th>Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for componente in componentes if componente.tipo == 'EMBALAGEM 3' %}
+                        <tr>
+                            <td>{{ componente.id }}</td>
+                            <td>{{ componente.descricao }}</td>
+                            <td>{{componente.unidade_medida}}</td>
+                            <td>R$ {{ "%.2f"|format(componente.preco) }}</td>
+                            <td>
+                                <button type="button" class="btn btn-success selecionar-embalagem"
+                                    data-id="{{ componente.id }}" 
+                                    data-descricao="{{ componente.descricao }}"
+                                    data-unidade="{{componente.unidade_medida}}"
+                                    data-preco="{{ componente.preco }}"
+                                    data-tipo="3">
+                                    Selecionar
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!--MODAL CUSTO FIXO -->
+<!-- Modal para Selecionar Custo Fixo -->
+<div class="modal fade" id="modalCustoFixo" tabindex="-1" aria-labelledby="modalCustoFixoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Selecionar Custo Fixo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Descrição</th>
+                            <th>Unidade/Medida</th>
+                            <th>Preço</th>
+                            <th>Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for componente in componentes if componente.tipo == 'CUSTO FIXO' %}
+                        <tr>
+                            <td>{{ componente.id }}</td>
+                            <td>{{ componente.descricao }}</td>
+                            <td>{{componente.unidade_medida}}</td>
+                            <td>R$ {{ "%.2f"|format(componente.preco) }}</td>
+                            <td>
+                                <button type="button" class="btn btn-success selecionar-custo"
+                                    data-id="{{ componente.id }}" 
+                                    data-descricao="{{ componente.descricao }}"
+                                    data-preco="{{ componente.preco }}"
+                                    data-tipo="fixo">
+                                    Selecionar
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!--CUSTO INDIRETO-->
+<!-- Modal para Selecionar Custo Indireto -->
+<div class="modal fade" id="modalCustoIndireto" tabindex="-1" aria-labelledby="modalCustoIndiretoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Selecionar Custo Indireto</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Descrição</th>
+                            <th>Preço</th>
+                            <th>Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for componente in componentes if componente.tipo == 'CUSTO INDIRETO' %}
+                        <tr>
+                            <td>{{ componente.id }}</td>
+                            <td>{{ componente.descricao }}</td>
+                            <td>R$ {{ "%.2f"|format(componente.preco) }}</td>
+                            <td>
+                                <button type="button" class="btn btn-success selecionar-custo"
+                                    data-id="{{ componente.id }}" 
+                                    data-descricao="{{ componente.descricao }}"
+                                    data-preco="{{ componente.preco }}"
+                                    data-tipo="indireto">
+                                    Selecionar
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

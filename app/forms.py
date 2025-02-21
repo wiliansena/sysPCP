@@ -1,3 +1,4 @@
+from typing import Optional
 from flask_wtf import FlaskForm
 from wtforms import DecimalField, SelectMultipleField, StringField, SubmitField, FloatField, FileField
 from wtforms.validators import DataRequired
@@ -6,17 +7,8 @@ from wtforms import SelectField
 from flask_wtf import FlaskForm
 from wtforms import StringField, FloatField, IntegerField, FileField, FieldList, FormField, SubmitField
 from wtforms.validators import DataRequired
+from wtforms.validators import Optional
 
-class ReferenciaForm(FlaskForm):
-    codigo_referencia = StringField('Código de Referência', validators=[DataRequired()])
-    descricao = StringField('Descrição', validators=[DataRequired()])
-    linha = SelectField('Linha', choices=[('BABY', 'BABY'),
-                                        ('INFANTIL', 'INFANTIL'),
-                                        ('ADULTO MASCULINO', 'ADULTO MASCULINO'),
-                                        ('ADULTO FEMININO', 'ADULTO FEMININO')
-                                        ], validators=[DataRequired()])
-    imagem = FileField('Imagem do Produto')
-    submit = SubmitField('Salvar')
 
 class ColecaoForm(FlaskForm):
     codigo = StringField('Código', validators=[DataRequired()])
@@ -94,6 +86,20 @@ class FormulacaoAlcaForm(FlaskForm):
     componente_id = SelectField('Componente', coerce=int)
     carga = DecimalField('Carga (Kg)', default=0.0)
 
+
+class ReferenciaForm(FlaskForm):
+    codigo_referencia = StringField('Código da Referência', validators=[DataRequired()])
+    descricao = StringField('Descrição', validators=[DataRequired()])
+    imagem = FileField('Imagem', validators=[Optional()])
+
+    # Alterando para SelectMultipleField para permitir múltiplas seleções
+    solados = SelectMultipleField('Solados', coerce=int)
+    alcas = SelectMultipleField('Alças', coerce=int)
+    componentes = SelectMultipleField('Componentes', coerce=int)
+    custos_operacionais = SelectMultipleField('Custos Operacionais', coerce=int)
+    mao_de_obra = SelectField('Mão de Obra', coerce=int, validators=[DataRequired()])
+
+    submit = SubmitField('Salvar')
 
 
 

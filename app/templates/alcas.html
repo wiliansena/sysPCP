@@ -5,16 +5,13 @@
     <h2>Lista de Alças</h2>
     <a href="{{ url_for('routes.nova_alca') }}" class="btn btn-success mb-3">Nova Alça</a>
     <br>
-    <h5>Filtrar Referência</h5>
-    <a href="{{ url_for('routes.listar_alcas', filtro='TODAS') }}" class="btn btn-dark">TODAS</a>
-    <a href="{{ url_for('routes.listar_alcas', filtro='ALC') }}" class="btn btn-dark">ALC</a>
-    <hr>
+    <h5>Buscar referência</h5>
 
     <!-- 🔎 Campo de busca -->
     <div class="row mb-3">
         <div class="col-md-4"> <!-- Define um tamanho menor para o campo -->
             <form method="GET" action="{{ url_for('routes.listar_alcas') }}" class="d-flex">
-                <input type="text" name="filtro" class="form-control form-control-sm" placeholder="Buscar referência"
+                <input type="text" name="filtro" class="form-control form-control-sm" placeholder="Buscar por referência"
                     value="{{ request.args.get('filtro', '') }}">
                 <button type="submit" class="btn btn-primary btn-sm ms-2">Buscar</button>
             </form>
@@ -27,6 +24,7 @@
                 <th>Referência</th>
                 <th>Descrição</th>
                 <th>Imagem</th>
+                <th>Custo Total</th>
                 <th>Ações</th>
             </tr>
         </thead>
@@ -42,8 +40,9 @@
                     Sem imagem
                     {% endif %}
                 </td>
+                <td>R$ {{ "%.2f"|format(alca.preco_total) }}</td>
                 <td>
-                    <a href="{{ url_for('routes.ver_alca', id=alca.id) }}" class="btn btn-primary btn-sm">Abrir</a>
+                    <a href="{{ url_for('routes.ver_alca', id=alca.id) }}" class="btn btn-info btn-sm">Ver</a>
                     <a href="{{ url_for('routes.editar_alca', id=alca.id) }}" class="btn btn-warning btn-sm">Editar</a>
                     <form action="{{ url_for('routes.excluir_alca', id=alca.id) }}" method="POST"
                         style="display:inline;">

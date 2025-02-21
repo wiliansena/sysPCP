@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, render_template, redirect, url_for, flash, request
 from app import db
-from app.models import FormulacaoSolado, FormulacaoSoladoFriso, Referencia, Componente, CustoOperacional, Salario, MaoDeObra
+from app.models import FormulacaoSolado, FormulacaoSoladoFriso, Referencia, Componente, CustoOperacional, ReferenciaAlca, ReferenciaComponentes, ReferenciaCustoOperacional, ReferenciaMaoDeObra, ReferenciaSolado, Salario, MaoDeObra
 from app.forms import ReferenciaForm, ComponenteForm, CustoOperacionalForm, SalarioForm, MaoDeObraForm
 import os
 #SOLADO
@@ -33,62 +33,105 @@ def home():
 
     #REFERENCIAS
 
+
+
+
 @bp.route('/referencias', methods=['GET'])
 def listar_referencias():
     filtro = request.args.get('filtro', '')
-
-    if filtro == "TODAS":
-        referencias = Referencia.query.all()  # Retorna todas as REF
+    if filtro:
+        referencias = Referencia.query.all()
     elif filtro:
         referencias = Referencia.query.filter(Referencia.codigo_referencia.ilike(f"{filtro}%")).all()
     else:
-        referencias = []  # Inicialmente, mantém a lista vazia até um filtro ser selecionado
-
+        referencias = Referencia.query.all()
     return render_template('referencias.html', referencias=referencias)
 
-@bp.route('/referencia/nova', methods=['GET', 'POST'])
+@bp.route('/referencia/ver/<int:id>')
+def ver_referencia(id):
+    referencia = Referencia.query.get_or_404(id)
+    solado = ReferenciaSolado.query.filter_by(referencia_id=id).first()
+    alcas = ReferenciaAlca.query.filter_by(referencia_id=id).all()
+    componentes = ReferenciaComponentes.query.filter_by(referencia_id=id).all()
+    custos_operacionais = ReferenciaCustoOperacional.query.filter_by(referencia_id=id).all()
+    mao_de_obra = ReferenciaMaoDeObra.query.filter_by(referencia_id=id).first()
+    return render_template('ver_referencia.html', referencia=referencia, solado=solado, alcas=alcas, componentes=componentes, custos_operacionais=custos_operacionais, mao_de_obra=mao_de_obra)
+
+@bp.route('/referencia/novo', methods=['GET', 'POST'])
 def nova_referencia():
     form = ReferenciaForm()
+
+    # Definindo opções para os selects
+    form.solados.choices = [(s.id, f"{s.referencia} - {s.descricao}") for s in Solado.query.all()]
+    form.alcas.choices = [(a.id, f"{a.referencia} - {a.descricao}") for a in Alca.query.all()]
+    form.componentes.choices = [(c.id, f"{c.codigo} - {c.descricao}") for c in Componente.query.all()]
+    form.custos_operacionais.choices = [(c.id, f"{c.codigo} - {c.descricao}") for c in CustoOperacional.query.all()]
+    form.mao_de_obra.choices = [(m.id, m.descricao) for m in MaoDeObra.query.all()]
+
     if form.validate_on_submit():
-        imagem_filename = None
-        if form.imagem.data:
-            imagem_filename = form.imagem.data.filename
-            form.imagem.data.save(os.path.join(UPLOAD_FOLDER, imagem_filename))
-        
+        print("✅ Criando nova referência...")
+
         referencia = Referencia(
             codigo_referencia=form.codigo_referencia.data,
             descricao=form.descricao.data,
-            linha=form.linha.data,
-            imagem=imagem_filename
+            imagem=form.imagem.data.filename if form.imagem.data else None
         )
         db.session.add(referencia)
+        db.session.flush()  # Para capturar o ID antes de inserir os relacionamentos
+
+        # Associando os itens selecionados
+        for solado_id in form.solados.data:
+            db.session.add(ReferenciaSolado(referencia_id=referencia.id, solado_id=solado_id, consumo=1, preco_unitario=0))
+
+        for alca_id in form.alcas.data:
+            db.session.add(ReferenciaAlca(referencia_id=referencia.id, alca_id=alca_id, consumo=1, preco_unitario=0))
+
+        for componente_id in form.componentes.data:
+            db.session.add(ReferenciaComponentes(referencia_id=referencia.id, componente_id=componente_id, tipo="COMPONENTE", consumo=1, preco_unitario=0))
+
+        for custo_id in form.custos_operacionais.data:
+            db.session.add(ReferenciaCustoOperacional(referencia_id=referencia.id, custo_id=custo_id, tipo="FIXO", preco_unitario=0))
+
+        if form.mao_de_obra.data:
+            db.session.add(ReferenciaMaoDeObra(referencia_id=referencia.id, mao_de_obra_id=form.mao_de_obra.data, consumo=1, producao=1, preco_unitario=0))
+
         db.session.commit()
-        flash('Referência adicionada com sucesso!', 'success')
+        flash("Referência cadastrada com sucesso!", "success")
         return redirect(url_for('routes.listar_referencias'))
-    
-    return render_template('nova_referencia.html', form=form)
+
+    # Carregar dados para exibir no template
+    solados = Solado.query.all()
+    alcas = Alca.query.all()
+    componentes = Componente.query.all()
+    custos_operacionais = CustoOperacional.query.all()
+    mao_de_obra = MaoDeObra.query.all()
+
+    return render_template(
+        'nova_referencia.html',
+        form=form,
+        solados=solados,
+        alcas=alcas,
+        componentes=componentes,
+        custos_operacionais=custos_operacionais,
+        mao_de_obra=mao_de_obra
+    )
+
+
+
+
 
 @bp.route('/referencia/editar/<int:id>', methods=['GET', 'POST'])
 def editar_referencia(id):
     referencia = Referencia.query.get_or_404(id)
     form = ReferenciaForm(obj=referencia)
-    
     if form.validate_on_submit():
-        referencia.codigo_referencia = form.codigo_referencia.data
         referencia.descricao = form.descricao.data
-        referencia.linha = form.linha.data
-        
         if form.imagem.data:
-            imagem_filename = form.imagem.data.filename
-            form.imagem.data.save(os.path.join(UPLOAD_FOLDER, imagem_filename))
-            referencia.imagem = imagem_filename
-        
+            referencia.imagem = form.imagem.data.filename
         db.session.commit()
-        flash('Referência atualizada com sucesso!', 'success')
+        flash("Referência atualizada com sucesso!", "success")
         return redirect(url_for('routes.listar_referencias'))
-    
     return render_template('editar_referencia.html', form=form, referencia=referencia)
-
 
 @bp.route('/referencia/excluir/<int:id>', methods=['POST'])
 def excluir_referencia(id):
@@ -384,12 +427,12 @@ UPLOAD_FOLDER = 'app/static/uploads'
 def listar_solados():
     filtro = request.args.get('filtro', '')
 
-    if filtro == "TODAS":
+    if filtro:
         solados = Solado.query.all()  # Retorna todos os solados
     elif filtro:
         solados = Solado.query.filter(Solado.referencia.ilike(f"{filtro}%")).all()
     else:
-        solados = []  # Inicialmente, mantém a lista vazia até um filtro ser selecionado
+        solados = Solado.query.all()
 
     return render_template('solados.html', solados=solados)
 
@@ -643,12 +686,12 @@ def excluir_solado(id):
 def listar_alcas():
     filtro = request.args.get('filtro', '')
 
-    if filtro == "TODAS":
+    if filtro:
         alcas = Alca.query.all()  # Retorna todas as alcas
     elif filtro:
         alcas = Alca.query.filter(Alca.referencia.ilike(f"{filtro}%")).all()
     else:
-        alcas = []  # Inicialmente, mantém a lista vazia até um filtro ser selecionado
+        alcas = Alca.query.all()
 
     return render_template('alcas.html', alcas=alcas)
 

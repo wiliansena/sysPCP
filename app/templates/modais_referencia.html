@@ -1,0 +1,215 @@
+<!-- Modal para selecionar Solado -->
+<div class="modal fade" id="modalSolado" tabindex="-1" aria-labelledby="modalSoladoLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Selecionar Solado</h5>
+                <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Descrição</th>
+                            <th>Preço</th>
+                            <th>Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for solado in solados %}
+                        <tr>
+                            <td>{{ solado.id }}</td>
+                            <td>{{ solado.descricao }}</td>
+                            <td>R$ {{ "%.2f"|format(solado.custo_total) }}</td>
+                            <td>
+                                <button type="button" class="btn btn-success btn-sm selecionar-solado"
+                                    data-id="{{ solado.id }}" 
+                                    data-descricao="{{ solado.descricao }}"
+                                    data-preco="{{ "%.2f"|format(solado.custo_total) }}">
+                                    Selecionar
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para selecionar Alça -->
+<div class="modal fade" id="modalAlca" tabindex="-1" aria-labelledby="modalAlcaLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Selecionar Alça</h5>
+                <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Descrição</th>
+                            <th>Preço</th>
+                            <th>Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for alca in alcas %}
+                        <tr>
+                            <td>{{ alca.id }}</td>
+                            <td>{{ alca.descricao }}</td>
+                            <td>R$ {{ "%.2f"|format(alca.preco_total) }}</td>
+                            <td>
+                                <button type="button" class="btn btn-success btn-sm selecionar-alca"
+                                    data-id="{{ alca.id }}" 
+                                    data-descricao="{{ alca.descricao }}"
+                                    data-preco="{{ "%.2f"|format(alca.preco_total) }}">
+                                    Selecionar
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Modal para selecionar Componentes -->
+<div class="modal fade" id="modalComponentes" tabindex="-1" aria-labelledby="modalComponentesLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Selecionar Componentes</h5>
+                <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Descrição</th>
+                            <th>Preço</th>
+                            <th>Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for componente in componentes %}
+                        <tr>
+                            <td>{{ componente.id }}</td>
+                            <td>{{ componente.descricao }}</td>
+                            <td>R$ {{ "%.2f"|format(componente.preco) }}</td>
+                            <td>
+                                <button type="button" class="btn btn-success btn-sm selecionar-componente"
+                                    data-id="{{ componente.id }}" data-descricao="{{ componente.descricao }}"
+                                    data-preco="{{ "%.2f"|format(componente.preco) }}">
+                                    Selecionar
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para selecionar Custos Operacionais -->
+<div class="modal fade" id="modalCustos" tabindex="-1" aria-labelledby="modalCustosLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Selecionar Custos Operacionais</h5>
+                <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Descrição</th>
+                            <th>Tipo</th>
+                            <th>Preço</th>
+                            <th>Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for custo in custos_operacionais %}
+                        <tr>
+                            <td>{{ custo.id }}</td>
+                            <td>{{ custo.descricao }}</td>
+                            <td>{{ custo.tipo }}</td>
+                            <td>R$ {{ "%.2f"|format(custo.preco) }}</td>
+                            <td>
+                                <button type="button" class="btn btn-success btn-sm selecionar-custo"
+                                    data-id="{{ custo.id }}" data-descricao="{{ custo.descricao }}"
+                                    data-tipo="{{ custo.tipo }}"
+                                    data-preco="{{ "%.2f"|format(custo.preco) }}">
+                                    Selecionar
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para selecionar Mão de Obra -->
+<div class="modal fade" id="modalMaoObra" tabindex="-1" aria-labelledby="modalMaoObraLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Selecionar Mão de Obra</h5>
+                <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Descrição</th>
+                            <th>Diária</th>
+                            <th>Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for mao in mao_de_obra %}
+                        <tr>
+                            <td>{{ mao.id }}</td>
+                            <td>{{ mao.descricao }}</td>
+                            <td>R$ {{ "%.2f"|format(mao.diaria) }}</td>
+                            <td>
+                                <button type="button" class="btn btn-success btn-sm selecionar-mao"
+                                    data-id="{{ mao.id }}" data-descricao="{{ mao.descricao }}"
+                                    data-diaria="{{ "%.2f"|format(mao.diaria) }}">
+                                    Selecionar
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

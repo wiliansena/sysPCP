@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2>Formulação da Referência: {{ referencia.codigo_referencia }} - {{ referencia.descricao }}</h2>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalFormula">Editar Formulação</button>
+
+    <!-- Modal -->
+    <div class="modal fade" id="modalFormula" tabindex="-1" aria-labelledby="modalFormulaLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Editar Formulação</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <h4>Solado</h4>
+                    <select id="selectSolado">
+                        {% for solado in solados %}
+                            <option value="{{ solado.id }}">{{ solado.descricao }} - R$ {{ solado.preco_total }}</option>
+                        {% endfor %}
+                    </select>
+
+                    <h4>Alças</h4>
+                    <select id="selectAlca" multiple>
+                        {% for alca in alcas %}
+                            <option value="{{ alca.id }}">{{ alca.descricao }} - R$ {{ alca.preco_total }}</option>
+                        {% endfor %}
+                    </select>
+
+                    <h4>Componentes</h4>
+                    <select id="selectComponente">
+                        {% for componente in componentes %}
+                            <option value="{{ componente.id }}">{{ componente.descricao }} - R$ {{ componente.preco }}</option>
+                        {% endfor %}
+                    </select>
+                    <input type="number" id="consumoComponente" placeholder="Consumo">
+
+                    <button onclick="adicionarComponente()">Adicionar Componente</button>
+                    <h3>Total: R$ <span id="totalFormula">0.00</span></h3>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function atualizarFormula() {
+    let solado_id = document.getElementById("selectSolado").value;
+    let alca_ids = Array.from(document.getElementById("selectAlca").selectedOptions).map(option => option.value);
+
+    fetch("/referencia/atualizar_formulacao/{{ referencia.id }}", {
+        method: "POST",
+        body: JSON.stringify({ solado_id: solado_id, alca_ids: alca_ids }),
+        headers: { "Content-Type": "application/json" }
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById("totalFormula").innerText = data.total_formula.toFixed(2);
+    });
+}
+</script>
+
+{% include "modais.html" %}
+{% endblock %}

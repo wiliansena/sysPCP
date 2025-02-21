@@ -10,8 +10,59 @@ class Referencia(db.Model):
     descricao = db.Column(db.String(100), nullable=False)
     imagem = db.Column(db.String(200))
     linha = db.Column(db.String(50), nullable=True)
-    total_componentes = db.Column(db.Numeric(10,4), default=Decimal(0))
-    total_operacional = db.Column(db.Numeric(10,4), default=Decimal(0))
+
+    # Novos totais
+    total_solado = db.Column(db.Numeric(10,4), default=Decimal(0))
+    total_alcas = db.Column(db.Numeric(10,4), default=Decimal(0))
+    total_custo_fixo = db.Column(db.Numeric(10,4), default=Decimal(0))
+    total_custo_indireto = db.Column(db.Numeric(10,4), default=Decimal(0))
+    total_mao_de_obra = db.Column(db.Numeric(10,4), default=Decimal(0))
+
+    # Totais por embalagem
+    preco_embalagem_1 = db.Column(db.Numeric(10,4), default=Decimal(0))
+    preco_embalagem_2 = db.Column(db.Numeric(10,4), default=Decimal(0))
+    preco_embalagem_3 = db.Column(db.Numeric(10,4), default=Decimal(0))
+    
+class ReferenciaSolado(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    referencia_id = db.Column(db.Integer, db.ForeignKey('referencia.id'), nullable=False)
+    solado_id = db.Column(db.Integer, db.ForeignKey('solado.id'), nullable=False)
+    consumo = db.Column(db.Numeric(10,4), nullable=False)
+    preco_unitario = db.Column(db.Numeric(10,4), nullable=False)
+
+
+class ReferenciaAlca(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    referencia_id = db.Column(db.Integer, db.ForeignKey('referencia.id'), nullable=False)
+    alca_id = db.Column(db.Integer, db.ForeignKey('alca.id'), nullable=False)
+    consumo = db.Column(db.Numeric(10,4), nullable=False)
+    preco_unitario = db.Column(db.Numeric(10,4), nullable=False)
+
+
+class ReferenciaComponentes(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    referencia_id = db.Column(db.Integer, db.ForeignKey('referencia.id'), nullable=False)
+    componente_id = db.Column(db.Integer, db.ForeignKey('componente.id'), nullable=False)
+    tipo = db.Column(db.String(20), nullable=False)  # COMPONENTE, EMBALAGEM 1, EMBALAGEM 2, EMBALAGEM 3
+    consumo = db.Column(db.Numeric(10,4), nullable=False)
+    preco_unitario = db.Column(db.Numeric(10,4), nullable=False)
+
+class ReferenciaCustoOperacional(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    referencia_id = db.Column(db.Integer, db.ForeignKey('referencia.id'), nullable=False)
+    custo_id = db.Column(db.Integer, db.ForeignKey('custo_operacional.id'), nullable=False)
+    tipo = db.Column(db.String(20), nullable=False)  # FIXO ou INDIRETO
+    preco_unitario = db.Column(db.Numeric(10,4), nullable=False)
+
+class ReferenciaMaoDeObra(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    referencia_id = db.Column(db.Integer, db.ForeignKey('referencia.id'), nullable=False)
+    mao_de_obra_id = db.Column(db.Integer, db.ForeignKey('mao_de_obra.id'), nullable=False)
+    consumo = db.Column(db.Numeric(10,4), nullable=False)
+    producao = db.Column(db.Numeric(10,4), nullable=False)
+    preco_unitario = db.Column(db.Numeric(10,4), nullable=False)
+
+
 
 class Colecao(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -38,6 +89,12 @@ class MaoDeObra(db.Model):
     multiplicador = db.Column(db.Numeric(10,4), nullable=False, default=Decimal(0))
     preco_liquido = db.Column(db.Numeric(10,4), nullable=False, default=Decimal(0))
     preco_bruto = db.Column(db.Numeric(10,4), nullable=False, default=Decimal(0))
+    
+    @property
+    def diaria(self):
+        """ Calcula a diária como preco_bruto / 21, garantindo que não ocorra divisão por zero. """
+        return (self.preco_bruto / Decimal(21)).quantize(Decimal('0.0001'),
+                                                         rounding=ROUND_HALF_UP) if self.preco_bruto > 0 else Decimal(0)
 
     # Relacionamento com Salario
     salario = db.relationship('Salario', backref=db.backref('mao_de_obra', lazy=True))
