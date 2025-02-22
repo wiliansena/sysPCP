@@ -17,6 +17,7 @@ from wtforms import HiddenField
 from app import db, csrf  # 🔹 Importando o `csrf` que foi definido no __init__.py
 from flask.views import MethodView
 from decimal import Decimal, ROUND_HALF_UP  # Importa Decimal para cálculos precisos
+from sqlalchemy.exc import SQLAlchemyError
 
 bp = Blueprint('routes', __name__)
 
@@ -57,54 +58,107 @@ def ver_referencia(id):
     mao_de_obra = ReferenciaMaoDeObra.query.filter_by(referencia_id=id).first()
     return render_template('ver_referencia.html', referencia=referencia, solado=solado, alcas=alcas, componentes=componentes, custos_operacionais=custos_operacionais, mao_de_obra=mao_de_obra)
 
+
+
+# 🔹 Função para converter valores para float de forma segura
+def parse_float(value, default=0):
+    try:
+        return float(value.strip()) if value.strip() else default
+    except (ValueError, AttributeError):
+        return default
+
+
+
 @bp.route('/referencia/novo', methods=['GET', 'POST'])
 def nova_referencia():
     form = ReferenciaForm()
 
-    # Definindo opções para os selects
-    form.solados.choices = [(s.id, f"{s.referencia} - {s.descricao}") for s in Solado.query.all()]
-    form.alcas.choices = [(a.id, f"{a.referencia} - {a.descricao}") for a in Alca.query.all()]
-    form.componentes.choices = [(c.id, f"{c.codigo} - {c.descricao}") for c in Componente.query.all()]
-    form.custos_operacionais.choices = [(c.id, f"{c.codigo} - {c.descricao}") for c in CustoOperacional.query.all()]
-    form.mao_de_obra.choices = [(m.id, m.descricao) for m in MaoDeObra.query.all()]
-
-    if form.validate_on_submit():
-        print("✅ Criando nova referência...")
-
-        referencia = Referencia(
-            codigo_referencia=form.codigo_referencia.data,
-            descricao=form.descricao.data,
-            imagem=form.imagem.data.filename if form.imagem.data else None
-        )
-        db.session.add(referencia)
-        db.session.flush()  # Para capturar o ID antes de inserir os relacionamentos
-
-        # Associando os itens selecionados
-        for solado_id in form.solados.data:
-            db.session.add(ReferenciaSolado(referencia_id=referencia.id, solado_id=solado_id, consumo=1, preco_unitario=0))
-
-        for alca_id in form.alcas.data:
-            db.session.add(ReferenciaAlca(referencia_id=referencia.id, alca_id=alca_id, consumo=1, preco_unitario=0))
-
-        for componente_id in form.componentes.data:
-            db.session.add(ReferenciaComponentes(referencia_id=referencia.id, componente_id=componente_id, tipo="COMPONENTE", consumo=1, preco_unitario=0))
-
-        for custo_id in form.custos_operacionais.data:
-            db.session.add(ReferenciaCustoOperacional(referencia_id=referencia.id, custo_id=custo_id, tipo="FIXO", preco_unitario=0))
-
-        if form.mao_de_obra.data:
-            db.session.add(ReferenciaMaoDeObra(referencia_id=referencia.id, mao_de_obra_id=form.mao_de_obra.data, consumo=1, producao=1, preco_unitario=0))
-
-        db.session.commit()
-        flash("Referência cadastrada com sucesso!", "success")
-        return redirect(url_for('routes.listar_referencias'))
-
-    # Carregar dados para exibir no template
+    # 🔹 Recupera os dados do banco corretamente
     solados = Solado.query.all()
     alcas = Alca.query.all()
     componentes = Componente.query.all()
     custos_operacionais = CustoOperacional.query.all()
     mao_de_obra = MaoDeObra.query.all()
+
+    if form.validate_on_submit():
+        referencia = Referencia(
+            codigo_referencia=form.codigo_referencia.data,
+            descricao=form.descricao.data,
+            linha=form.linha.data,
+            imagem=form.imagem.data.filename if form.imagem.data else None,
+            
+            # 🔹 Correção: Convertendo `Decimal` para `float`
+            total_solado= sum(float(consumo) * float(Solado.query.get(int(solado_id)).custo_total)
+                              for solado_id, consumo in zip(request.form.getlist("solado_id[]"), request.form.getlist("solado_consumo[]")) if consumo),
+
+            total_alcas= sum(float(consumo) * float(Alca.query.get(int(alca_id)).preco_total)
+                             for alca_id, consumo in zip(request.form.getlist("alca_id[]"), request.form.getlist("alca_consumo[]")) if consumo),
+
+            total_componentes= sum(float(consumo) * float(Componente.query.get(int(componente_id)).preco)
+                                   for componente_id, consumo in zip(request.form.getlist("componente_id[]"), request.form.getlist("componente_consumo[]")) if consumo),
+
+            total_operacional= sum(float(consumo) * float(CustoOperacional.query.get(int(custo_id)).preco)
+                                   for custo_id, consumo in zip(request.form.getlist("custo_id[]"), request.form.getlist("custo_consumo[]")) if consumo),
+
+            total_mao_de_obra= sum(float(consumo) * float(MaoDeObra.query.get(int(mao_obra_id)).diaria)
+                                   for mao_obra_id, consumo in zip(request.form.getlist("mao_obra_id[]"), request.form.getlist("mao_obra_consumo[]")) if consumo),
+        )
+
+        # Salvar imagem
+        if form.imagem.data:
+            imagem_filename = secure_filename(form.imagem.data.filename)
+            caminho_imagem = os.path.join("static/uploads", imagem_filename)
+            form.imagem.data.save(caminho_imagem)
+            referencia.imagem = imagem_filename
+
+        db.session.add(referencia)
+        db.session.flush()  # Captura o ID antes de inserir os relacionamentos
+
+        # Associar os itens corretamente
+        for solado_id, consumo in zip(request.form.getlist("solado_id[]"), request.form.getlist("solado_consumo[]")):
+            db.session.add(ReferenciaSolado(
+                referencia_id=referencia.id,
+                solado_id=int(solado_id),
+                consumo=float(consumo) if consumo else 0,
+                preco_unitario=float(Solado.query.get(int(solado_id)).custo_total)
+            ))
+
+        for alca_id, consumo in zip(request.form.getlist("alca_id[]"), request.form.getlist("alca_consumo[]")):
+            db.session.add(ReferenciaAlca(
+                referencia_id=referencia.id,
+                alca_id=int(alca_id),
+                consumo=float(consumo) if consumo else 0,
+                preco_unitario=float(Alca.query.get(int(alca_id)).preco_total)
+            ))
+
+        for componente_id, consumo in zip(request.form.getlist("componente_id[]"), request.form.getlist("componente_consumo[]")):
+            db.session.add(ReferenciaComponentes(
+                referencia_id=referencia.id,
+                componente_id=int(componente_id),
+                consumo=float(consumo) if consumo else 0,
+                preco_unitario=float(Componente.query.get(int(componente_id)).preco)
+            ))
+
+        for custo_id, consumo in zip(request.form.getlist("custo_id[]"), request.form.getlist("custo_consumo[]")):
+            db.session.add(ReferenciaCustoOperacional(
+                referencia_id=referencia.id,
+                custo_id=int(custo_id),
+                consumo=float(consumo) if consumo else 0,
+                preco_unitario=float(CustoOperacional.query.get(int(custo_id)).preco)
+            ))
+
+        for mao_obra_id, consumo, producao in zip(request.form.getlist("mao_obra_id[]"), request.form.getlist("mao_obra_consumo[]"), request.form.getlist("mao_obra_producao[]")):
+            db.session.add(ReferenciaMaoDeObra(
+                referencia_id=referencia.id,
+                mao_de_obra_id=int(mao_obra_id),
+                consumo=float(consumo) if consumo else 0,
+                producao=float(producao) if producao else 1,
+                preco_unitario=float(MaoDeObra.query.get(int(mao_obra_id)).diaria)
+            ))
+
+        db.session.commit()
+        flash("Referência cadastrada com sucesso!", "success")
+        return redirect(url_for('routes.listar_referencias'))
 
     return render_template(
         'nova_referencia.html',
@@ -118,28 +172,92 @@ def nova_referencia():
 
 
 
+@bp.route('/referencia/<int:referencia_id>', methods=['GET'])
+def ver_referencia(referencia_id):
+    """Exibe os detalhes de uma referência específica."""
+    referencia = Referencia.query.get_or_404(referencia_id)
+    
+    # Recuperando os itens associados
+    solados = ReferenciaSolado.query.filter_by(referencia_id=referencia.id).all()
+    alcas = ReferenciaAlca.query.filter_by(referencia_id=referencia.id).all()
+    componentes = ReferenciaComponentes.query.filter_by(referencia_id=referencia.id).all()
+    custos_operacionais = ReferenciaCustoOperacional.query.filter_by(referencia_id=referencia.id).all()
+    mao_de_obra = ReferenciaMaoDeObra.query.filter_by(referencia_id=referencia.id).all()
+    
+    return render_template(
+        'ver_referencia.html',
+        referencia=referencia,
+        solados=solados,
+        alcas=alcas,
+        componentes=componentes,
+        custos_operacionais=custos_operacionais,
+        mao_de_obra=mao_de_obra
+    )
 
 
-@bp.route('/referencia/editar/<int:id>', methods=['GET', 'POST'])
-def editar_referencia(id):
-    referencia = Referencia.query.get_or_404(id)
+@bp.route('/referencia/<int:referencia_id>/editar', methods=['GET', 'POST'])
+def editar_referencia(referencia_id):
+    """Edita uma referência existente."""
+    referencia = Referencia.query.get_or_404(referencia_id)
     form = ReferenciaForm(obj=referencia)
+
     if form.validate_on_submit():
+        referencia.codigo_referencia = form.codigo_referencia.data
         referencia.descricao = form.descricao.data
+        referencia.linha = form.linha.data
+        
+        # Se houver uma nova imagem, salva
         if form.imagem.data:
-            referencia.imagem = form.imagem.data.filename
+            imagem_filename = secure_filename(form.imagem.data.filename)
+            caminho_imagem = os.path.join("static/uploads", imagem_filename)
+            form.imagem.data.save(caminho_imagem)
+            referencia.imagem = imagem_filename
+        
+        # 🔹 Atualizar os cálculos dos totais
+        referencia.total_solado = sum(float(consumo) * float(Solado.query.get(int(solado_id)).custo_total)
+                                      for solado_id, consumo in zip(request.form.getlist("solado_id[]"), request.form.getlist("solado_consumo[]")) if consumo)
+        
+        referencia.total_alcas = sum(float(consumo) * float(Alca.query.get(int(alca_id)).preco_total)
+                                     for alca_id, consumo in zip(request.form.getlist("alca_id[]"), request.form.getlist("alca_consumo[]")) if consumo)
+        
+        referencia.total_componentes = sum(float(consumo) * float(Componente.query.get(int(componente_id)).preco)
+                                           for componente_id, consumo in zip(request.form.getlist("componente_id[]"), request.form.getlist("componente_consumo[]")) if consumo)
+
+        referencia.total_operacional = sum(float(consumo) * float(CustoOperacional.query.get(int(custo_id)).preco)
+                                           for custo_id, consumo in zip(request.form.getlist("custo_id[]"), request.form.getlist("custo_consumo[]")) if consumo)
+
+        referencia.total_mao_de_obra = sum(float(consumo) * float(MaoDeObra.query.get(int(mao_obra_id)).diaria)
+                                           for mao_obra_id, consumo in zip(request.form.getlist("mao_obra_id[]"), request.form.getlist("mao_obra_consumo[]")) if consumo)
+
         db.session.commit()
         flash("Referência atualizada com sucesso!", "success")
         return redirect(url_for('routes.listar_referencias'))
+
     return render_template('editar_referencia.html', form=form, referencia=referencia)
 
-@bp.route('/referencia/excluir/<int:id>', methods=['POST'])
-def excluir_referencia(id):
-    referencia = Referencia.query.get_or_404(id)
+
+@bp.route('/referencia/<int:referencia_id>/excluir', methods=['POST'])
+def excluir_referencia(referencia_id):
+    """Exclui uma referência."""
+    referencia = Referencia.query.get_or_404(referencia_id)
+    
+    # 🔹 Excluir os relacionamentos primeiro
+    ReferenciaSolado.query.filter_by(referencia_id=referencia.id).delete()
+    ReferenciaAlca.query.filter_by(referencia_id=referencia.id).delete()
+    ReferenciaComponentes.query.filter_by(referencia_id=referencia.id).delete()
+    ReferenciaCustoOperacional.query.filter_by(referencia_id=referencia.id).delete()
+    ReferenciaMaoDeObra.query.filter_by(referencia_id=referencia.id).delete()
+
+    # 🔹 Excluir a própria referência
     db.session.delete(referencia)
     db.session.commit()
-    flash('Referência excluída com sucesso!', 'danger')
+    
+    flash("Referência excluída com sucesso!", "success")
     return redirect(url_for('routes.listar_referencias'))
+
+
+
+
 
 @bp.route('/colecoes')
 def listar_colecoes():

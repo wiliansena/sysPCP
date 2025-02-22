@@ -18,21 +18,18 @@
         </div>
 
         <div class="form-group">
+            <label>Linha</label>
+            {{ form.linha(class="form-control") }}
+        </div>
+        <hr>
+
+        <div class="form-group">
             <label>Imagem</label>
             {{ form.imagem(class="form-control-file") }}
         </div>
+        <hr>
 
         <h4>Ficha Técnica</h4>
-
-        <!-- Botões para abrir os modais -->
-
-
-
-
-
-
-        <!-- Tabelas para exibir os itens selecionados -->
-        <h4>Itens Selecionados</h4>
 
         <h4> Solados </h4>
         <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalSolado">
@@ -45,13 +42,14 @@
                     <th>Descrição</th>
                     <th>Preço</th>
                     <th>Consumo</th>
-                    <th>Preço Unitário</th>
+                    <th>Preço unitário</th>
                     <th>Ação</th>
                 </tr>
             </thead>
             <tbody></tbody>
         </table>
-        <h4>Alças</h4>
+        
+        <h4> Alças </h4>
         <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalAlca">
             Adicionar Alça
         </button>
@@ -62,7 +60,7 @@
                     <th>Descrição</th>
                     <th>Preço</th>
                     <th>Consumo</th>
-                    <th>Preço Unitário</th>
+                    <th>Preço unitário</th>
                     <th>Ação</th>
                 </tr>
             </thead>
@@ -80,16 +78,16 @@
                     <th>Descrição</th>
                     <th>Preço</th>
                     <th>Consumo</th>
-                    <th>Preço Unitário</th>
+                    <th>Preço unitário</th>
                     <th>Ação</th>
                 </tr>
             </thead>
             <tbody></tbody>
         </table>
-
-        <h4>Custos Operacionais( FIXOS/INDIRETOS ) </h4>
+        
+        <h4> Custos Operacionais</h4>
         <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalCustos">
-            Adicionar Custos
+            Adicionar Custo Operacional
         </button>
         <table class="table table-bordered" id="tabela-custo">
             <thead>
@@ -98,7 +96,7 @@
                     <th>Descrição</th>
                     <th>Preço</th>
                     <th>Consumo</th>
-                    <th>Preço Unitário</th>
+                    <th>Preço unitário</th>
                     <th>Ação</th>
                 </tr>
             </thead>
@@ -109,7 +107,6 @@
         <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalMaoObra">
             Adicionar Mão de Obra
         </button>
-        <h4>Custo Mão de Obra</h4>
         <table class="table table-bordered" id="tabela-mao_obra">
             <thead>
                 <tr>
@@ -118,17 +115,13 @@
                     <th>Diária</th>
                     <th>Consumo</th>
                     <th>Produção</th>
-                    <th>Preço Unitário</th>
+                    <th>Preço unitário</th>
                     <th>Ação</th>
                 </tr>
             </thead>
-            <tbody>
-                <!-- Itens adicionados dinamicamente aqui -->
-            </tbody>
+            <tbody></tbody>
         </table>
 
-
-        <!-- Tabela de Resumo dos Custos -->
         <h4>Resumo de Custos</h4>
         <table class="table table-bordered">
             <thead>
@@ -152,7 +145,7 @@
                 </tr>
                 <tr>
                     <td>Custos Operacionais</td>
-                    <td id="total_custos">0.00</td>
+                    <td id="total_operacional">0.00</td>
                 </tr>
                 <tr>
                     <td>Mão de Obra</td>
@@ -161,20 +154,18 @@
             </tbody>
         </table>
 
+        <!-- Inputs escondidos para salvar os totais -->
+        <input type="hidden" name="total_solado" id="input_total_solado">
+        <input type="hidden" name="total_alcas" id="input_total_alcas">
+        <input type="hidden" name="total_componentes" id="input_total_componentes">
+        <input type="hidden" name="total_operacional" id="input_total_operacional">
+        <input type="hidden" name="total_mao_obra" id="input_total_mao_obra">
 
         <button type="submit" class="btn btn-success">Salvar</button>
         <a href="{{ url_for('routes.listar_referencias') }}" class="btn btn-secondary">Cancelar</a>
     </form>
 </div>
-
-<p>Solados carregados: {{ solados }}</p>
-<p>Alças carregadas: {{ alcas }}</p>
-<p>Componentes carregados: {{ componentes }}</p>
-<p>Custos carregados: {{ custos_operacionais }}</p>
-
 <!-- 🔹 Modais para seleção de itens -->
 {% include 'modais_referencia.html' %}
-
 <script src="{{ url_for('static', filename='js/referencia.js') }}"></script>
-
 {% endblock %}

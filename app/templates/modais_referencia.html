@@ -23,7 +23,7 @@
                         <tr>
                             <td>{{ solado.id }}</td>
                             <td>{{ solado.descricao }}</td>
-                            <td>R$ {{ "%.2f"|format(solado.custo_total) }}</td>
+                            <td>R$ {{ "%.6f"|format(solado.custo_total) }}</td>
                             <td>
                                 <button type="button" class="btn btn-success btn-sm selecionar-solado"
                                     data-id="{{ solado.id }}" 
@@ -66,7 +66,7 @@
                         <tr>
                             <td>{{ alca.id }}</td>
                             <td>{{ alca.descricao }}</td>
-                            <td>R$ {{ "%.2f"|format(alca.preco_total) }}</td>
+                            <td>R$ {{ "%.6f"|format(alca.preco_total) }}</td>
                             <td>
                                 <button type="button" class="btn btn-success btn-sm selecionar-alca"
                                     data-id="{{ alca.id }}" 
@@ -110,7 +110,7 @@
                         <tr>
                             <td>{{ componente.id }}</td>
                             <td>{{ componente.descricao }}</td>
-                            <td>R$ {{ "%.2f"|format(componente.preco) }}</td>
+                            <td>R$ {{ "%.6f"|format(componente.preco) }}</td>
                             <td>
                                 <button type="button" class="btn btn-success btn-sm selecionar-componente"
                                     data-id="{{ componente.id }}" data-descricao="{{ componente.descricao }}"
@@ -154,7 +154,7 @@
                             <td>{{ custo.id }}</td>
                             <td>{{ custo.descricao }}</td>
                             <td>{{ custo.tipo }}</td>
-                            <td>R$ {{ "%.2f"|format(custo.preco) }}</td>
+                            <td>R$ {{ "%.6f"|format(custo.preco) }}</td>
                             <td>
                                 <button type="button" class="btn btn-success btn-sm selecionar-custo"
                                     data-id="{{ custo.id }}" data-descricao="{{ custo.descricao }}"
@@ -197,7 +197,7 @@
                         <tr>
                             <td>{{ mao.id }}</td>
                             <td>{{ mao.descricao }}</td>
-                            <td>R$ {{ "%.2f"|format(mao.diaria) }}</td>
+                            <td>R$ {{ "%.6f"|format(mao.diaria) }}</td>
                             <td>
                                 <button type="button" class="btn btn-success btn-sm selecionar-mao"
                                     data-id="{{ mao.id }}" data-descricao="{{ mao.descricao }}"

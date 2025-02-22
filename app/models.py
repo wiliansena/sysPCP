@@ -1,8 +1,9 @@
 from decimal import Decimal
-from enum import Enum
 from sqlalchemy.orm import relationship
 from app import db
 from decimal import Decimal, ROUND_HALF_UP, ROUND_CEILING
+from sqlalchemy.ext.hybrid import hybrid_property
+
 
 class Referencia(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -14,15 +15,18 @@ class Referencia(db.Model):
     # Novos totais
     total_solado = db.Column(db.Numeric(10,4), default=Decimal(0))
     total_alcas = db.Column(db.Numeric(10,4), default=Decimal(0))
-    total_custo_fixo = db.Column(db.Numeric(10,4), default=Decimal(0))
-    total_custo_indireto = db.Column(db.Numeric(10,4), default=Decimal(0))
+    total_componentes = db.Column(db.Numeric(10,4), default=Decimal(0))
+    total_operacional = db.Column(db.Numeric(10,4), default=Decimal(0))
     total_mao_de_obra = db.Column(db.Numeric(10,4), default=Decimal(0))
-
-    # Totais por embalagem
-    preco_embalagem_1 = db.Column(db.Numeric(10,4), default=Decimal(0))
-    preco_embalagem_2 = db.Column(db.Numeric(10,4), default=Decimal(0))
-    preco_embalagem_3 = db.Column(db.Numeric(10,4), default=Decimal(0))
     
+    def calcular_totais(self):
+        self.total_solado = sum(solado.preco_unitario for solado in self.solados)
+        self.total_alcas = sum(alca.preco_unitario for alca in self.alcas)
+        self.total_componentes = sum(componente.preco_unitario for componente in self.componentes)
+        self.total_operacional = sum(custo.preco_unitario for custo in self.custos_operacionais)
+        self.total_mao_de_obra = sum(mao_obra.preco_unitario for mao_obra in self.mao_de_obra)
+    
+
 class ReferenciaSolado(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     referencia_id = db.Column(db.Integer, db.ForeignKey('referencia.id'), nullable=False)
@@ -30,6 +34,12 @@ class ReferenciaSolado(db.Model):
     consumo = db.Column(db.Numeric(10,4), nullable=False)
     preco_unitario = db.Column(db.Numeric(10,4), nullable=False)
 
+    solado = db.relationship("Solado")
+
+    @property
+    def custo_total(self):
+        """Calcula o custo total do solado baseado no consumo"""
+        return self.consumo * self.solado.custo_total
 
 class ReferenciaAlca(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -38,21 +48,40 @@ class ReferenciaAlca(db.Model):
     consumo = db.Column(db.Numeric(10,4), nullable=False)
     preco_unitario = db.Column(db.Numeric(10,4), nullable=False)
 
+    alca = db.relationship("Alca")
+
+    @property
+    def custo_total(self):
+        """Calcula o custo total da alça baseado no consumo"""
+        return self.consumo * self.alca.preco_total
 
 class ReferenciaComponentes(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     referencia_id = db.Column(db.Integer, db.ForeignKey('referencia.id'), nullable=False)
     componente_id = db.Column(db.Integer, db.ForeignKey('componente.id'), nullable=False)
-    tipo = db.Column(db.String(20), nullable=False)  # COMPONENTE, EMBALAGEM 1, EMBALAGEM 2, EMBALAGEM 3
     consumo = db.Column(db.Numeric(10,4), nullable=False)
     preco_unitario = db.Column(db.Numeric(10,4), nullable=False)
+
+    componente = db.relationship("Componente")
+
+    @property
+    def custo_total(self):
+        """Calcula o custo total dos componentes baseado no consumo"""
+        return self.consumo * self.componente.preco
 
 class ReferenciaCustoOperacional(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     referencia_id = db.Column(db.Integer, db.ForeignKey('referencia.id'), nullable=False)
     custo_id = db.Column(db.Integer, db.ForeignKey('custo_operacional.id'), nullable=False)
-    tipo = db.Column(db.String(20), nullable=False)  # FIXO ou INDIRETO
+    consumo = db.Column(db.Numeric(10,4), nullable=False)
     preco_unitario = db.Column(db.Numeric(10,4), nullable=False)
+
+    custo = db.relationship("CustoOperacional")
+
+    @property
+    def custo_total(self):
+        """Calcula o custo total dos custos operacionais baseado no consumo"""
+        return self.consumo * self.custo.preco
 
 class ReferenciaMaoDeObra(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -61,6 +90,14 @@ class ReferenciaMaoDeObra(db.Model):
     consumo = db.Column(db.Numeric(10,4), nullable=False)
     producao = db.Column(db.Numeric(10,4), nullable=False)
     preco_unitario = db.Column(db.Numeric(10,4), nullable=False)
+
+    mao_de_obra = db.relationship("MaoDeObra")
+
+    @property
+    def custo_total(self):
+        """Calcula o custo total da mão de obra baseado no consumo e produção"""
+        return (self.consumo * self.mao_de_obra.diaria) / (self.producao if self.producao > 0 else 1)
+
 
 
 

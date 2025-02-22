@@ -1,6 +1,6 @@
 from typing import Optional
 from flask_wtf import FlaskForm
-from wtforms import DecimalField, SelectMultipleField, StringField, SubmitField, FloatField, FileField
+from wtforms import DecimalField, HiddenField, SelectMultipleField, StringField, SubmitField, FloatField, FileField
 from wtforms.validators import DataRequired
 from wtforms import SelectField
 #SOLADO
@@ -87,19 +87,54 @@ class FormulacaoAlcaForm(FlaskForm):
     carga = DecimalField('Carga (Kg)', default=0.0)
 
 
+
 class ReferenciaForm(FlaskForm):
     codigo_referencia = StringField('Código da Referência', validators=[DataRequired()])
     descricao = StringField('Descrição', validators=[DataRequired()])
+    linha = SelectField('Linha', choices=[('MASCULINO', 'MASCULINO'),
+                                          ('FEMININO', 'FEMININO'),
+                                          ('BABY', 'BABY')], validators=[DataRequired()])
     imagem = FileField('Imagem', validators=[Optional()])
-
-    # Alterando para SelectMultipleField para permitir múltiplas seleções
+    
+    total_solado = HiddenField("total_solado")
+    total_alcas = HiddenField("total_alcas")
+    total_componentes = HiddenField("total_componentes")
+    total_operacional = HiddenField("total_operacional")
+    total_mao_de_obra = HiddenField("total_mao_obra")
+    
     solados = SelectMultipleField('Solados', coerce=int)
     alcas = SelectMultipleField('Alças', coerce=int)
     componentes = SelectMultipleField('Componentes', coerce=int)
     custos_operacionais = SelectMultipleField('Custos Operacionais', coerce=int)
-    mao_de_obra = SelectField('Mão de Obra', coerce=int, validators=[DataRequired()])
-
+    mao_de_obra = SelectMultipleField('Mão de Obra', coerce=int)
+    
     submit = SubmitField('Salvar')
+
+class ReferenciaSoladoForm(FlaskForm):
+    solado_id = SelectField('Solado', coerce=int, validators=[DataRequired()])
+    consumo = DecimalField('Consumo', places=4, validators=[DataRequired()])
+    submit = SubmitField('Adicionar Solado')
+
+class ReferenciaAlcaForm(FlaskForm):
+    alca_id = SelectField('Alça', coerce=int, validators=[DataRequired()])
+    consumo = DecimalField('Consumo', places=4, validators=[DataRequired()])
+    submit = SubmitField('Adicionar Alça')
+
+class ReferenciaComponentesForm(FlaskForm):
+    componente_id = SelectField('Componente', coerce=int, validators=[DataRequired()])
+    consumo = DecimalField('Consumo', places=4, validators=[DataRequired()])
+    submit = SubmitField('Adicionar Componente')
+
+class ReferenciaCustoOperacionalForm(FlaskForm):
+    custo_id = SelectField('Custo Operacional', coerce=int, validators=[DataRequired()])
+    consumo = DecimalField('Consumo', places=4, validators=[DataRequired()])
+    submit = SubmitField('Adicionar Custo Operacional')
+
+class ReferenciaMaoDeObraForm(FlaskForm):
+    mao_de_obra_id = SelectField('Mão de Obra', coerce=int, validators=[DataRequired()])
+    consumo = DecimalField('Consumo', places=4, validators=[DataRequired()])
+    producao = IntegerField('Produção', validators=[DataRequired()])
+    submit = SubmitField('Adicionar Mão de Obra')
 
 
 
