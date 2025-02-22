@@ -1,6 +1,6 @@
 <!-- Modal para selecionar Solado -->
 <div class="modal fade" id="modalSolado" tabindex="-1" aria-labelledby="modalSoladoLabel" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Selecionar Solado</h5>
@@ -23,11 +23,11 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for solado in solados %}
+                        {% for solado in solados_disponiveis %}
                         <tr>
                             <td>{{ solado.id }}</td>
                             <td>{{ solado.descricao }}</td>
-                            <td>R$ {{ "%.2f"|format(solado.custo_total) }}</td>
+                            <td>R$ {{ "%.6f"|format(solado.custo_total) }}</td>
                             <td>
                                 <button type="button" class="btn btn-success btn-sm selecionar-solado"
                                     data-id="{{ solado.id }}" 
@@ -47,7 +47,7 @@
 
 <!-- Modal para selecionar Alça -->
 <div class="modal fade" id="modalAlca" tabindex="-1" aria-labelledby="modalAlcaLabel" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Selecionar Alça</h5>
@@ -70,11 +70,11 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for alca in alcas %}
+                        {% for alca in alcas_disponiveis %}
                         <tr>
                             <td>{{ alca.id }}</td>
                             <td>{{ alca.descricao }}</td>
-                            <td>R$ {{ "%.2f"|format(alca.preco_total) }}</td>
+                            <td>R$ {{ "%.6f"|format(alca.preco_total) }}</td>
                             <td>
                                 <button type="button" class="btn btn-success btn-sm selecionar-alca"
                                     data-id="{{ alca.id }}" 
@@ -94,7 +94,7 @@
 
 <!-- Modal para selecionar Componentes -->
 <div class="modal fade" id="modalComponentes" tabindex="-1" aria-labelledby="modalComponentesLabel" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Selecionar Componentes</h5>
@@ -117,11 +117,11 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for componente in componentes %}
+                        {% for componente in componentes_disponiveis %}
                         <tr>
                             <td>{{ componente.id }}</td>
                             <td>{{ componente.descricao }}</td>
-                            <td>R$ {{ "%.2f"|format(componente.preco) }}</td>
+                            <td>R$ {{ "%.6f"|format(componente.preco) }}</td>
                             <td>
                                 <button type="button" class="btn btn-success btn-sm selecionar-componente"
                                     data-id="{{ componente.id }}" 
@@ -141,7 +141,7 @@
 
 <!-- Modal para selecionar Custos Operacionais -->
 <div class="modal fade" id="modalCustos" tabindex="-1" aria-labelledby="modalCustosLabel" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Selecionar Custos Operacionais</h5>
@@ -159,23 +159,20 @@
                         <tr>
                             <th>Código</th>
                             <th>Descrição</th>
-                            <th>Tipo</th>
                             <th>Preço</th>
                             <th>Ação</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for custo in custos_operacionais %}
+                        {% for custo in custos_disponiveis %}
                         <tr>
                             <td>{{ custo.id }}</td>
                             <td>{{ custo.descricao }}</td>
-                            <td>{{ custo.tipo }}</td>
-                            <td>R$ {{ "%.2f"|format(custo.preco) }}</td>
+                            <td>R$ {{ "%.6f"|format(custo.preco) }}</td>
                             <td>
                                 <button type="button" class="btn btn-success btn-sm selecionar-custo"
                                     data-id="{{ custo.id }}" 
                                     data-descricao="{{ custo.descricao }}"
-                                    data-tipo="{{ custo.tipo }}"
                                     data-preco="{{ "%.2f"|format(custo.preco) }}">
                                     Selecionar
                                 </button>
@@ -214,7 +211,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for mao in mao_de_obra %}
+                        {% for mao in mao_de_obra_disponiveis %}
                         <tr>
                             <td>{{ mao.id }}</td>
                             <td>{{ mao.descricao }}</td>
@@ -242,12 +239,17 @@ function setupFilter(filterId, tableId) {
     const filterInput = document.getElementById(filterId);
     if (filterInput) {
         filterInput.addEventListener('keyup', function() {
-            const filtro = this.value.toUpperCase();
-            const rows = document.querySelectorAll('#' + tableId + ' tbody tr');
+            let filtro = this.value.toUpperCase();
+            let rows = document.querySelectorAll('#' + tableId + ' tbody tr');
             rows.forEach(row => {
-                const col1 = row.querySelector('td:nth-child(1)').textContent.toUpperCase();
-                const col2 = row.querySelector('td:nth-child(2)').textContent.toUpperCase();
-                row.style.display = (col1.indexOf(filtro) > -1 || col2.indexOf(filtro) > -1) ? '' : 'none';
+                // Busca nos dados das duas primeiras colunas (ajuste se necessário)
+                let col1 = row.querySelector('td:nth-child(1)').textContent.toUpperCase();
+                let col2 = row.querySelector('td:nth-child(2)').textContent.toUpperCase();
+                if (col1.indexOf(filtro) > -1 || col2.indexOf(filtro) > -1) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
             });
         });
     }

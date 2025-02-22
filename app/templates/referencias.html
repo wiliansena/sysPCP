@@ -3,13 +3,7 @@
 {% block content %}
     <h2>Referências</h2>
     <br>
-    <a href="{{ url_for('routes.nova_referencia') }}" class="btn btn-primary">Nova Referência</a>
-    <h5>Filtrar Referência</h5>
-    <a href="{{ url_for('routes.listar_referencias', filtro='TODAS') }}" class="btn btn-dark">TODAS</a>
-    <a href="{{ url_for('routes.listar_referencias', filtro='VZ') }}" class="btn btn-dark">VZ</a>
-    <a href="{{ url_for('routes.listar_referencias', filtro='BK') }}" class="btn btn-dark">BK</a>
-    <a href="{{ url_for('routes.listar_referencias', filtro='MAC') }}" class="btn btn-dark">MAC</a>
-    <a href="{{ url_for('routes.listar_referencias', filtro='DULT') }}" class="btn btn-dark">DULT</a>
+    <a href="{{ url_for('routes.nova_referencia') }}" class="btn btn-success mb-3">Nova Referência</a>
     <hr>
 
     <!-- 🔎 Campo de busca -->
@@ -48,9 +42,10 @@
                             {% endif %}
                         </td>
                         <td>
+                            <a href="{{ url_for('routes.ver_referencia', id=referencia.id) }}" class="btn btn-info btn-sm">Ver</a>
                             <a href="{{ url_for('routes.editar_referencia', id=referencia.id) }}" class="btn btn-warning btn-sm">Editar</a>
-                            <form action="{{ url_for('routes.excluir_referencia', id=referencia.id) }}" method="post" style="display:inline;">
-                                <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Tem certeza?')">Excluir</button>
+                            <form action="{{ url_for('routes.excluir_referencia', id=referencia.id) }}" method="POST" style="display:inline;">
+                                <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Tem certeza que deseja excluir este solado?')">Excluir</button>
                             </form>
                         </td>
                     </tr>

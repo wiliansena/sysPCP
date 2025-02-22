@@ -9,11 +9,7 @@
                 </button>
             </div>
             <div class="modal-body">
-                <!-- Campo de filtro -->
-                <div class="mb-3">
-                    <input type="text" id="filterSolado" class="form-control" placeholder="Filtrar Solado">
-                </div>
-                <table class="table" id="soladoTable">
+                <table class="table">
                     <thead>
                         <tr>
                             <th>Código</th>
@@ -27,7 +23,7 @@
                         <tr>
                             <td>{{ solado.id }}</td>
                             <td>{{ solado.descricao }}</td>
-                            <td>R$ {{ "%.2f"|format(solado.custo_total) }}</td>
+                            <td>R$ {{ "%.6f"|format(solado.custo_total) }}</td>
                             <td>
                                 <button type="button" class="btn btn-success btn-sm selecionar-solado"
                                     data-id="{{ solado.id }}" 
@@ -56,11 +52,7 @@
                 </button>
             </div>
             <div class="modal-body">
-                <!-- Campo de filtro -->
-                <div class="mb-3">
-                    <input type="text" id="filterAlca" class="form-control" placeholder="Filtrar Alça">
-                </div>
-                <table class="table" id="alcaTable">
+                <table class="table">
                     <thead>
                         <tr>
                             <th>Código</th>
@@ -74,7 +66,7 @@
                         <tr>
                             <td>{{ alca.id }}</td>
                             <td>{{ alca.descricao }}</td>
-                            <td>R$ {{ "%.2f"|format(alca.preco_total) }}</td>
+                            <td>R$ {{ "%.6f"|format(alca.preco_total) }}</td>
                             <td>
                                 <button type="button" class="btn btn-success btn-sm selecionar-alca"
                                     data-id="{{ alca.id }}" 
@@ -92,6 +84,7 @@
     </div>
 </div>
 
+
 <!-- Modal para selecionar Componentes -->
 <div class="modal fade" id="modalComponentes" tabindex="-1" aria-labelledby="modalComponentesLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -103,11 +96,7 @@
                 </button>
             </div>
             <div class="modal-body">
-                <!-- Campo de filtro -->
-                <div class="mb-3">
-                    <input type="text" id="filterComponentes" class="form-control" placeholder="Filtrar Componentes">
-                </div>
-                <table class="table" id="componentesTable">
+                <table class="table">
                     <thead>
                         <tr>
                             <th>Código</th>
@@ -121,11 +110,10 @@
                         <tr>
                             <td>{{ componente.id }}</td>
                             <td>{{ componente.descricao }}</td>
-                            <td>R$ {{ "%.2f"|format(componente.preco) }}</td>
+                            <td>R$ {{ "%.6f"|format(componente.preco) }}</td>
                             <td>
                                 <button type="button" class="btn btn-success btn-sm selecionar-componente"
-                                    data-id="{{ componente.id }}" 
-                                    data-descricao="{{ componente.descricao }}"
+                                    data-id="{{ componente.id }}" data-descricao="{{ componente.descricao }}"
                                     data-preco="{{ "%.2f"|format(componente.preco) }}">
                                     Selecionar
                                 </button>
@@ -150,11 +138,7 @@
                 </button>
             </div>
             <div class="modal-body">
-                <!-- Campo de filtro -->
-                <div class="mb-3">
-                    <input type="text" id="filterCustos" class="form-control" placeholder="Filtrar Custos Operacionais">
-                </div>
-                <table class="table" id="custosTable">
+                <table class="table">
                     <thead>
                         <tr>
                             <th>Código</th>
@@ -170,11 +154,10 @@
                             <td>{{ custo.id }}</td>
                             <td>{{ custo.descricao }}</td>
                             <td>{{ custo.tipo }}</td>
-                            <td>R$ {{ "%.2f"|format(custo.preco) }}</td>
+                            <td>R$ {{ "%.6f"|format(custo.preco) }}</td>
                             <td>
                                 <button type="button" class="btn btn-success btn-sm selecionar-custo"
-                                    data-id="{{ custo.id }}" 
-                                    data-descricao="{{ custo.descricao }}"
+                                    data-id="{{ custo.id }}" data-descricao="{{ custo.descricao }}"
                                     data-tipo="{{ custo.tipo }}"
                                     data-preco="{{ "%.2f"|format(custo.preco) }}">
                                     Selecionar
@@ -200,11 +183,7 @@
                 </button>
             </div>
             <div class="modal-body">
-                <!-- Campo de filtro -->
-                <div class="mb-3">
-                    <input type="text" id="filterMaoObra" class="form-control" placeholder="Filtrar Mão de Obra">
-                </div>
-                <table class="table" id="maoObraTable">
+                <table class="table">
                     <thead>
                         <tr>
                             <th>Código</th>
@@ -218,11 +197,10 @@
                         <tr>
                             <td>{{ mao.id }}</td>
                             <td>{{ mao.descricao }}</td>
-                            <td>R$ {{ "%.2f"|format(mao.diaria) }}</td>
+                            <td>R$ {{ "%.6f"|format(mao.diaria) }}</td>
                             <td>
                                 <button type="button" class="btn btn-success btn-sm selecionar-mao"
-                                    data-id="{{ mao.id }}" 
-                                    data-descricao="{{ mao.descricao }}"
+                                    data-id="{{ mao.id }}" data-descricao="{{ mao.descricao }}"
                                     data-diaria="{{ "%.2f"|format(mao.diaria) }}">
                                     Selecionar
                                 </button>
@@ -235,27 +213,3 @@
         </div>
     </div>
 </div>
-
-<!-- Script para filtrar todas as tabelas -->
-<script>
-function setupFilter(filterId, tableId) {
-    const filterInput = document.getElementById(filterId);
-    if (filterInput) {
-        filterInput.addEventListener('keyup', function() {
-            const filtro = this.value.toUpperCase();
-            const rows = document.querySelectorAll('#' + tableId + ' tbody tr');
-            rows.forEach(row => {
-                const col1 = row.querySelector('td:nth-child(1)').textContent.toUpperCase();
-                const col2 = row.querySelector('td:nth-child(2)').textContent.toUpperCase();
-                row.style.display = (col1.indexOf(filtro) > -1 || col2.indexOf(filtro) > -1) ? '' : 'none';
-            });
-        });
-    }
-}
-
-setupFilter('filterSolado', 'soladoTable');
-setupFilter('filterAlca', 'alcaTable');
-setupFilter('filterComponentes', 'componentesTable');
-setupFilter('filterCustos', 'custosTable');
-setupFilter('filterMaoObra', 'maoObraTable');
-</script>

@@ -152,7 +152,6 @@
     </form>
 </div>
 
-<!-- Modal para selecionar componentes -->
 <!-- 🔹 Modal para selecionar componentes (Sem Friso) -->
 <div class="modal fade" id="modalComponentes" tabindex="-1" aria-labelledby="modalComponentesLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -164,7 +163,11 @@
                 </button>
             </div>
             <div class="modal-body">
-                <table class="table">
+                <!-- Campo de filtro -->
+                <div class="mb-3">
+                    <input type="text" id="filterComponentesSemFriso" class="form-control" placeholder="Filtrar Componentes Sem Friso">
+                </div>
+                <table class="table" id="componentesSemFrisoTable">
                     <thead>
                         <tr>
                             <th>Código</th>
@@ -181,8 +184,10 @@
                             <td>R$ {{ "%.2f"|format(componente.preco) }}</td>
                             <td>
                                 <button type="button" class="btn btn-success btn-sm selecionar-componente"
-                                    data-id="{{ componente.id }}" data-descricao="{{ componente.descricao }}"
-                                    data-preco="{{ " %.2f"|format(componente.preco) }}" data-tipo="sem_friso">
+                                    data-id="{{ componente.id }}" 
+                                    data-descricao="{{ componente.descricao }}"
+                                    data-preco="{{ "%.2f"|format(componente.preco) }}" 
+                                    data-tipo="sem_friso">
                                     Selecionar
                                 </button>
                             </td>
@@ -196,8 +201,7 @@
 </div>
 
 <!-- 🔹 Modal para selecionar componentes (Com Friso) -->
-<div class="modal fade" id="modalComponentesFriso" tabindex="-1" aria-labelledby="modalComponentesFrisoLabel"
-    aria-hidden="true">
+<div class="modal fade" id="modalComponentesFriso" tabindex="-1" aria-labelledby="modalComponentesFrisoLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -207,7 +211,11 @@
                 </button>
             </div>
             <div class="modal-body">
-                <table class="table">
+                <!-- Campo de filtro -->
+                <div class="mb-3">
+                    <input type="text" id="filterComponentesFriso" class="form-control" placeholder="Filtrar Componentes Com Friso">
+                </div>
+                <table class="table" id="componentesFrisoTable">
                     <thead>
                         <tr>
                             <th>Código</th>
@@ -224,8 +232,10 @@
                             <td>R$ {{ "%.2f"|format(componente.preco) }}</td>
                             <td>
                                 <button type="button" class="btn btn-success btn-sm selecionar-componente"
-                                    data-id="{{ componente.id }}" data-descricao="{{ componente.descricao }}"
-                                    data-preco="{{ " %.2f"|format(componente.preco) }}" data-tipo="friso">
+                                    data-id="{{ componente.id }}" 
+                                    data-descricao="{{ componente.descricao }}"
+                                    data-preco="{{ "%.2f"|format(componente.preco) }}" 
+                                    data-tipo="friso">
                                     Selecionar
                                 </button>
                             </td>
@@ -237,6 +247,27 @@
         </div>
     </div>
 </div>
+
+<!-- Script para filtrar as tabelas dos modais -->
+<script>
+function setupFilter(filterId, tableId) {
+    const filterInput = document.getElementById(filterId);
+    if (filterInput) {
+        filterInput.addEventListener('keyup', function() {
+            const filtro = this.value.toUpperCase();
+            const rows = document.querySelectorAll('#' + tableId + ' tbody tr');
+            rows.forEach(row => {
+                const col1 = row.querySelector('td:nth-child(1)').textContent.toUpperCase();
+                const col2 = row.querySelector('td:nth-child(2)').textContent.toUpperCase();
+                row.style.display = (col1.indexOf(filtro) > -1 || col2.indexOf(filtro) > -1) ? '' : 'none';
+            });
+        });
+    }
+}
+
+setupFilter('filterComponentesSemFriso', 'componentesSemFrisoTable');
+setupFilter('filterComponentesFriso', 'componentesFrisoTable');
+</script>
 
 <script>
     $(document).ready(function () {

@@ -91,8 +91,7 @@
         <a href="{{ url_for('routes.listar_alcas') }}" class="btn btn-secondary">Cancelar</a>
     </form>
 </div>
-
-<!-- Modal para selecionar componentes -->
+<!-- 🔹 Modal para selecionar componentes -->
 <div class="modal fade" id="modalComponentes" tabindex="-1" aria-labelledby="modalComponentesLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -103,7 +102,11 @@
                 </button>
             </div>
             <div class="modal-body">
-                <table class="table">
+                <!-- Campo de filtro -->
+                <div class="mb-3">
+                    <input type="text" id="filterComponentesModal" class="form-control" placeholder="Filtrar Componentes">
+                </div>
+                <table class="table" id="componentesModalTable">
                     <thead>
                         <tr>
                             <th>Código</th>
@@ -133,6 +136,25 @@
         </div>
     </div>
 </div>
+
+<!-- Script para filtrar a tabela do modal de componentes -->
+<script>
+function setupFilter(filterId, tableId) {
+    const filterInput = document.getElementById(filterId);
+    if (filterInput) {
+        filterInput.addEventListener('keyup', function() {
+            const filtro = this.value.toUpperCase();
+            const rows = document.querySelectorAll('#' + tableId + ' tbody tr');
+            rows.forEach(row => {
+                const col1 = row.querySelector('td:nth-child(1)').textContent.toUpperCase();
+                const col2 = row.querySelector('td:nth-child(2)').textContent.toUpperCase();
+                row.style.display = (col1.indexOf(filtro) > -1 || col2.indexOf(filtro) > -1) ? '' : 'none';
+            });
+        });
+    }
+}
+setupFilter('filterComponentesModal', 'componentesModalTable');
+</script>
 
 <script>
     $(document).ready(function () {

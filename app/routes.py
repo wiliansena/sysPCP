@@ -41,22 +41,10 @@ def home():
 def listar_referencias():
     filtro = request.args.get('filtro', '')
     if filtro:
-        referencias = Referencia.query.all()
-    elif filtro:
         referencias = Referencia.query.filter(Referencia.codigo_referencia.ilike(f"{filtro}%")).all()
     else:
         referencias = Referencia.query.all()
     return render_template('referencias.html', referencias=referencias)
-
-@bp.route('/referencia/ver/<int:id>')
-def ver_referencia(id):
-    referencia = Referencia.query.get_or_404(id)
-    solado = ReferenciaSolado.query.filter_by(referencia_id=id).first()
-    alcas = ReferenciaAlca.query.filter_by(referencia_id=id).all()
-    componentes = ReferenciaComponentes.query.filter_by(referencia_id=id).all()
-    custos_operacionais = ReferenciaCustoOperacional.query.filter_by(referencia_id=id).all()
-    mao_de_obra = ReferenciaMaoDeObra.query.filter_by(referencia_id=id).first()
-    return render_template('ver_referencia.html', referencia=referencia, solado=solado, alcas=alcas, componentes=componentes, custos_operacionais=custos_operacionais, mao_de_obra=mao_de_obra)
 
 
 
@@ -172,18 +160,20 @@ def nova_referencia():
 
 
 
-@bp.route('/referencia/<int:referencia_id>', methods=['GET'])
-def ver_referencia(referencia_id):
-    """Exibe os detalhes de uma referência específica."""
-    referencia = Referencia.query.get_or_404(referencia_id)
+@bp.route('/referencia/ver/<int:id>', methods=['GET'])
+def ver_referencia(id):
+    referencia = Referencia.query.get_or_404(id)
     
+    # 🔹 Certifique-se de calcular os totais antes de exibir a referência
+    referencia.calcular_totais()
+
     # Recuperando os itens associados
     solados = ReferenciaSolado.query.filter_by(referencia_id=referencia.id).all()
     alcas = ReferenciaAlca.query.filter_by(referencia_id=referencia.id).all()
     componentes = ReferenciaComponentes.query.filter_by(referencia_id=referencia.id).all()
     custos_operacionais = ReferenciaCustoOperacional.query.filter_by(referencia_id=referencia.id).all()
     mao_de_obra = ReferenciaMaoDeObra.query.filter_by(referencia_id=referencia.id).all()
-    
+
     return render_template(
         'ver_referencia.html',
         referencia=referencia,
@@ -194,52 +184,174 @@ def ver_referencia(referencia_id):
         mao_de_obra=mao_de_obra
     )
 
+@bp.route('/referencia/editar/<int:id>', methods=['GET', 'POST'])
+def editar_referencia(id):
+    """Edita uma referência existente mantendo os itens e permitindo adicionar novos."""
 
-@bp.route('/referencia/<int:referencia_id>/editar', methods=['GET', 'POST'])
-def editar_referencia(referencia_id):
-    """Edita uma referência existente."""
-    referencia = Referencia.query.get_or_404(referencia_id)
+    referencia = Referencia.query.get_or_404(id)
     form = ReferenciaForm(obj=referencia)
+
+    # 🔹 Recuperar os itens vinculados para exibição no template
+    solados = {str(s.solado_id): s for s in ReferenciaSolado.query.filter_by(referencia_id=id).all()}
+    alcas = {str(a.alca_id): a for a in ReferenciaAlca.query.filter_by(referencia_id=id).all()}
+    componentes = {str(c.componente_id): c for c in ReferenciaComponentes.query.filter_by(referencia_id=id).all()}
+    custos_operacionais = {str(co.custo_id): co for co in ReferenciaCustoOperacional.query.filter_by(referencia_id=id).all()}
+    mao_de_obra = {str(m.mao_de_obra_id): m for m in ReferenciaMaoDeObra.query.filter_by(referencia_id=id).all()}
+
+    # 🔹 Recuperar todos os itens disponíveis nos modais
+    solados_disponiveis = Solado.query.all()
+    alcas_disponiveis = Alca.query.all()
+    componentes_disponiveis = Componente.query.all()
+    custos_disponiveis = CustoOperacional.query.all()
+    mao_de_obra_disponiveis = MaoDeObra.query.all()
 
     if form.validate_on_submit():
         referencia.codigo_referencia = form.codigo_referencia.data
         referencia.descricao = form.descricao.data
         referencia.linha = form.linha.data
-        
+
         # Se houver uma nova imagem, salva
         if form.imagem.data:
             imagem_filename = secure_filename(form.imagem.data.filename)
             caminho_imagem = os.path.join("static/uploads", imagem_filename)
             form.imagem.data.save(caminho_imagem)
             referencia.imagem = imagem_filename
-        
-        # 🔹 Atualizar os cálculos dos totais
-        referencia.total_solado = sum(float(consumo) * float(Solado.query.get(int(solado_id)).custo_total)
-                                      for solado_id, consumo in zip(request.form.getlist("solado_id[]"), request.form.getlist("solado_consumo[]")) if consumo)
-        
-        referencia.total_alcas = sum(float(consumo) * float(Alca.query.get(int(alca_id)).preco_total)
-                                     for alca_id, consumo in zip(request.form.getlist("alca_id[]"), request.form.getlist("alca_consumo[]")) if consumo)
-        
-        referencia.total_componentes = sum(float(consumo) * float(Componente.query.get(int(componente_id)).preco)
-                                           for componente_id, consumo in zip(request.form.getlist("componente_id[]"), request.form.getlist("componente_consumo[]")) if consumo)
 
-        referencia.total_operacional = sum(float(consumo) * float(CustoOperacional.query.get(int(custo_id)).preco)
-                                           for custo_id, consumo in zip(request.form.getlist("custo_id[]"), request.form.getlist("custo_consumo[]")) if consumo)
+        ### **🔹 Atualizar SOMENTE os itens modificados e adicionar novos**
 
-        referencia.total_mao_de_obra = sum(float(consumo) * float(MaoDeObra.query.get(int(mao_obra_id)).diaria)
-                                           for mao_obra_id, consumo in zip(request.form.getlist("mao_obra_id[]"), request.form.getlist("mao_obra_consumo[]")) if consumo)
+        # **Solados**
+        solado_ids = request.form.getlist("solado_id[]")
+        solado_consumos = request.form.getlist("solado_consumo[]")
+
+        for solado_id, consumo in zip(solado_ids, solado_consumos):
+            consumo = float(consumo) if consumo else 1.0  # Evita remover itens se não for informado consumo
+            if solado_id in solados:
+                solados[solado_id].consumo = consumo  # Atualiza consumo
+            else:
+                db.session.add(ReferenciaSolado(
+                    referencia_id=id,
+                    solado_id=int(solado_id),
+                    consumo=consumo,
+                    preco_unitario=Solado.query.get(int(solado_id)).custo_total
+                ))
+
+        # **Alças**
+        alca_ids = request.form.getlist("alca_id[]")
+        alca_consumos = request.form.getlist("alca_consumo[]")
+
+        for alca_id, consumo in zip(alca_ids, alca_consumos):
+            consumo = float(consumo) if consumo else 1.0
+            if alca_id in alcas:
+                alcas[alca_id].consumo = consumo
+            else:
+                db.session.add(ReferenciaAlca(
+                    referencia_id=id,
+                    alca_id=int(alca_id),
+                    consumo=consumo,
+                    preco_unitario=Alca.query.get(int(alca_id)).preco_total
+                ))
+
+        # **Componentes**
+        componente_ids = request.form.getlist("componente_id[]")
+        componente_consumos = request.form.getlist("componente_consumo[]")
+
+        for componente_id, consumo in zip(componente_ids, componente_consumos):
+            consumo = float(consumo) if consumo else 1.0
+            if componente_id in componentes:
+                componentes[componente_id].consumo = consumo
+            else:
+                db.session.add(ReferenciaComponentes(
+                    referencia_id=id,
+                    componente_id=int(componente_id),
+                    consumo=consumo,
+                    preco_unitario=Componente.query.get(int(componente_id)).preco
+                ))
+
+        # **Custos Operacionais**
+        custo_ids = request.form.getlist("custo_id[]")
+        custo_consumos = request.form.getlist("custo_consumo[]")
+
+        for custo_id, consumo in zip(custo_ids, custo_consumos):
+            consumo = float(consumo) if consumo else 1.0
+            if custo_id in custos_operacionais:
+                custos_operacionais[custo_id].consumo = consumo
+            else:
+                db.session.add(ReferenciaCustoOperacional(
+                    referencia_id=id,
+                    custo_id=int(custo_id),
+                    consumo=consumo,
+                    preco_unitario=CustoOperacional.query.get(int(custo_id)).preco
+                ))
+
+        # **Mão de Obra**
+        mao_ids = request.form.getlist("mao_obra_id[]")
+        mao_consumos = request.form.getlist("mao_obra_consumo[]")
+        mao_producoes = request.form.getlist("mao_obra_producao[]")
+
+        for mao_id, consumo, producao in zip(mao_ids, mao_consumos, mao_producoes):
+            consumo = float(consumo) if consumo else 1.0
+            producao = float(producao) if producao else 1.0
+            if mao_id in mao_de_obra:
+                mao_de_obra[mao_id].consumo = consumo
+                mao_de_obra[mao_id].producao = producao
+            else:
+                db.session.add(ReferenciaMaoDeObra(
+                    referencia_id=id,
+                    mao_de_obra_id=int(mao_id),
+                    consumo=consumo,
+                    producao=producao,
+                    preco_unitario=MaoDeObra.query.get(int(mao_id)).diaria
+                ))
+
+        ### **🔹 Remover SOMENTE os itens que foram excluídos pelo usuário**
+        ids_atualizados = set(solado_ids + alca_ids + componente_ids + custo_ids + mao_ids)
+
+        for s in list(solados.values()):
+            if str(s.solado_id) not in ids_atualizados:
+                db.session.delete(s)
+        for a in list(alcas.values()):
+            if str(a.alca_id) not in ids_atualizados:
+                db.session.delete(a)
+        for c in list(componentes.values()):
+            if str(c.componente_id) not in ids_atualizados:
+                db.session.delete(c)
+        for co in list(custos_operacionais.values()):
+            if str(co.custo_id) not in ids_atualizados:
+                db.session.delete(co)
+        for m in list(mao_de_obra.values()):
+            if str(m.mao_de_obra_id) not in ids_atualizados:
+                db.session.delete(m)
+
+        ### **🔹 Atualizar totais**
+        referencia.calcular_totais()
 
         db.session.commit()
         flash("Referência atualizada com sucesso!", "success")
         return redirect(url_for('routes.listar_referencias'))
 
-    return render_template('editar_referencia.html', form=form, referencia=referencia)
+    return render_template(
+        'editar_referencia.html',
+        form=form,
+        referencia=referencia,
+        solados=solados.values(),
+        alcas=alcas.values(),
+        componentes=componentes.values(),
+        custos_operacionais=custos_operacionais.values(),
+        mao_de_obra=mao_de_obra.values(),
+        solados_disponiveis=solados_disponiveis,
+        alcas_disponiveis=alcas_disponiveis,
+        componentes_disponiveis=componentes_disponiveis,
+        custos_disponiveis=custos_disponiveis,
+        mao_de_obra_disponiveis=mao_de_obra_disponiveis
+    )
 
 
-@bp.route('/referencia/<int:referencia_id>/excluir', methods=['POST'])
-def excluir_referencia(referencia_id):
+
+
+@bp.route('/referencia/excluir/<int:id>', methods=['POST'])
+def excluir_referencia(id):
     """Exclui uma referência."""
-    referencia = Referencia.query.get_or_404(referencia_id)
+    referencia = Referencia.query.get_or_404(id)
     
     # 🔹 Excluir os relacionamentos primeiro
     ReferenciaSolado.query.filter_by(referencia_id=referencia.id).delete()
@@ -300,9 +412,14 @@ def excluir_colecao(id):
 
 
         #COMPONENTES OK
-@bp.route('/componentes')
+
+@bp.route('/componentes', methods=['GET'])
 def listar_componentes():
-    componentes = Componente.query.all()
+    filtro = request.args.get('filtro', '')
+    if filtro:
+        componentes = Componente.query.filter(Componente.descricao.ilike(f"{filtro}%")).all()
+    else:
+        componentes = Componente.query.all()
     return render_template('componentes.html', componentes=componentes)
 
 
@@ -546,8 +663,6 @@ def listar_solados():
     filtro = request.args.get('filtro', '')
 
     if filtro:
-        solados = Solado.query.all()  # Retorna todos os solados
-    elif filtro:
         solados = Solado.query.filter(Solado.referencia.ilike(f"{filtro}%")).all()
     else:
         solados = Solado.query.all()
@@ -805,8 +920,6 @@ def listar_alcas():
     filtro = request.args.get('filtro', '')
 
     if filtro:
-        alcas = Alca.query.all()  # Retorna todas as alcas
-    elif filtro:
         alcas = Alca.query.filter(Alca.referencia.ilike(f"{filtro}%")).all()
     else:
         alcas = Alca.query.all()

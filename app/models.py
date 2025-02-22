@@ -12,19 +12,29 @@ class Referencia(db.Model):
     imagem = db.Column(db.String(200))
     linha = db.Column(db.String(50), nullable=True)
 
-    # Novos totais
+    # Totais calculados
     total_solado = db.Column(db.Numeric(10,4), default=Decimal(0))
     total_alcas = db.Column(db.Numeric(10,4), default=Decimal(0))
     total_componentes = db.Column(db.Numeric(10,4), default=Decimal(0))
     total_operacional = db.Column(db.Numeric(10,4), default=Decimal(0))
     total_mao_de_obra = db.Column(db.Numeric(10,4), default=Decimal(0))
-    
+
+    # 🔹 Relacionamentos com os componentes da referência
+    solados = db.relationship("ReferenciaSolado", backref="referencia", lazy=True)
+    alcas = db.relationship("ReferenciaAlca", backref="referencia", lazy=True)
+    componentes = db.relationship("ReferenciaComponentes", backref="referencia", lazy=True)
+    custos_operacionais = db.relationship("ReferenciaCustoOperacional", backref="referencia", lazy=True)
+    mao_de_obra = db.relationship("ReferenciaMaoDeObra", backref="referencia", lazy=True)
+
     def calcular_totais(self):
-        self.total_solado = sum(solado.preco_unitario for solado in self.solados)
-        self.total_alcas = sum(alca.preco_unitario for alca in self.alcas)
-        self.total_componentes = sum(componente.preco_unitario for componente in self.componentes)
-        self.total_operacional = sum(custo.preco_unitario for custo in self.custos_operacionais)
-        self.total_mao_de_obra = sum(mao_obra.preco_unitario for mao_obra in self.mao_de_obra)
+        """ Calcula os valores totais da referência """
+        self.total_solado = sum(solado.custo_total for solado in self.solados)
+        self.total_alcas = sum(alca.custo_total for alca in self.alcas)
+        self.total_componentes = sum(componente.custo_total for componente in self.componentes)
+        self.total_operacional = sum(custo.custo_total for custo in self.custos_operacionais)
+        self.total_mao_de_obra = sum(mao.custo_total for mao in self.mao_de_obra)
+
+
     
 
 class ReferenciaSolado(db.Model):

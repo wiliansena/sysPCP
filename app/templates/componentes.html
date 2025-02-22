@@ -2,7 +2,19 @@
 
 {% block content %}
     <h2>Componentes</h2>
-    <a href="{{ url_for('routes.novo_componente') }}" class="btn btn-primary">Novo Componente</a>
+    <a href="{{ url_for('routes.novo_componente') }}" class="btn btn-success mb-3">Novo Componente</a>
+    <hr>
+
+        <!-- 🔎 Campo de busca -->
+        <div class="row mb-3">
+            <div class="col-md-4"> <!-- Define um tamanho menor para o campo -->
+                <form method="GET" action="{{ url_for('routes.listar_componentes') }}" class="d-flex">
+                    <input type="text" name="filtro" class="form-control form-control-sm" placeholder="Buscar Descrição"
+                        value="{{ request.args.get('filtro', '') }}">
+                    <button type="submit" class="btn btn-primary btn-sm ms-2">Buscar</button>
+                </form>
+            </div>
+        </div>
 
     <table class="table table-striped mt-3">
         <thead>
