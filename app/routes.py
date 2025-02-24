@@ -41,7 +41,7 @@ def home():
 def listar_referencias():
     filtro = request.args.get('filtro', '')
     if filtro:
-        referencias = Referencia.query.filter(Referencia.codigo_referencia.ilike(f"{filtro}%")).all()
+        referencias = Referencia.query.filter(Referencia.codigo_referencia.ilike(f"%{filtro}%")).all()
     else:
         referencias = Referencia.query.all()
     return render_template('referencias.html', referencias=referencias)
@@ -501,7 +501,7 @@ def excluir_colecao(id):
 def listar_componentes():
     filtro = request.args.get('filtro', '')
     if filtro:
-        componentes = Componente.query.filter(Componente.descricao.ilike(f"{filtro}%")).all()
+        componentes = Componente.query.filter(Componente.descricao.ilike(f"%{filtro}%")).all()
     else:
         componentes = Componente.query.all()
     return render_template('componentes.html', componentes=componentes)
@@ -747,7 +747,7 @@ def listar_solados():
     filtro = request.args.get('filtro', '')
 
     if filtro:
-        solados = Solado.query.filter(Solado.referencia.ilike(f"{filtro}%")).all()
+        solados = Solado.query.filter(Solado.referencia.ilike(f"%{filtro}%")).all()
     else:
         solados = Solado.query.all()
 
@@ -1065,7 +1065,7 @@ def listar_alcas():
     filtro = request.args.get('filtro', '')
 
     if filtro:
-        alcas = Alca.query.filter(Alca.referencia.ilike(f"{filtro}%")).all()
+        alcas = Alca.query.filter(Alca.referencia.ilike(f"%{filtro}%")).all()
     else:
         alcas = Alca.query.all()
 

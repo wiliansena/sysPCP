@@ -2,6 +2,8 @@
 
 {% block content %}
 <div class="container mt-4">
+    <a href="{{ url_for('routes.listar_solados') }}" class="btn btn-secondary">Sair</a>
+    <hr>
     <h2>Ficha Técnica do Solado</h2>
 
     <div class="form-group">
@@ -66,14 +68,14 @@
             </tr>
         </tbody>
     </table>
-    
+
     <h4>Formulação do Solado (Sem Friso)</h4>
     <table class="table table-bordered">
         <thead>
             <tr>
                 <th>Código</th>
                 <th>Descrição</th>
-                <th>Preço</th>  <!-- 🟢 Nova coluna -->
+                <th>Preço</th> <!-- 🟢 Nova coluna -->
                 <th>Carga (Kg)</th>
                 <th>Porcentagem (%)</th>
                 <th>Pares por Carga</th>
@@ -96,8 +98,7 @@
             {% endfor %}
         </tbody>
     </table>
-    
-    <h4><strong>Custo Total Sola Sem Friso: R$ {{ "%.2f"|format(preco_total) }}</strong></h4>
+
 
     {% if solado.formulacao_friso %}
     <h4>Formulação do Solado (Com Friso)</h4>
@@ -106,7 +107,7 @@
             <tr>
                 <th>Código</th>
                 <th>Descrição</th>
-                <th>Preço</th>  <!-- 🟢 Nova coluna -->
+                <th>Preço</th> <!-- 🟢 Nova coluna -->
                 <th>Carga (Kg)</th>
                 <th>Porcentagem (%)</th>
                 <th>Pares por Carga</th>
@@ -129,21 +130,19 @@
             {% endfor %}
         </tbody>
     </table>
-    <h4><strong>Custo Total Sola Com Friso: R$ {{ "%.2f"|format(preco_total_friso) }}</strong></h4>
-{% else %}
-    <h4>Formulação do Solado (Com Friso)</h4>
-    <p class="text-danger"><strong>⚠️ Nenhum componente foi adicionado à formulação com friso.</strong></p>
-{% endif %}
+    {% endif %}
 
-<h4><strong>Custo Total da Sola Sem Friso: R$ {{ "%.2f"|format(preco_total) }}</strong></h4>
-<h4><strong>Custo Total da Sola Com Friso: R$ {{ "%.2f"|format(preco_total_friso) }}</strong></h4>
 
+<h4><strong>SEM FRISO - TOTAL: R$ {{ "%.2f"|format(preco_total) }}</strong></h4>
+<h4><strong>COM FRISO - TOTAL: R$ {{ "%.2f"|format(preco_total_friso) }}</strong></h4>
 <h3 class="text-primary"><strong>CUSTO TOTAL DA SOLA: R$ {{ "%.2f"|format(custo_total) }}</strong></h3>
-
+<hr>
+    <a href="{{ url_for('routes.listar_solados') }}" class="btn btn-secondary">Sair</a>
+    <a href="{{ url_for('routes.editar_solado', id=solado.id) }}" class="btn btn-warning btn-sm">Editar</a>    
     <button class="btn btn-primary" onclick="window.print()">
         <i class="fa fa-print"></i> Imprimir
     </button>
-    <a href="{{ url_for('routes.listar_solados') }}" class="btn btn-secondary">Sair</a>    
-
+<hr>
+<br>
 </div>
 {% endblock %}

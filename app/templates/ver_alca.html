@@ -2,7 +2,11 @@
 
 {% block content %}
 <div class="container mt-4">
+    
+    <a href="{{ url_for('routes.listar_alcas') }}" class="btn btn-secondary">Sair</a> 
+    <hr>
     <h2>Ficha Técnica da Alça</h2>
+    
 
     <div class="form-group">
         <label><b>Referência:</b></label>
@@ -83,9 +87,11 @@
 
     <h4><strong>Custo Total da Alça: R$ {{ "%.2f"|format(preco_total) }}</strong></h4>
 
+    <a href="{{ url_for('routes.listar_alcas') }}" class="btn btn-secondary">Sair</a> 
+    <a href="{{ url_for('routes.editar_alca', id=alca.id) }}" class="btn btn-warning btn-sm">Editar</a>
     <button class="btn btn-primary" onclick="window.print()">
         <i class="fa fa-print"></i> Imprimir
     </button>
-    <a href="{{ url_for('routes.listar_alcas') }}" class="btn btn-secondary">Sair</a>    
+       
 </div>
 {% endblock %}

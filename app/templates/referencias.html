@@ -42,7 +42,7 @@
                                 Sem imagem
                             {% endif %}
                         </td>
-                        <td>{{ referencia.custo_total }}</td>
+                        <td><strong>{{ referencia.custo_total }}</strong></td>
                         <td>
                             <a href="{{ url_for('routes.ver_referencia', id=referencia.id) }}" class="btn btn-info btn-sm">Ver</a>
                             <a href="{{ url_for('routes.editar_referencia', id=referencia.id) }}" class="btn btn-warning btn-sm">Editar</a>
