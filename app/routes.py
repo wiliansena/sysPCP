@@ -61,7 +61,7 @@ def parse_float(value, default=0):
 def nova_referencia():
     form = ReferenciaForm()
 
-    # 🔹 Recupera os dados do banco corretamente
+    # Recupera os dados para os modais
     solados = Solado.query.all()
     alcas = Alca.query.all()
     componentes = Componente.query.all()
@@ -74,75 +74,82 @@ def nova_referencia():
             descricao=form.descricao.data,
             linha=form.linha.data,
             imagem=form.imagem.data.filename if form.imagem.data else None,
-            
-            # 🔹 Correção: Convertendo `Decimal` para `float`
-            total_solado= sum(float(consumo) * float(Solado.query.get(int(solado_id)).custo_total)
-                              for solado_id, consumo in zip(request.form.getlist("solado_id[]"), request.form.getlist("solado_consumo[]")) if consumo),
-
-            total_alcas= sum(float(consumo) * float(Alca.query.get(int(alca_id)).preco_total)
-                             for alca_id, consumo in zip(request.form.getlist("alca_id[]"), request.form.getlist("alca_consumo[]")) if consumo),
-
-            total_componentes= sum(float(consumo) * float(Componente.query.get(int(componente_id)).preco)
-                                   for componente_id, consumo in zip(request.form.getlist("componente_id[]"), request.form.getlist("componente_consumo[]")) if consumo),
-
-            total_operacional= sum(float(consumo) * float(CustoOperacional.query.get(int(custo_id)).preco)
-                                   for custo_id, consumo in zip(request.form.getlist("custo_id[]"), request.form.getlist("custo_consumo[]")) if consumo),
-
-            total_mao_de_obra= sum(float(consumo) * float(MaoDeObra.query.get(int(mao_obra_id)).diaria)
-                                   for mao_obra_id, consumo in zip(request.form.getlist("mao_obra_id[]"), request.form.getlist("mao_obra_consumo[]")) if consumo),
         )
 
-        # Salvar imagem
+        # Salvar imagem se houver
         if form.imagem.data:
             imagem_filename = secure_filename(form.imagem.data.filename)
-            caminho_imagem = os.path.join("static/uploads", imagem_filename)
+            caminho_imagem = os.path.join(current_app.config['UPLOAD_FOLDER'], imagem_filename)
             form.imagem.data.save(caminho_imagem)
             referencia.imagem = imagem_filename
 
         db.session.add(referencia)
-        db.session.flush()  # Captura o ID antes de inserir os relacionamentos
+        db.session.flush()  # Garante que referencia.id esteja definido
 
-        # Associar os itens corretamente
-        for solado_id, consumo in zip(request.form.getlist("solado_id[]"), request.form.getlist("solado_consumo[]")):
+        # Associa os Solados
+        for solado_id, consumo in zip(
+                request.form.getlist("solado_id[]"),
+                request.form.getlist("solado_consumo[]")
+        ):
             db.session.add(ReferenciaSolado(
                 referencia_id=referencia.id,
                 solado_id=int(solado_id),
-                consumo=float(consumo) if consumo else 0,
-                preco_unitario=float(Solado.query.get(int(solado_id)).custo_total)
+                consumo=consumo if consumo else 0,
+                preco_unitario=Solado.query.get(int(solado_id)).custo_total
             ))
 
-        for alca_id, consumo in zip(request.form.getlist("alca_id[]"), request.form.getlist("alca_consumo[]")):
+        # Associa as Alças
+        for alca_id, consumo in zip(
+                request.form.getlist("alca_id[]"),
+                request.form.getlist("alca_consumo[]")
+        ):
             db.session.add(ReferenciaAlca(
                 referencia_id=referencia.id,
                 alca_id=int(alca_id),
-                consumo=float(consumo) if consumo else 0,
-                preco_unitario=float(Alca.query.get(int(alca_id)).preco_total)
+                consumo=consumo if consumo else 0,
+                preco_unitario=Alca.query.get(int(alca_id)).preco_total
             ))
 
-        for componente_id, consumo in zip(request.form.getlist("componente_id[]"), request.form.getlist("componente_consumo[]")):
+        # Associa os Componentes
+        for componente_id, consumo in zip(
+                request.form.getlist("componente_id[]"),
+                request.form.getlist("componente_consumo[]")
+        ):
             db.session.add(ReferenciaComponentes(
                 referencia_id=referencia.id,
                 componente_id=int(componente_id),
-                consumo=float(consumo) if consumo else 0,
-                preco_unitario=float(Componente.query.get(int(componente_id)).preco)
+                consumo=consumo if consumo else 0,
+                preco_unitario=Componente.query.get(int(componente_id)).preco
             ))
 
-        for custo_id, consumo in zip(request.form.getlist("custo_id[]"), request.form.getlist("custo_consumo[]")):
+        # Associa os Custos Operacionais
+        for custo_id, consumo in zip(
+                request.form.getlist("custo_id[]"),
+                request.form.getlist("custo_consumo[]")
+        ):
             db.session.add(ReferenciaCustoOperacional(
                 referencia_id=referencia.id,
                 custo_id=int(custo_id),
-                consumo=float(consumo) if consumo else 0,
-                preco_unitario=float(CustoOperacional.query.get(int(custo_id)).preco)
+                consumo=consumo if consumo else 0,
+                preco_unitario=CustoOperacional.query.get(int(custo_id)).preco
             ))
 
-        for mao_obra_id, consumo, producao in zip(request.form.getlist("mao_obra_id[]"), request.form.getlist("mao_obra_consumo[]"), request.form.getlist("mao_obra_producao[]")):
+        # Associa a Mão de Obra
+        for mao_obra_id, consumo, producao in zip(
+                request.form.getlist("mao_obra_id[]"),
+                request.form.getlist("mao_obra_consumo[]"),
+                request.form.getlist("mao_obra_producao[]")
+        ):
             db.session.add(ReferenciaMaoDeObra(
                 referencia_id=referencia.id,
                 mao_de_obra_id=int(mao_obra_id),
-                consumo=float(consumo) if consumo else 0,
-                producao=float(producao) if producao else 1,
-                preco_unitario=float(MaoDeObra.query.get(int(mao_obra_id)).diaria)
+                consumo=consumo if consumo else 0,
+                producao=producao if producao else 1,
+                preco_unitario=MaoDeObra.query.get(int(mao_obra_id)).diaria
             ))
+        
+        # Recalcular os totais (o método do modelo já faz as conversões necessárias)
+        referencia.calcular_totais()
 
         db.session.commit()
         flash("Referência cadastrada com sucesso!", "success")
@@ -157,7 +164,6 @@ def nova_referencia():
         custos_operacionais=custos_operacionais,
         mao_de_obra=mao_de_obra
     )
-
 
 
 @bp.route('/referencia/ver/<int:id>', methods=['GET'])
@@ -184,160 +190,155 @@ def ver_referencia(id):
         mao_de_obra=mao_de_obra
     )
 
+from flask import render_template, request, redirect, url_for, flash
+from app import db
+from app.models import Referencia, ReferenciaSolado, ReferenciaAlca, ReferenciaComponentes, ReferenciaCustoOperacional, ReferenciaMaoDeObra, Solado, Alca, Componente, CustoOperacional, MaoDeObra
+from app.forms import ReferenciaForm
+import os
+from werkzeug.utils import secure_filename
+
 @bp.route('/referencia/editar/<int:id>', methods=['GET', 'POST'])
 def editar_referencia(id):
-    """Edita uma referência existente mantendo os itens e permitindo adicionar novos."""
-
+    """Edita uma referência existente permitindo adicionar, atualizar ou remover itens."""
     referencia = Referencia.query.get_or_404(id)
     form = ReferenciaForm(obj=referencia)
 
-    # 🔹 Recuperar os itens vinculados para exibição no template
-    solados = {str(s.solado_id): s for s in ReferenciaSolado.query.filter_by(referencia_id=id).all()}
-    alcas = {str(a.alca_id): a for a in ReferenciaAlca.query.filter_by(referencia_id=id).all()}
-    componentes = {str(c.componente_id): c for c in ReferenciaComponentes.query.filter_by(referencia_id=id).all()}
-    custos_operacionais = {str(co.custo_id): co for co in ReferenciaCustoOperacional.query.filter_by(referencia_id=id).all()}
-    mao_de_obra = {str(m.mao_de_obra_id): m for m in ReferenciaMaoDeObra.query.filter_by(referencia_id=id).all()}
-
-    # 🔹 Recuperar todos os itens disponíveis nos modais
-    solados_disponiveis = Solado.query.all()
-    alcas_disponiveis = Alca.query.all()
-    componentes_disponiveis = Componente.query.all()
-    custos_disponiveis = CustoOperacional.query.all()
-    mao_de_obra_disponiveis = MaoDeObra.query.all()
+    # Recupera os itens já associados à referência
+    solados = ReferenciaSolado.query.filter_by(referencia_id=id).all()
+    alcas = ReferenciaAlca.query.filter_by(referencia_id=id).all()
+    componentes = ReferenciaComponentes.query.filter_by(referencia_id=id).all()
+    custos_operacionais = ReferenciaCustoOperacional.query.filter_by(referencia_id=id).all()
+    mao_de_obra = ReferenciaMaoDeObra.query.filter_by(referencia_id=id).all()
 
     if form.validate_on_submit():
         referencia.codigo_referencia = form.codigo_referencia.data
         referencia.descricao = form.descricao.data
         referencia.linha = form.linha.data
 
-        # Se houver uma nova imagem, salva
+        # Atualiza a imagem se enviada
         if form.imagem.data:
             imagem_filename = secure_filename(form.imagem.data.filename)
-            caminho_imagem = os.path.join("static/uploads", imagem_filename)
+            caminho_imagem = os.path.join(current_app.config['UPLOAD_FOLDER'], imagem_filename)
             form.imagem.data.save(caminho_imagem)
             referencia.imagem = imagem_filename
 
-        ### **🔹 Atualizar SOMENTE os itens modificados e adicionar novos**
-
-        # **Solados**
-        solado_ids = request.form.getlist("solado_id[]")
+        # ===== Atualização dos SOLADOS =====
+        solado_ids_post = request.form.getlist("solado_id[]")
         solado_consumos = request.form.getlist("solado_consumo[]")
-
-        for solado_id, consumo in zip(solado_ids, solado_consumos):
-            consumo = float(consumo) if consumo else 1.0  # Evita remover itens se não for informado consumo
-            if solado_id in solados:
-                solados[solado_id].consumo = consumo  # Atualiza consumo
+        for s in solados:
+            if str(s.solado_id) not in solado_ids_post:
+                db.session.delete(s)
+        solados_existentes = {str(s.solado_id): s for s in solados}
+        for solado_id, consumo in zip(solado_ids_post, solado_consumos):
+            # Se já existe, atualiza; caso contrário, adiciona novo item
+            if solado_id in solados_existentes:
+                solados_existentes[solado_id].consumo = consumo if consumo else 1
             else:
                 db.session.add(ReferenciaSolado(
                     referencia_id=id,
                     solado_id=int(solado_id),
-                    consumo=consumo,
+                    consumo=consumo if consumo else 1,
                     preco_unitario=Solado.query.get(int(solado_id)).custo_total
                 ))
 
-        # **Alças**
-        alca_ids = request.form.getlist("alca_id[]")
+        # ===== Atualização das ALÇAS =====
+        alca_ids_post = request.form.getlist("alca_id[]")
         alca_consumos = request.form.getlist("alca_consumo[]")
-
-        for alca_id, consumo in zip(alca_ids, alca_consumos):
-            consumo = float(consumo) if consumo else 1.0
-            if alca_id in alcas:
-                alcas[alca_id].consumo = consumo
+        for a in alcas:
+            if str(a.alca_id) not in alca_ids_post:
+                db.session.delete(a)
+        alcas_existentes = {str(a.alca_id): a for a in alcas}
+        for alca_id, consumo in zip(alca_ids_post, alca_consumos):
+            if alca_id in alcas_existentes:
+                alcas_existentes[alca_id].consumo = consumo if consumo else 1
             else:
                 db.session.add(ReferenciaAlca(
                     referencia_id=id,
                     alca_id=int(alca_id),
-                    consumo=consumo,
+                    consumo=consumo if consumo else 1,
                     preco_unitario=Alca.query.get(int(alca_id)).preco_total
                 ))
 
-        # **Componentes**
-        componente_ids = request.form.getlist("componente_id[]")
+        # ===== Atualização dos COMPONENTES =====
+        componente_ids_post = request.form.getlist("componente_id[]")
         componente_consumos = request.form.getlist("componente_consumo[]")
-
-        for componente_id, consumo in zip(componente_ids, componente_consumos):
-            consumo = float(consumo) if consumo else 1.0
-            if componente_id in componentes:
-                componentes[componente_id].consumo = consumo
+        for comp in componentes:
+            if str(comp.componente_id) not in componente_ids_post:
+                db.session.delete(comp)
+        componentes_existentes = {str(c.componente_id): c for c in componentes}
+        for comp_id, consumo in zip(componente_ids_post, componente_consumos):
+            if comp_id in componentes_existentes:
+                componentes_existentes[comp_id].consumo = consumo if consumo else 1
             else:
                 db.session.add(ReferenciaComponentes(
                     referencia_id=id,
-                    componente_id=int(componente_id),
-                    consumo=consumo,
-                    preco_unitario=Componente.query.get(int(componente_id)).preco
+                    componente_id=int(comp_id),
+                    consumo=consumo if consumo else 1,
+                    preco_unitario=Componente.query.get(int(comp_id)).preco
                 ))
 
-        # **Custos Operacionais**
-        custo_ids = request.form.getlist("custo_id[]")
+        # ===== Atualização dos CUSTOS OPERACIONAIS =====
+        custo_ids_post = request.form.getlist("custo_id[]")
         custo_consumos = request.form.getlist("custo_consumo[]")
-
-        for custo_id, consumo in zip(custo_ids, custo_consumos):
-            consumo = float(consumo) if consumo else 1.0
-            if custo_id in custos_operacionais:
-                custos_operacionais[custo_id].consumo = consumo
+        for c in custos_operacionais:
+            if str(c.custo_id) not in custo_ids_post:
+                db.session.delete(c)
+        custos_existentes = {str(co.custo_id): co for co in custos_operacionais}
+        for custo_id, consumo in zip(custo_ids_post, custo_consumos):
+            if custo_id in custos_existentes:
+                custos_existentes[custo_id].consumo = consumo if consumo else 1
             else:
                 db.session.add(ReferenciaCustoOperacional(
                     referencia_id=id,
                     custo_id=int(custo_id),
-                    consumo=consumo,
+                    consumo=consumo if consumo else 1,
                     preco_unitario=CustoOperacional.query.get(int(custo_id)).preco
                 ))
 
-        # **Mão de Obra**
-        mao_ids = request.form.getlist("mao_obra_id[]")
+        # ===== Atualização da MÃO DE OBRA =====
+        mao_ids_post = request.form.getlist("mao_obra_id[]")
         mao_consumos = request.form.getlist("mao_obra_consumo[]")
         mao_producoes = request.form.getlist("mao_obra_producao[]")
-
-        for mao_id, consumo, producao in zip(mao_ids, mao_consumos, mao_producoes):
-            consumo = float(consumo) if consumo else 1.0
-            producao = float(producao) if producao else 1.0
-            if mao_id in mao_de_obra:
-                mao_de_obra[mao_id].consumo = consumo
-                mao_de_obra[mao_id].producao = producao
+        for m in mao_de_obra:
+            if str(m.mao_de_obra_id) not in mao_ids_post:
+                db.session.delete(m)
+        mao_existentes = {str(m.mao_de_obra_id): m for m in mao_de_obra}
+        for mao_id, consumo, producao in zip(mao_ids_post, mao_consumos, mao_producoes):
+            if mao_id in mao_existentes:
+                mao_existentes[mao_id].consumo = consumo if consumo else 1
+                mao_existentes[mao_id].producao = producao if producao else 1
             else:
                 db.session.add(ReferenciaMaoDeObra(
                     referencia_id=id,
                     mao_de_obra_id=int(mao_id),
-                    consumo=consumo,
-                    producao=producao,
+                    consumo=consumo if consumo else 0,
+                    producao=producao if producao else 1,
                     preco_unitario=MaoDeObra.query.get(int(mao_id)).diaria
                 ))
-
-        ### **🔹 Remover SOMENTE os itens que foram excluídos pelo usuário**
-        ids_atualizados = set(solado_ids + alca_ids + componente_ids + custo_ids + mao_ids)
-
-        for s in list(solados.values()):
-            if str(s.solado_id) not in ids_atualizados:
-                db.session.delete(s)
-        for a in list(alcas.values()):
-            if str(a.alca_id) not in ids_atualizados:
-                db.session.delete(a)
-        for c in list(componentes.values()):
-            if str(c.componente_id) not in ids_atualizados:
-                db.session.delete(c)
-        for co in list(custos_operacionais.values()):
-            if str(co.custo_id) not in ids_atualizados:
-                db.session.delete(co)
-        for m in list(mao_de_obra.values()):
-            if str(m.mao_de_obra_id) not in ids_atualizados:
-                db.session.delete(m)
-
-        ### **🔹 Atualizar totais**
+        
+        # Recalcular todos os totais, incluindo o custo_total
         referencia.calcular_totais()
 
         db.session.commit()
         flash("Referência atualizada com sucesso!", "success")
         return redirect(url_for('routes.listar_referencias'))
 
+    # Recupera os dados para os modais
+    solados_disponiveis = Solado.query.all()
+    alcas_disponiveis = Alca.query.all()
+    componentes_disponiveis = Componente.query.all()
+    custos_disponiveis = CustoOperacional.query.all()
+    mao_de_obra_disponiveis = MaoDeObra.query.all()
+
     return render_template(
         'editar_referencia.html',
         form=form,
         referencia=referencia,
-        solados=solados.values(),
-        alcas=alcas.values(),
-        componentes=componentes.values(),
-        custos_operacionais=custos_operacionais.values(),
-        mao_de_obra=mao_de_obra.values(),
+        solados=solados,
+        alcas=alcas,
+        componentes=componentes,
+        custos_operacionais=custos_operacionais,
+        mao_de_obra=mao_de_obra,
         solados_disponiveis=solados_disponiveis,
         alcas_disponiveis=alcas_disponiveis,
         componentes_disponiveis=componentes_disponiveis,
@@ -345,6 +346,89 @@ def editar_referencia(id):
         mao_de_obra_disponiveis=mao_de_obra_disponiveis
     )
 
+
+import random, string
+
+import random, string
+
+@bp.route('/referencia/copiar/<int:id>', methods=['GET'])
+def copiar_referencia(id):
+    # Recupera a referência original ou retorna 404 se não existir
+    referencia = Referencia.query.get_or_404(id)
+    
+    # Obter prefixo do código original, limitado a 7 caracteres
+    prefix = referencia.codigo_referencia[:7]
+    
+    # Gerar uma string aleatória de 6 caracteres (letras maiúsculas e dígitos)
+    random_string = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+    
+    # Montar o código temporário no formato: "ORIG-COPIA-RANDOM"
+    codigo_temporario = f"{prefix}-COPIA-{random_string}"
+    
+    # Cria a nova referência usando o código temporário
+    nova_referencia = Referencia(
+        codigo_referencia=codigo_temporario,
+        descricao=referencia.descricao,
+        linha=referencia.linha,
+        imagem=referencia.imagem
+    )
+    db.session.add(nova_referencia)
+    db.session.flush()  # Garante que nova_referencia.id seja definido antes de criar as relações
+
+    # Copia os Solados
+    for solado in referencia.solados:
+        nova_solado = ReferenciaSolado(
+            referencia_id=nova_referencia.id,
+            solado_id=solado.solado_id,
+            consumo=solado.consumo,
+            preco_unitario=solado.preco_unitario
+        )
+        db.session.add(nova_solado)
+
+    # Copia as Alças
+    for alca in referencia.alcas:
+        nova_alca = ReferenciaAlca(
+            referencia_id=nova_referencia.id,
+            alca_id=alca.alca_id,
+            consumo=alca.consumo,
+            preco_unitario=alca.preco_unitario
+        )
+        db.session.add(nova_alca)
+
+    # Copia os Componentes
+    for comp in referencia.componentes:
+        novo_componente = ReferenciaComponentes(
+            referencia_id=nova_referencia.id,
+            componente_id=comp.componente_id,
+            consumo=comp.consumo,
+            preco_unitario=comp.preco_unitario
+        )
+        db.session.add(novo_componente)
+
+    # Copia os Custos Operacionais
+    for custo in referencia.custos_operacionais:
+        novo_custo = ReferenciaCustoOperacional(
+            referencia_id=nova_referencia.id,
+            custo_id=custo.custo_id,
+            consumo=custo.consumo,
+            preco_unitario=custo.preco_unitario
+        )
+        db.session.add(novo_custo)
+
+    # Copia a Mão de Obra
+    for mao in referencia.mao_de_obra:
+        nova_mao = ReferenciaMaoDeObra(
+            referencia_id=nova_referencia.id,
+            mao_de_obra_id=mao.mao_de_obra_id,
+            consumo=mao.consumo,
+            producao=mao.producao,
+            preco_unitario=mao.preco_unitario
+        )
+        db.session.add(nova_mao)
+
+    db.session.commit()
+    flash("Referência copiada com sucesso! Lembre-se de atualizar o código e ajustar os itens conforme necessário.", "success")
+    return redirect(url_for('routes.editar_referencia', id=nova_referencia.id))
 
 
 
@@ -882,6 +966,67 @@ def editar_solado(id):
 
     return render_template('editar_solado.html', form=form, solado=solado, componentes=componentes)
 
+import random, string
+from flask import redirect, url_for, flash
+from werkzeug.utils import secure_filename
+
+@bp.route('/solado/copiar/<int:id>', methods=['GET'])
+def copiar_solado(id):
+    # Recupera o solado original ou retorna 404 se não existir
+    solado = Solado.query.get_or_404(id)
+    
+    # Gera o código temporário baseado no campo "referencia"
+    # Usa os primeiros 7 caracteres do código original ou "SOLADO" se estiver vazio
+    prefix = solado.referencia[:7] if solado.referencia else "SOLADO"
+    random_string = ''.join(random.choices(string.ascii_lowercase, k=6))
+    codigo_temporario = f"{prefix}-cópia-{random_string}"
+    
+    # Cria a nova instância de Solado com o código temporário e os demais dados copiados
+    nova_solado = Solado(
+        referencia=codigo_temporario,
+        descricao=solado.descricao,
+        imagem=solado.imagem
+    )
+    db.session.add(nova_solado)
+    db.session.flush()  # Garante que nova_solado.id esteja definido para os relacionamentos
+
+    # Copia os Tamanhos (consulta Tamanho onde solado_id == solado.id)
+    tamanhos = Tamanho.query.filter_by(solado_id=solado.id).all()
+    for tamanho in tamanhos:
+        novo_tamanho = Tamanho(
+            solado_id=nova_solado.id,
+            nome=tamanho.nome,
+            quantidade=tamanho.quantidade,
+            peso_medio=tamanho.peso_medio,
+            peso_friso=tamanho.peso_friso,
+            peso_sem_friso=tamanho.peso_sem_friso
+        )
+        db.session.add(novo_tamanho)
+
+    # Copia a formulação SEM friso (consulta FormulacaoSolado onde solado_id == solado.id)
+    formulacoes_sem_friso = FormulacaoSolado.query.filter_by(solado_id=solado.id).all()
+    for formulacao in formulacoes_sem_friso:
+        nova_formulacao = FormulacaoSolado(
+            solado_id=nova_solado.id,
+            componente_id=formulacao.componente_id,
+            carga=formulacao.carga
+        )
+        db.session.add(nova_formulacao)
+
+    # Copia a formulação COM friso (consulta FormulacaoSoladoFriso onde solado_id == solado.id)
+    formulacoes_com_friso = FormulacaoSoladoFriso.query.filter_by(solado_id=solado.id).all()
+    for formulacao_friso in formulacoes_com_friso:
+        nova_formulacao_friso = FormulacaoSoladoFriso(
+            solado_id=nova_solado.id,
+            componente_id=formulacao_friso.componente_id,
+            carga=formulacao_friso.carga
+        )
+        db.session.add(nova_formulacao_friso)
+
+    db.session.commit()
+    flash("Solado copiado com sucesso! Atualize o código e os demais dados conforme necessário.", "success")
+    return redirect(url_for('routes.editar_solado', id=nova_solado.id))
+
 
 @bp.route('/solado/excluir/<int:id>', methods=['POST'])
 def excluir_solado(id):
@@ -1038,6 +1183,56 @@ def editar_alca(id):
         return redirect(url_for('routes.listar_alcas'))
 
     return render_template('editar_alca.html', form=form, alca=alca, componentes=componentes)
+
+
+import random, string
+from flask import redirect, url_for, flash
+from werkzeug.utils import secure_filename
+
+@bp.route('/alca/copiar/<int:id>', methods=['GET'])
+def copiar_alca(id):
+    # Recupera a alça original ou retorna 404 se não existir
+    alca = Alca.query.get_or_404(id)
+    
+    # Gera o código temporário baseado no campo "referencia" da alça
+    # Se alca.referencia estiver definido, usa os primeiros 7 caracteres; caso contrário, usa "ALCA"
+    prefix = alca.referencia[:7] if alca.referencia else "ALCA"
+    random_string = ''.join(random.choices(string.ascii_lowercase, k=6))
+    codigo_temporario = f"{prefix}-cópia-{random_string}"
+    
+    # Cria a nova instância de Alca com o código temporário e demais dados copiados
+    nova_alca = Alca(
+        referencia=codigo_temporario,
+        descricao=alca.descricao,
+        imagem=alca.imagem
+        # Adicione outros campos se necessário
+    )
+    db.session.add(nova_alca)
+    db.session.flush()  # Garante que nova_alca.id seja definido para os relacionamentos
+
+    # Copia os tamanhos da alça (assumindo que alca.tamanhos é uma lista de objetos TamanhoAlca)
+    for tamanho in alca.tamanhos:
+        novo_tamanho = TamanhoAlca(
+            alca_id=nova_alca.id,
+            nome=tamanho.nome,
+            quantidade=tamanho.quantidade,
+            peso_medio=tamanho.peso_medio
+        )
+        db.session.add(novo_tamanho)
+
+    # Copia a formulação da alça (assumindo que alca.formulacao é uma lista de objetos FormulacaoAlca)
+    for formulacao in alca.formulacao:
+        nova_formulacao = FormulacaoAlca(
+            alca_id=nova_alca.id,
+            componente_id=formulacao.componente_id,
+            carga=formulacao.carga
+        )
+        db.session.add(nova_formulacao)
+
+    db.session.commit()
+    flash("Alça copiada com sucesso! Atualize o código e os demais dados conforme necessário.", "success")
+    return redirect(url_for('routes.editar_alca', id=nova_alca.id))
+
 
 @bp.route('/alca/ver/<int:id>', methods=['GET'])
 def ver_alca(id):

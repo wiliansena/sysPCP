@@ -18,7 +18,14 @@ class ComponenteForm(FlaskForm):
     codigo = StringField('Código', validators=[DataRequired()])
     tipo = SelectField('Tipo', choices=[('PINTURA/SERIGRAFIA', 'PINTURA/SERIGRAFIA'),
                                         ('ENFEITE E ADEREÇOS', 'ENFEITE E ADEREÇOS'),
-                                        ('EMBALAGENS', 'EMBALAGENS')], validators=[DataRequired()])
+                                        ('EMBALAGENS', 'EMBALAGENS'),
+                                        ('QUIMICOS', 'QUIMICOS'),
+                                        ('CADARÇOS', 'CADARÇOS'),
+                                        ('CAIXA', 'CAIXA'),
+                                        ('BOTÕES-PINOS-REBITE', 'BOTÕES-PINOS-REBITE'),
+                                        ('EMBALAGENS', 'EMBALAGENS'),
+                                        ('INFORMATICA', 'INFORMATICA'),
+                                        ('ESCRITORIO', 'ESCRITORIO')], validators=[DataRequired()])
     descricao = StringField('Descrição', validators=[DataRequired()])
     unidade_medida = SelectField('Unidade de Medida', choices=[('KQ', 'KQ'), ('L', 'L'), ('M', 'M'), ('UND', 'UND')], validators=[DataRequired()])
     preco = FloatField('Preço', validators=[DataRequired()])

@@ -2,7 +2,7 @@ from decimal import Decimal
 from sqlalchemy.orm import relationship
 from app import db
 from decimal import Decimal, ROUND_HALF_UP, ROUND_CEILING
-from sqlalchemy.ext.hybrid import hybrid_property
+
 
 
 class Referencia(db.Model):
@@ -12,14 +12,16 @@ class Referencia(db.Model):
     imagem = db.Column(db.String(200))
     linha = db.Column(db.String(50), nullable=True)
 
-    # Totais calculados
+    # Totais calculados individuais
     total_solado = db.Column(db.Numeric(10,4), default=Decimal(0))
     total_alcas = db.Column(db.Numeric(10,4), default=Decimal(0))
     total_componentes = db.Column(db.Numeric(10,4), default=Decimal(0))
     total_operacional = db.Column(db.Numeric(10,4), default=Decimal(0))
     total_mao_de_obra = db.Column(db.Numeric(10,4), default=Decimal(0))
+    # Novo campo: custo_total (soma de todos os totais)
+    custo_total = db.Column(db.Numeric(10,4), default=Decimal(0))
 
-    # 🔹 Relacionamentos com os componentes da referência
+    # Relacionamentos com os itens da referência
     solados = db.relationship("ReferenciaSolado", backref="referencia", lazy=True)
     alcas = db.relationship("ReferenciaAlca", backref="referencia", lazy=True)
     componentes = db.relationship("ReferenciaComponentes", backref="referencia", lazy=True)
@@ -27,12 +29,18 @@ class Referencia(db.Model):
     mao_de_obra = db.relationship("ReferenciaMaoDeObra", backref="referencia", lazy=True)
 
     def calcular_totais(self):
-        """ Calcula os valores totais da referência """
+        """Calcula os totais individuais e o custo_total (soma de todos)."""
         self.total_solado = sum(solado.custo_total for solado in self.solados)
         self.total_alcas = sum(alca.custo_total for alca in self.alcas)
         self.total_componentes = sum(componente.custo_total for componente in self.componentes)
         self.total_operacional = sum(custo.custo_total for custo in self.custos_operacionais)
         self.total_mao_de_obra = sum(mao.custo_total for mao in self.mao_de_obra)
+        self.custo_total = (self.total_solado +
+                            self.total_alcas +
+                            self.total_componentes +
+                            self.total_operacional +
+                            self.total_mao_de_obra)
+
 
 
     
@@ -48,8 +56,11 @@ class ReferenciaSolado(db.Model):
 
     @property
     def custo_total(self):
-        """Calcula o custo total do solado baseado no consumo"""
-        return self.consumo * self.solado.custo_total
+        """Calcula o custo total do solado baseado no consumo, convertendo os valores para Decimal."""
+        consumo_decimal = Decimal(self.consumo)
+        # Se self.solado.custo_total já for Decimal, esta conversão é redundante; caso contrário, garante a consistência.
+        custo_solado = Decimal(self.solado.custo_total)
+        return consumo_decimal * custo_solado
 
 class ReferenciaAlca(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -63,7 +74,9 @@ class ReferenciaAlca(db.Model):
     @property
     def custo_total(self):
         """Calcula o custo total da alça baseado no consumo"""
-        return self.consumo * self.alca.preco_total
+        consumo_decimal = Decimal(self.consumo)
+        custo_alca = Decimal(self.alca.preco_total)
+        return consumo_decimal * custo_alca
 
 class ReferenciaComponentes(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -77,7 +90,9 @@ class ReferenciaComponentes(db.Model):
     @property
     def custo_total(self):
         """Calcula o custo total dos componentes baseado no consumo"""
-        return self.consumo * self.componente.preco
+        consumo_decimal = Decimal(self.consumo)
+        custo_componente = Decimal(self.componente.preco)
+        return consumo_decimal * custo_componente
 
 class ReferenciaCustoOperacional(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -91,7 +106,9 @@ class ReferenciaCustoOperacional(db.Model):
     @property
     def custo_total(self):
         """Calcula o custo total dos custos operacionais baseado no consumo"""
-        return self.consumo * self.custo.preco
+        consumo_decimal = Decimal(self.consumo)
+        custo = Decimal(self.custo.preco)
+        return consumo_decimal * custo
 
 class ReferenciaMaoDeObra(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -105,8 +122,12 @@ class ReferenciaMaoDeObra(db.Model):
 
     @property
     def custo_total(self):
-        """Calcula o custo total da mão de obra baseado no consumo e produção"""
-        return (self.consumo * self.mao_de_obra.diaria) / (self.producao if self.producao > 0 else 1)
+        """Calcula o custo total da mão de obra baseado no consumo e produção, utilizando Decimal."""
+        consumo_decimal = Decimal(self.consumo)
+        producao_decimal = Decimal(self.producao)
+        diaria = Decimal(self.mao_de_obra.diaria)
+        divisor = producao_decimal if producao_decimal > Decimal(0) else Decimal(1)
+        return (consumo_decimal * diaria) / divisor
 
 
 

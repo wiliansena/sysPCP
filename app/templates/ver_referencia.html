@@ -31,8 +31,8 @@
                 <td>{{ solado.solado.id }}</td>
                 <td>{{ solado.solado.descricao }}</td>
                 <td>{{ solado.consumo }}</td>
-                <td>R$ {{ "%.2f"|format(solado.solado.custo_total) }}</td>
-                <td>R$ {{ "%.2f"|format(solado.custo_total) }}</td>
+                <td>R$ {{ "%.6f"|format(solado.solado.custo_total) }}</td>
+                <td>R$ {{ "%.6f"|format(solado.custo_total) }}</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -56,8 +56,8 @@
                 <td>{{ alca.alca.id }}</td>
                 <td>{{ alca.alca.descricao }}</td>
                 <td>{{ alca.consumo }}</td>
-                <td>R$ {{ "%.2f"|format(alca.alca.preco_total) }}</td>
-                <td>R$ {{ "%.2f"|format(alca.custo_total) }}</td>
+                <td>R$ {{ "%.6f"|format(alca.alca.preco_total) }}</td>
+                <td>R$ {{ "%.6f"|format(alca.custo_total) }}</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -81,8 +81,8 @@
                 <td>{{ componente.componente.id }}</td>
                 <td>{{ componente.componente.descricao }}</td>
                 <td>{{ componente.consumo }}</td>
-                <td>R$ {{ "%.2f"|format(componente.componente.preco) }}</td>
-                <td>R$ {{ "%.2f"|format(componente.custo_total) }}</td>
+                <td>R$ {{ "%.6f"|format(componente.componente.preco) }}</td>
+                <td>R$ {{ "%.6f"|format(componente.custo_total) }}</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -106,8 +106,8 @@
                 <td>{{ custo.custo.id }}</td>
                 <td>{{ custo.custo.descricao }}</td>
                 <td>{{ custo.consumo }}</td>
-                <td>R$ {{ "%.2f"|format(custo.custo.preco) }}</td>
-                <td>R$ {{ "%.2f"|format(custo.custo_total) }}</td>
+                <td>R$ {{ "%.6f"|format(custo.custo.preco) }}</td>
+                <td>R$ {{ "%.6f"|format(custo.custo_total) }}</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -133,8 +133,8 @@
                 <td>{{ mao.mao_de_obra.descricao }}</td>
                 <td>{{ mao.consumo }}</td>
                 <td>{{ mao.producao }}</td>
-                <td>R$ {{ "%.2f"|format(mao.mao_de_obra.diaria) }}</td>
-                <td>R$ {{ "%.2f"|format(mao.custo_total) }}</td>
+                <td>R$ {{ "%.6f"|format(mao.mao_de_obra.diaria) }}</td>
+                <td>R$ {{ "%.6f"|format(mao.custo_total) }}</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -152,27 +152,32 @@
         <tbody>
             <tr>
                 <td>Solado</td>
-                <td>R$ {{ "%.2f"|format(referencia.total_solado) }}</td>
+                <td>R$ {{ "%.6f"|format(referencia.total_solado) }}</td>
             </tr>
             <tr>
                 <td>Alças</td>
-                <td>R$ {{ "%.2f"|format(referencia.total_alcas) }}</td>
+                <td>R$ {{ "%.6f"|format(referencia.total_alcas) }}</td>
             </tr>
             <tr>
                 <td>Componentes</td>
-                <td>R$ {{ "%.2f"|format(referencia.total_componentes) }}</td>
+                <td>R$ {{ "%.6f"|format(referencia.total_componentes) }}</td>
             </tr>
             <tr>
                 <td>Custos Operacionais</td>
-                <td>R$ {{ "%.2f"|format(referencia.total_operacional) }}</td>
+                <td>R$ {{ "%.6f"|format(referencia.total_operacional) }}</td>
             </tr>
             <tr>
                 <td>Mão de Obra</td>
-                <td>R$ {{ "%.2f"|format(referencia.total_mao_de_obra) }}</td>
+                <td>R$ {{ "%.6f"|format(referencia.total_mao_de_obra) }}</td>
+            </tr>
+            <tr class="table-dark">
+                <td>Custo total</td>
+                <td>R$ {{ "%.6f"|format(referencia.custo_total) }}</td>
             </tr>
         </tbody>
     </table>
 
     <a href="{{ url_for('routes.listar_referencias') }}" class="btn btn-secondary">Voltar</a>
+    <a href="{{ url_for('routes.editar_referencia', id=referencia.id) }}" class="btn btn-warning btn-sm">Editar</a>
 </div>
 {% endblock %}
