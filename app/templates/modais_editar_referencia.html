@@ -30,9 +30,8 @@
                             <td>R$ {{ "%.6f"|format(solado.custo_total) }}</td>
                             <td>
                                 <button type="button" class="btn btn-success btn-sm selecionar-solado"
-                                    data-id="{{ solado.id }}" 
-                                    data-descricao="{{ solado.descricao }}"
-                                    data-preco="{{ "%.2f"|format(solado.custo_total) }}">
+                                    data-id="{{ solado.id }}" data-descricao="{{ solado.descricao }}" data-preco="{{ "
+                                    %.2f"|format(solado.custo_total) }}">
                                     Selecionar
                                 </button>
                             </td>
@@ -77,9 +76,8 @@
                             <td>R$ {{ "%.6f"|format(alca.preco_total) }}</td>
                             <td>
                                 <button type="button" class="btn btn-success btn-sm selecionar-alca"
-                                    data-id="{{ alca.id }}" 
-                                    data-descricao="{{ alca.descricao }}"
-                                    data-preco="{{ "%.2f"|format(alca.preco_total) }}">
+                                    data-id="{{ alca.id }}" data-descricao="{{ alca.descricao }}" data-preco="{{ "
+                                    %.2f"|format(alca.preco_total) }}">
                                     Selecionar
                                 </button>
                             </td>
@@ -124,11 +122,151 @@
                             <td>R$ {{ "%.6f"|format(componente.preco) }}</td>
                             <td>
                                 <button type="button" class="btn btn-success btn-sm selecionar-componente"
-                                    data-id="{{ componente.id }}" 
-                                    data-descricao="{{ componente.descricao }}"
-                                    data-preco="{{ "%.2f"|format(componente.preco) }}">
+                                    data-id="{{ componente.id }}" data-descricao="{{ componente.descricao }}"
+                                    data-preco="{{ " %.2f"|format(componente.preco) }}">
                                     Selecionar
                                 </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para selecionar Embalagem 1 -->
+<div class="modal fade" id="modalEmbalagem1" tabindex="-1" aria-labelledby="modalEmbalagem1Label" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Selecionar Embalagem 1</h5>
+                <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <input type="text" id="filterEmbalagem1" class="form-control" placeholder="Filtrar Embalagem 1">
+                </div>
+                <table class="table" id="embalagem1Table">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Descrição</th>
+                            <th>Preço</th>
+                            <th>Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in componentes_disponiveis %}
+                        <tr>
+                            <td>{{ item.id }}</td>
+                            <td>{{ item.descricao }}</td>
+                            <td>R$ {{ "%.6f"|format(item.preco) }}</td>
+                            <td>
+                                <button type="button" class="btn btn-success btn-sm selecionar-embalagem"
+                                data-id="{{ item.id }}" 
+                                data-descricao="{{ item.descricao }}"
+                                data-preco="{{ "%.2f"|format(item.preco) }}"
+                                data-tipo="embalagem1">
+                                Selecionar
+                            </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para selecionar Embalagem 2 -->
+<div class="modal fade" id="modalEmbalagem2" tabindex="-1" aria-labelledby="modalEmbalagem2Label" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Selecionar Embalagem 2</h5>
+                <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <input type="text" id="filterEmbalagem2" class="form-control" placeholder="Filtrar Embalagem 2">
+                </div>
+                <table class="table" id="embalagem2Table">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Descrição</th>
+                            <th>Preço</th>
+                            <th>Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in componentes_disponiveis %}
+                        <tr>
+                            <td>{{ item.id }}</td>
+                            <td>{{ item.descricao }}</td>
+                            <td>R$ {{ "%.6f"|format(item.preco) }}</td>
+                            <td>
+                                <button type="button" class="btn btn-success btn-sm selecionar-embalagem"
+                                data-id="{{ item.id }}" 
+                                data-descricao="{{ item.descricao }}"
+                                data-preco="{{ "%.2f"|format(item.preco) }}"
+                                data-tipo="embalagem2">
+                                Selecionar
+                            </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para selecionar Embalagem 3 -->
+<div class="modal fade" id="modalEmbalagem3" tabindex="-1" aria-labelledby="modalEmbalagem3Label" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Selecionar Embalagem 3</h5>
+                <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <input type="text" id="filterEmbalagem3" class="form-control" placeholder="Filtrar Embalagem 3">
+                </div>
+                <table class="table" id="embalagem3Table">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Descrição</th>
+                            <th>Preço</th>
+                            <th>Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in componentes_disponiveis %}
+                        <tr>
+                            <td>{{ item.id }}</td>
+                            <td>{{ item.descricao }}</td>
+                            <td>R$ {{ "%.6f"|format(item.preco) }}</td>
+                            <td>
+                                <button type="button" class="btn btn-success btn-sm selecionar-embalagem"
+                                data-id="{{ item.id }}" 
+                                data-descricao="{{ item.descricao }}"
+                                data-preco="{{ "%.2f"|format(item.preco) }}"
+                                data-tipo="embalagem3">
+                                Selecionar
+                            </button>
                             </td>
                         </tr>
                         {% endfor %}
@@ -171,9 +309,8 @@
                             <td>R$ {{ "%.6f"|format(custo.preco) }}</td>
                             <td>
                                 <button type="button" class="btn btn-success btn-sm selecionar-custo"
-                                    data-id="{{ custo.id }}" 
-                                    data-descricao="{{ custo.descricao }}"
-                                    data-preco="{{ "%.2f"|format(custo.preco) }}">
+                                    data-id="{{ custo.id }}" data-descricao="{{ custo.descricao }}" data-preco="{{ "
+                                    %.2f"|format(custo.preco) }}">
                                     Selecionar
                                 </button>
                             </td>
@@ -218,9 +355,8 @@
                             <td>R$ {{ "%.2f"|format(mao.diaria) }}</td>
                             <td>
                                 <button type="button" class="btn btn-success btn-sm selecionar-mao"
-                                    data-id="{{ mao.id }}" 
-                                    data-descricao="{{ mao.descricao }}"
-                                    data-diaria="{{ "%.2f"|format(mao.diaria) }}">
+                                    data-id="{{ mao.id }}" data-descricao="{{ mao.descricao }}" data-diaria="{{ "
+                                    %.2f"|format(mao.diaria) }}">
                                     Selecionar
                                 </button>
                             </td>
@@ -235,29 +371,29 @@
 
 <!-- Script para filtrar todas as tabelas -->
 <script>
-function setupFilter(filterId, tableId) {
-    const filterInput = document.getElementById(filterId);
-    if (filterInput) {
-        filterInput.addEventListener('keyup', function() {
-            let filtro = this.value.toUpperCase();
-            let rows = document.querySelectorAll('#' + tableId + ' tbody tr');
-            rows.forEach(row => {
-                // Busca nos dados das duas primeiras colunas (ajuste se necessário)
-                let col1 = row.querySelector('td:nth-child(1)').textContent.toUpperCase();
-                let col2 = row.querySelector('td:nth-child(2)').textContent.toUpperCase();
-                if (col1.indexOf(filtro) > -1 || col2.indexOf(filtro) > -1) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
-                }
+    function setupFilter(filterId, tableId) {
+        const filterInput = document.getElementById(filterId);
+        if (filterInput) {
+            filterInput.addEventListener('keyup', function () {
+                let filtro = this.value.toUpperCase();
+                let rows = document.querySelectorAll('#' + tableId + ' tbody tr');
+                rows.forEach(row => {
+                    // Busca nos dados das duas primeiras colunas (ajuste se necessário)
+                    let col1 = row.querySelector('td:nth-child(1)').textContent.toUpperCase();
+                    let col2 = row.querySelector('td:nth-child(2)').textContent.toUpperCase();
+                    if (col1.indexOf(filtro) > -1 || col2.indexOf(filtro) > -1) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
             });
-        });
+        }
     }
-}
 
-setupFilter('filterSolado', 'soladoTable');
-setupFilter('filterAlca', 'alcaTable');
-setupFilter('filterComponentes', 'componentesTable');
-setupFilter('filterCustos', 'custosTable');
-setupFilter('filterMaoObra', 'maoObraTable');
+    setupFilter('filterSolado', 'soladoTable');
+    setupFilter('filterAlca', 'alcaTable');
+    setupFilter('filterComponentes', 'componentesTable');
+    setupFilter('filterCustos', 'custosTable');
+    setupFilter('filterMaoObra', 'maoObraTable');
 </script>

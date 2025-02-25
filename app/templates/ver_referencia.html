@@ -42,9 +42,9 @@
             <tr>
                 <th>Código</th>
                 <th>Descrição</th>
-                <th>Consumo</th>
                 <th>Preço Unitário</th>
-                <th>Total</th>
+                <th>Consumo</th> 
+                <th><strong>Total</strong></th>
             </tr>
         </thead>
         <tbody>
@@ -52,8 +52,8 @@
             <tr>
                 <td>{{ solado.solado.id }}</td>
                 <td>{{ solado.solado.descricao }}</td>
-                <td>{{ solado.consumo }}</td>
                 <td>R$ {{ "%.6f"|format(solado.solado.custo_total) }}</td>
+                <td>{{ solado.consumo }}</td>
                 <td>R$ {{ "%.6f"|format(solado.custo_total) }}</td>
             </tr>
             {% endfor %}
@@ -64,12 +64,12 @@
     <h4>Alças</h4>
     <table class="table table-bordered">
         <thead>
-            <tr>
+            <tr> 
                 <th>Código</th>
                 <th>Descrição</th>
-                <th>Consumo</th>
                 <th>Preço Unitário</th>
-                <th>Total</th>
+                <th>Consumo</th>
+                <th><strong>Total</strong></th>
             </tr>
         </thead>
         <tbody>
@@ -77,8 +77,8 @@
             <tr>
                 <td>{{ alca.alca.id }}</td>
                 <td>{{ alca.alca.descricao }}</td>
-                <td>{{ alca.consumo }}</td>
                 <td>R$ {{ "%.6f"|format(alca.alca.preco_total) }}</td>
+                <td>{{ alca.consumo }}</td>
                 <td>R$ {{ "%.6f"|format(alca.custo_total) }}</td>
             </tr>
             {% endfor %}
@@ -92,9 +92,9 @@
             <tr>
                 <th>Código</th>
                 <th>Descrição</th>
-                <th>Consumo</th>
                 <th>Preço Unitário</th>
-                <th>Total</th>
+                <th>Consumo</th>
+                <th><strong>Total</strong></th>
             </tr>
         </thead>
         <tbody>
@@ -102,8 +102,8 @@
             <tr>
                 <td>{{ componente.componente.id }}</td>
                 <td>{{ componente.componente.descricao }}</td>
-                <td>{{ componente.consumo }}</td>
                 <td>R$ {{ "%.6f"|format(componente.componente.preco) }}</td>
+                <td>{{ componente.consumo }}</td>
                 <td>R$ {{ "%.6f"|format(componente.custo_total) }}</td>
             </tr>
             {% endfor %}
@@ -118,6 +118,7 @@
                 <th>Descrição</th>
                 <th>Preço</th>
                 <th>Consumo</th>
+                <th><strong>Total</strong></th>
             </tr>
         </thead>
         <tbody>
@@ -125,8 +126,9 @@
             <tr>
                 <td>{{ item.componente.id }}</td>
                 <td>{{ item.componente.descricao }}</td>
-                <td>R$ {{ "%.2f"|format(item.preco_unitario) }}</td>
+                <td>R$ {{ "%.6f"|format(item.preco_unitario) }}</td>
                 <td>{{ item.consumo }}</td>
+                <td>R$ {{ "%.6f"|format(item.custo_total) }}</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -140,6 +142,7 @@
                 <th>Descrição</th>
                 <th>Preço</th>
                 <th>Consumo</th>
+                <th><strong>Total</strong></th>
             </tr>
         </thead>
         <tbody>
@@ -147,8 +150,9 @@
             <tr>
                 <td>{{ item.componente.id }}</td>
                 <td>{{ item.componente.descricao }}</td>
-                <td>R$ {{ "%.2f"|format(item.preco_unitario) }}</td>
+                <td>R$ {{ "%.6f"|format(item.preco_unitario) }}</td>
                 <td>{{ item.consumo }}</td>
+                <td>R$ {{ "%.6f"|format(item.custo_total) }}</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -162,6 +166,7 @@
                 <th>Descrição</th>
                 <th>Preço</th>
                 <th>Consumo</th>
+                <th><strong>Total</strong></th>
             </tr>
         </thead>
         <tbody>
@@ -169,8 +174,10 @@
             <tr>
                 <td>{{ item.componente.id }}</td>
                 <td>{{ item.componente.descricao }}</td>
-                <td>R$ {{ "%.2f"|format(item.preco_unitario) }}</td>
+                <td>R$ {{ "%.6f"|format(item.preco_unitario) }}</td>
                 <td>{{ item.consumo }}</td>
+                <td>R$ {{ "%.6f"|format(item.custo_total) }}</td>
+                
             </tr>
             {% endfor %}
         </tbody>
@@ -183,9 +190,9 @@
             <tr>
                 <th>Código</th>
                 <th>Descrição</th>
-                <th>Consumo</th>
                 <th>Preço Unitário</th>
-                <th>Total</th>
+                <th>Consumo</th>
+                <th><strong>Total</strong></th>
             </tr>
         </thead>
         <tbody>
@@ -193,8 +200,8 @@
             <tr>
                 <td>{{ custo.custo.id }}</td>
                 <td>{{ custo.custo.descricao }}</td>
-                <td>{{ custo.consumo }}</td>
                 <td>R$ {{ "%.6f"|format(custo.custo.preco) }}</td>
+                <td>{{ custo.consumo }}</td>
                 <td>R$ {{ "%.6f"|format(custo.custo_total) }}</td>
             </tr>
             {% endfor %}
@@ -208,10 +215,11 @@
             <tr>
                 <th>Código</th>
                 <th>Descrição</th>
+                <th>Diária</th>
                 <th>Consumo</th>
                 <th>Produção</th>
-                <th>Preço Unitário</th>
-                <th>Total</th>
+                
+                <th><strong>Total</strong></th>
             </tr>
         </thead>
         <tbody>
@@ -219,9 +227,9 @@
             <tr>
                 <td>{{ mao.mao_de_obra.id }}</td>
                 <td>{{ mao.mao_de_obra.descricao }}</td>
+                <td>R$ {{ "%.6f"|format(mao.mao_de_obra.diaria) }}</td>
                 <td>{{ mao.consumo }}</td>
                 <td>{{ mao.producao }}</td>
-                <td>R$ {{ "%.6f"|format(mao.mao_de_obra.diaria) }}</td>
                 <td>R$ {{ "%.6f"|format(mao.custo_total) }}</td>
             </tr>
             {% endfor %}

@@ -139,6 +139,90 @@
             </tbody>
         </table>
 
+        <!-- Embalagem 1 -->
+        <h4>Embalagem 1</h4>
+        <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalEmbalagem1">
+            Adicionar Embalagem 1
+        </button>
+        <table class="table table-bordered text-center" id="tabela-embalagem1">
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Descrição</th>
+                    <th>Preço</th>
+                    <th>Consumo</th>
+                    <th>Ação</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for embalagem in embalagem1 %}
+                <tr data-id="{{ embalagem.componente.id }}">
+                    <td><input type="hidden" name="embalagem1_id[]" value="{{ embalagem.componente.id }}">{{ embalagem.componente.id }}</td>
+                    <td>{{ embalagem.componente.descricao }}</td>
+                    <td>R$ {{ "%.2f"|format(embalagem.componente.preco) }}</td>
+                    <td><input type="number" name="embalagem1_consumo[]" value="{{ embalagem.consumo }}" class="form-control"></td>
+                    <td><button type="button" class="btn btn-danger btn-sm remover-item">Remover</button></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Embalagem 2 -->
+        <h4>Embalagem 2</h4>
+        <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalEmbalagem2">
+            Adicionar Embalagem 2
+        </button>
+        <table class="table table-bordered text-center" id="tabela-embalagem2">
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Descrição</th>
+                    <th>Preço</th>
+                    <th>Consumo</th>
+                    <th>Ação</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for embalagem in embalagem2 %}
+                <tr data-id="{{ embalagem.componente.id }}">
+                    <td><input type="hidden" name="embalagem2_id[]" value="{{ embalagem.componente.id }}">{{ embalagem.componente.id }}</td>
+                    <td>{{ embalagem.componente.descricao }}</td>
+                    <td>R$ {{ "%.2f"|format(embalagem.componente.preco) }}</td>
+                    <td><input type="number" name="embalagem2_consumo[]" value="{{ embalagem.consumo }}" class="form-control"></td>
+                    <td><button type="button" class="btn btn-danger btn-sm remover-item">Remover</button></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Embalagem 3 -->
+        <h4>Embalagem 3</h4>
+        <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalEmbalagem3">
+            Adicionar Embalagem 3
+        </button>
+        <table class="table table-bordered text-center" id="tabela-embalagem3">
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Descrição</th>
+                    <th>Preço</th>
+                    <th>Consumo</th>
+                    <th>Ação</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for embalagem in embalagem3 %}
+                <tr data-id="{{ embalagem.componente.id }}">
+                    <td><input type="hidden" name="embalagem3_id[]" value="{{ embalagem.componente.id }}">{{ embalagem.componente.id }}</td>
+                    <td>{{ embalagem.componente.descricao }}</td>
+                    <td>R$ {{ "%.2f"|format(embalagem.componente.preco) }}</td>
+                    <td><input type="number" name="embalagem3_consumo[]" value="{{ embalagem.consumo }}" class="form-control"></td>
+                    <td><button type="button" class="btn btn-danger btn-sm remover-item">Remover</button></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
         <!-- Custos Operacionais -->
         <h4>Custos Operacionais</h4>
         <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalCustos">

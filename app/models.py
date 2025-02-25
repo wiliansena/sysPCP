@@ -125,7 +125,10 @@ class ReferenciaEmbalagem1(db.Model):
 
     @property
     def custo_total(self):
-        return self.consumo * self.preco_unitario
+        """Calcula o custo total baseado no consumo e preço unitário"""
+        consumo_decimal = Decimal(self.consumo)  # 🔹 Converte para Decimal
+        custo_componente = Decimal(self.componente.preco)  # 🔹 Pega o preço do componente
+        return consumo_decimal * custo_componente
 
 class ReferenciaEmbalagem2(db.Model):
     __tablename__ = 'referencia_embalagem2'
@@ -139,7 +142,9 @@ class ReferenciaEmbalagem2(db.Model):
 
     @property
     def custo_total(self):
-        return self.consumo * self.preco_unitario
+        consumo_decimal = Decimal(self.consumo)
+        custo_componente = Decimal(self.componente.preco)
+        return consumo_decimal * custo_componente
 
 class ReferenciaEmbalagem3(db.Model):
     __tablename__ = 'referencia_embalagem3'
@@ -153,7 +158,9 @@ class ReferenciaEmbalagem3(db.Model):
 
     @property
     def custo_total(self):
-        return self.consumo * self.preco_unitario
+        consumo_decimal = Decimal(self.consumo)
+        custo_componente = Decimal(self.componente.preco)
+        return consumo_decimal * custo_componente
 
 
 

@@ -248,6 +248,9 @@ def editar_referencia(id):
     solados = ReferenciaSolado.query.filter_by(referencia_id=id).all()
     alcas = ReferenciaAlca.query.filter_by(referencia_id=id).all()
     componentes = ReferenciaComponentes.query.filter_by(referencia_id=id).all()
+    embalagem1 = ReferenciaEmbalagem1.query.filter_by(referencia_id=id).all()
+    embalagem2 = ReferenciaEmbalagem2.query.filter_by(referencia_id=id).all()
+    embalagem3 = ReferenciaEmbalagem3.query.filter_by(referencia_id=id).all()
     custos_operacionais = ReferenciaCustoOperacional.query.filter_by(referencia_id=id).all()
     mao_de_obra = ReferenciaMaoDeObra.query.filter_by(referencia_id=id).all()
 
@@ -263,97 +266,85 @@ def editar_referencia(id):
             form.imagem.data.save(caminho_imagem)
             referencia.imagem = imagem_filename
 
-        # ===== Atualização dos SOLADOS =====
-        solado_ids_post = request.form.getlist("solado_id[]")
-        solado_consumos = request.form.getlist("solado_consumo[]")
-        for s in solados:
-            if str(s.solado_id) not in solado_ids_post:
-                db.session.delete(s)
-        solados_existentes = {str(s.solado_id): s for s in solados}
-        for solado_id, consumo in zip(solado_ids_post, solado_consumos):
-            # Se já existe, atualiza; caso contrário, adiciona novo item
-            if solado_id in solados_existentes:
-                solados_existentes[solado_id].consumo = consumo if consumo else 1
-            else:
-                db.session.add(ReferenciaSolado(
-                    referencia_id=id,
-                    solado_id=int(solado_id),
-                    consumo=consumo if consumo else 1,
-                    preco_unitario=Solado.query.get(int(solado_id)).custo_total
-                ))
+        # 🔹 Função para atualização de embalagens
+        def atualizar_embalagem(modelo, nome_form):
+            itens_existentes = modelo.query.filter_by(referencia_id=id).all()
+            ids_post = request.form.getlist(f"{nome_form}_id[]")
+            consumos_post = request.form.getlist(f"{nome_form}_consumo[]")
 
-        # ===== Atualização das ALÇAS =====
-        alca_ids_post = request.form.getlist("alca_id[]")
-        alca_consumos = request.form.getlist("alca_consumo[]")
-        for a in alcas:
-            if str(a.alca_id) not in alca_ids_post:
-                db.session.delete(a)
-        alcas_existentes = {str(a.alca_id): a for a in alcas}
-        for alca_id, consumo in zip(alca_ids_post, alca_consumos):
-            if alca_id in alcas_existentes:
-                alcas_existentes[alca_id].consumo = consumo if consumo else 1
-            else:
-                db.session.add(ReferenciaAlca(
-                    referencia_id=id,
-                    alca_id=int(alca_id),
-                    consumo=consumo if consumo else 1,
-                    preco_unitario=Alca.query.get(int(alca_id)).preco_total
-                ))
+            for item in itens_existentes:
+                if str(item.componente_id) not in ids_post:
+                    db.session.delete(item)
 
-        # ===== Atualização dos COMPONENTES =====
-        componente_ids_post = request.form.getlist("componente_id[]")
-        componente_consumos = request.form.getlist("componente_consumo[]")
-        for comp in componentes:
-            if str(comp.componente_id) not in componente_ids_post:
-                db.session.delete(comp)
-        componentes_existentes = {str(c.componente_id): c for c in componentes}
-        for comp_id, consumo in zip(componente_ids_post, componente_consumos):
-            if comp_id in componentes_existentes:
-                componentes_existentes[comp_id].consumo = consumo if consumo else 1
-            else:
-                db.session.add(ReferenciaComponentes(
-                    referencia_id=id,
-                    componente_id=int(comp_id),
-                    consumo=consumo if consumo else 1,
-                    preco_unitario=Componente.query.get(int(comp_id)).preco
-                ))
+            itens_existentes_dict = {str(item.componente_id): item for item in itens_existentes}
 
-        # ===== Atualização dos CUSTOS OPERACIONAIS =====
-        custo_ids_post = request.form.getlist("custo_id[]")
-        custo_consumos = request.form.getlist("custo_consumo[]")
-        for c in custos_operacionais:
-            if str(c.custo_id) not in custo_ids_post:
-                db.session.delete(c)
-        custos_existentes = {str(co.custo_id): co for co in custos_operacionais}
-        for custo_id, consumo in zip(custo_ids_post, custo_consumos):
-            if custo_id in custos_existentes:
-                custos_existentes[custo_id].consumo = consumo if consumo else 1
-            else:
-                db.session.add(ReferenciaCustoOperacional(
-                    referencia_id=id,
-                    custo_id=int(custo_id),
-                    consumo=consumo if consumo else 1,
-                    preco_unitario=CustoOperacional.query.get(int(custo_id)).preco
-                ))
+            for componente_id, consumo in zip(ids_post, consumos_post):
+                consumo_decimal = Decimal(consumo) if consumo else Decimal(0)
+                if componente_id in itens_existentes_dict:
+                    itens_existentes_dict[componente_id].consumo = consumo_decimal
+                else:
+                    db.session.add(modelo(
+                        referencia_id=id,
+                        componente_id=int(componente_id),
+                        consumo=consumo_decimal,
+                        preco_unitario=Componente.query.get(int(componente_id)).preco
+                    ))
 
-        # ===== Atualização da MÃO DE OBRA =====
+        atualizar_embalagem(ReferenciaEmbalagem1, "embalagem1")
+        atualizar_embalagem(ReferenciaEmbalagem2, "embalagem2")
+        atualizar_embalagem(ReferenciaEmbalagem3, "embalagem3")
+
+        # 🔹 Função para atualização dos outros itens (Solado, Alça, Componente, Custo Operacional, Mão de Obra)
+        def atualizar_itens(modelo, nome_form, chave_id, chave_consumo, chave_preco):
+            itens_existentes = modelo.query.filter_by(referencia_id=id).all()
+            ids_post = request.form.getlist(f"{nome_form}_id[]")
+            consumos_post = request.form.getlist(f"{nome_form}_consumo[]")
+
+            for item in itens_existentes:
+                if str(getattr(item, chave_id)) not in ids_post:
+                    db.session.delete(item)
+
+            itens_existentes_dict = {str(getattr(item, chave_id)): item for item in itens_existentes}
+
+            for item_id, consumo in zip(ids_post, consumos_post):
+                consumo_decimal = Decimal(consumo) if consumo else Decimal(0)
+                if item_id in itens_existentes_dict:
+                    itens_existentes_dict[item_id].consumo = consumo_decimal
+                else:
+                    db.session.add(modelo(
+                        referencia_id=id,
+                        **{chave_id: int(item_id)},
+                        consumo=consumo_decimal,
+                        preco_unitario=getattr(modelo.query.get(int(item_id)), chave_preco)
+                    ))
+
+        atualizar_itens(ReferenciaSolado, "solado", "solado_id", "solado_consumo", "custo_total")
+        atualizar_itens(ReferenciaAlca, "alca", "alca_id", "alca_consumo", "preco_total")
+        atualizar_itens(ReferenciaComponentes, "componente", "componente_id", "componente_consumo", "preco")
+        atualizar_itens(ReferenciaCustoOperacional, "custo", "custo_id", "custo_consumo", "preco")
+
+        # 🔹 Atualização da MÃO DE OBRA
         mao_ids_post = request.form.getlist("mao_obra_id[]")
         mao_consumos = request.form.getlist("mao_obra_consumo[]")
         mao_producoes = request.form.getlist("mao_obra_producao[]")
+
         for m in mao_de_obra:
             if str(m.mao_de_obra_id) not in mao_ids_post:
                 db.session.delete(m)
+
         mao_existentes = {str(m.mao_de_obra_id): m for m in mao_de_obra}
         for mao_id, consumo, producao in zip(mao_ids_post, mao_consumos, mao_producoes):
+            consumo_decimal = Decimal(consumo) if consumo else Decimal(0)
+            producao_decimal = Decimal(producao) if producao else Decimal(1)
             if mao_id in mao_existentes:
-                mao_existentes[mao_id].consumo = consumo if consumo else 1
-                mao_existentes[mao_id].producao = producao if producao else 1
+                mao_existentes[mao_id].consumo = consumo_decimal
+                mao_existentes[mao_id].producao = producao_decimal
             else:
                 db.session.add(ReferenciaMaoDeObra(
                     referencia_id=id,
                     mao_de_obra_id=int(mao_id),
-                    consumo=consumo if consumo else 0,
-                    producao=producao if producao else 1,
+                    consumo=consumo_decimal,
+                    producao=producao_decimal,
                     preco_unitario=MaoDeObra.query.get(int(mao_id)).diaria
                 ))
         
@@ -378,6 +369,9 @@ def editar_referencia(id):
         solados=solados,
         alcas=alcas,
         componentes=componentes,
+        embalagem1=embalagem1,
+        embalagem2=embalagem2,
+        embalagem3=embalagem3,
         custos_operacionais=custos_operacionais,
         mao_de_obra=mao_de_obra,
         solados_disponiveis=solados_disponiveis,
@@ -416,7 +410,7 @@ def copiar_referencia(id):
     db.session.add(nova_referencia)
     db.session.flush()  # Garante que nova_referencia.id seja definido antes de criar as relações
 
-    # Copia os Solados
+    # 🔹 Copia os Solados
     for solado in referencia.solados:
         nova_solado = ReferenciaSolado(
             referencia_id=nova_referencia.id,
@@ -426,7 +420,7 @@ def copiar_referencia(id):
         )
         db.session.add(nova_solado)
 
-    # Copia as Alças
+    # 🔹 Copia as Alças
     for alca in referencia.alcas:
         nova_alca = ReferenciaAlca(
             referencia_id=nova_referencia.id,
@@ -436,7 +430,7 @@ def copiar_referencia(id):
         )
         db.session.add(nova_alca)
 
-    # Copia os Componentes
+    # 🔹 Copia os Componentes
     for comp in referencia.componentes:
         novo_componente = ReferenciaComponentes(
             referencia_id=nova_referencia.id,
@@ -446,7 +440,7 @@ def copiar_referencia(id):
         )
         db.session.add(novo_componente)
 
-    # Copia os Custos Operacionais
+    # 🔹 Copia os Custos Operacionais
     for custo in referencia.custos_operacionais:
         novo_custo = ReferenciaCustoOperacional(
             referencia_id=nova_referencia.id,
@@ -456,7 +450,7 @@ def copiar_referencia(id):
         )
         db.session.add(novo_custo)
 
-    # Copia a Mão de Obra
+    # 🔹 Copia a Mão de Obra
     for mao in referencia.mao_de_obra:
         nova_mao = ReferenciaMaoDeObra(
             referencia_id=nova_referencia.id,
@@ -467,6 +461,37 @@ def copiar_referencia(id):
         )
         db.session.add(nova_mao)
 
+    # 🔹 Copia a Embalagem 1
+    for embalagem in referencia.embalagem1:
+        nova_embalagem = ReferenciaEmbalagem1(
+            referencia_id=nova_referencia.id,
+            componente_id=embalagem.componente_id,
+            consumo=embalagem.consumo,
+            preco_unitario=embalagem.preco_unitario
+        )
+        db.session.add(nova_embalagem)
+
+    # 🔹 Copia a Embalagem 2
+    for embalagem in referencia.embalagem2:
+        nova_embalagem = ReferenciaEmbalagem2(
+            referencia_id=nova_referencia.id,
+            componente_id=embalagem.componente_id,
+            consumo=embalagem.consumo,
+            preco_unitario=embalagem.preco_unitario
+        )
+        db.session.add(nova_embalagem)
+
+    # 🔹 Copia a Embalagem 3
+    for embalagem in referencia.embalagem3:
+        nova_embalagem = ReferenciaEmbalagem3(
+            referencia_id=nova_referencia.id,
+            componente_id=embalagem.componente_id,
+            consumo=embalagem.consumo,
+            preco_unitario=embalagem.preco_unitario
+        )
+        db.session.add(nova_embalagem)
+
+    # 🔹 Confirma a cópia e redireciona para edição
     db.session.commit()
     flash("Referência copiada com sucesso! Lembre-se de atualizar o código e ajustar os itens conforme necessário.", "success")
     return redirect(url_for('routes.editar_referencia', id=nova_referencia.id))
