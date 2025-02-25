@@ -110,6 +110,72 @@
         </tbody>
     </table>
 
+    <h4>Embalagem 1</h4>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Código</th>
+                <th>Descrição</th>
+                <th>Preço</th>
+                <th>Consumo</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in embalagem1 %}
+            <tr>
+                <td>{{ item.componente.id }}</td>
+                <td>{{ item.componente.descricao }}</td>
+                <td>R$ {{ "%.2f"|format(item.preco_unitario) }}</td>
+                <td>{{ item.consumo }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h4>Embalagem 2</h4>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Código</th>
+                <th>Descrição</th>
+                <th>Preço</th>
+                <th>Consumo</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in embalagem2 %}
+            <tr>
+                <td>{{ item.componente.id }}</td>
+                <td>{{ item.componente.descricao }}</td>
+                <td>R$ {{ "%.2f"|format(item.preco_unitario) }}</td>
+                <td>{{ item.consumo }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h4>Embalagem 3</h4>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Código</th>
+                <th>Descrição</th>
+                <th>Preço</th>
+                <th>Consumo</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in embalagem3 %}
+            <tr>
+                <td>{{ item.componente.id }}</td>
+                <td>{{ item.componente.descricao }}</td>
+                <td>R$ {{ "%.2f"|format(item.preco_unitario) }}</td>
+                <td>{{ item.consumo }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
     <!-- Custos Operacionais -->
     <h4>Custos Operacionais</h4>
     <table class="table table-bordered">
@@ -192,11 +258,23 @@
                 <td>Mão de Obra</td>
                 <td>R$ {{ "%.6f"|format(referencia.total_mao_de_obra) }}</td>
             </tr>
-            <tr>
-                <td><strong>Custo total</strong></td>
-                <td><strong>R$ {{ "%.6f"|format(referencia.custo_total) }}</strongg></td>
-            </tr>
         </tbody>
+    </table>
+    
+    <h4>Totais Calculados</h4>
+    <table class="table table-bordered">
+        <tr>
+            <td>Total Embalagem 1:</td>
+            <td>R$ {{ "%.2f"|format(referencia.custo_total_embalagem1) }}</td>
+        </tr>
+        <tr>
+            <td>Total Embalagem 2:</td>
+            <td>R$ {{ "%.2f"|format(referencia.custo_total_embalagem2) }}</td>
+        </tr>
+        <tr>
+            <td>Total Embalagem 3:</td>
+            <td>R$ {{ "%.2f"|format(referencia.custo_total_embalagem3) }}</td>
+        </tr>
     </table>
 
     <a href="{{ url_for('routes.listar_referencias') }}" class="btn btn-secondary">Sair</a>

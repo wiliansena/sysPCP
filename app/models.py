@@ -16,34 +16,52 @@ class Referencia(db.Model):
     total_solado = db.Column(db.Numeric(10,4), default=Decimal(0))
     total_alcas = db.Column(db.Numeric(10,4), default=Decimal(0))
     total_componentes = db.Column(db.Numeric(10,4), default=Decimal(0))
+    total_embalagem1 = db.Column(db.Numeric(10,4), default=Decimal(0))
+    total_embalagem2 = db.Column(db.Numeric(10,4), default=Decimal(0))
+    total_embalagem3 = db.Column(db.Numeric(10,4), default=Decimal(0))
     total_operacional = db.Column(db.Numeric(10,4), default=Decimal(0))
     total_mao_de_obra = db.Column(db.Numeric(10,4), default=Decimal(0))
-    # Novo campo: custo_total (soma de todos os totais)
-    custo_total = db.Column(db.Numeric(10,4), default=Decimal(0))
+    
+    # 🔹 Custo total separado por embalagem
+    custo_total_embalagem1 = db.Column(db.Numeric(10,4), default=Decimal(0))
+    custo_total_embalagem2 = db.Column(db.Numeric(10,4), default=Decimal(0))
+    custo_total_embalagem3 = db.Column(db.Numeric(10,4), default=Decimal(0))
 
     # Relacionamentos com os itens da referência
-    solados = db.relationship("ReferenciaSolado", backref="referencia", lazy=True)
-    alcas = db.relationship("ReferenciaAlca", backref="referencia", lazy=True)
-    componentes = db.relationship("ReferenciaComponentes", backref="referencia", lazy=True)
-    custos_operacionais = db.relationship("ReferenciaCustoOperacional", backref="referencia", lazy=True)
-    mao_de_obra = db.relationship("ReferenciaMaoDeObra", backref="referencia", lazy=True)
+    solados = db.relationship("ReferenciaSolado", backref="referencia", lazy=True, cascade="all, delete-orphan")
+    alcas = db.relationship("ReferenciaAlca", backref="referencia", lazy=True, cascade="all, delete-orphan")
+    componentes = db.relationship("ReferenciaComponentes", backref="referencia", lazy=True, cascade="all, delete-orphan")
+    embalagem1 = db.relationship("ReferenciaEmbalagem1", backref="referencia", lazy=True, cascade="all, delete-orphan")
+    embalagem2 = db.relationship("ReferenciaEmbalagem2", backref="referencia", lazy=True, cascade="all, delete-orphan")
+    embalagem3 = db.relationship("ReferenciaEmbalagem3", backref="referencia", lazy=True, cascade="all, delete-orphan")
+    custos_operacionais = db.relationship("ReferenciaCustoOperacional", backref="referencia", lazy=True, cascade="all, delete-orphan")
+    mao_de_obra = db.relationship("ReferenciaMaoDeObra", backref="referencia", lazy=True, cascade="all, delete-orphan")
 
     def calcular_totais(self):
-        """Calcula os totais individuais e o custo_total (soma de todos)."""
+        """Calcula os totais individuais e os custos totais por embalagem."""
         self.total_solado = sum(solado.custo_total for solado in self.solados)
         self.total_alcas = sum(alca.custo_total for alca in self.alcas)
         self.total_componentes = sum(componente.custo_total for componente in self.componentes)
+        self.total_embalagem1 = sum(embalagem.custo_total for embalagem in self.embalagem1)
+        self.total_embalagem2 = sum(embalagem.custo_total for embalagem in self.embalagem2)
+        self.total_embalagem3 = sum(embalagem.custo_total for embalagem in self.embalagem3)
         self.total_operacional = sum(custo.custo_total for custo in self.custos_operacionais)
         self.total_mao_de_obra = sum(mao.custo_total for mao in self.mao_de_obra)
-        self.custo_total = (self.total_solado +
-                            self.total_alcas +
-                            self.total_componentes +
-                            self.total_operacional +
-                            self.total_mao_de_obra)
+
+        # 🔹 Cálculo do custo total para cada embalagem
+        self.custo_total_embalagem1 = (self.total_solado + self.total_alcas + self.total_componentes +
+                                       self.total_embalagem1 + self.total_operacional + self.total_mao_de_obra)
+
+        self.custo_total_embalagem2 = (self.total_solado + self.total_alcas + self.total_componentes +
+                                       self.total_embalagem2 + self.total_operacional + self.total_mao_de_obra)
+
+        self.custo_total_embalagem3 = (self.total_solado + self.total_alcas + self.total_componentes +
+                                       self.total_embalagem3 + self.total_operacional + self.total_mao_de_obra)
 
 
 
-    
+
+
 
 class ReferenciaSolado(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -93,6 +111,51 @@ class ReferenciaComponentes(db.Model):
         consumo_decimal = Decimal(self.consumo)
         custo_componente = Decimal(self.componente.preco)
         return consumo_decimal * custo_componente
+
+
+class ReferenciaEmbalagem1(db.Model):
+    __tablename__ = 'referencia_embalagem1'
+    id = db.Column(db.Integer, primary_key=True)
+    referencia_id = db.Column(db.Integer, db.ForeignKey('referencia.id'), nullable=False)
+    componente_id = db.Column(db.Integer, db.ForeignKey('componente.id'), nullable=False)
+    consumo = db.Column(db.Numeric(10,4), nullable=False)
+    preco_unitario = db.Column(db.Numeric(10,4), nullable=False)
+
+    componente = db.relationship("Componente")
+
+    @property
+    def custo_total(self):
+        return self.consumo * self.preco_unitario
+
+class ReferenciaEmbalagem2(db.Model):
+    __tablename__ = 'referencia_embalagem2'
+    id = db.Column(db.Integer, primary_key=True)
+    referencia_id = db.Column(db.Integer, db.ForeignKey('referencia.id'), nullable=False)
+    componente_id = db.Column(db.Integer, db.ForeignKey('componente.id'), nullable=False)
+    consumo = db.Column(db.Numeric(10,4), nullable=False)
+    preco_unitario = db.Column(db.Numeric(10,4), nullable=False)
+
+    componente = db.relationship("Componente")
+
+    @property
+    def custo_total(self):
+        return self.consumo * self.preco_unitario
+
+class ReferenciaEmbalagem3(db.Model):
+    __tablename__ = 'referencia_embalagem3'
+    id = db.Column(db.Integer, primary_key=True)
+    referencia_id = db.Column(db.Integer, db.ForeignKey('referencia.id'), nullable=False)
+    componente_id = db.Column(db.Integer, db.ForeignKey('componente.id'), nullable=False)
+    consumo = db.Column(db.Numeric(10,4), nullable=False)
+    preco_unitario = db.Column(db.Numeric(10,4), nullable=False)
+
+    componente = db.relationship("Componente")
+
+    @property
+    def custo_total(self):
+        return self.consumo * self.preco_unitario
+
+
 
 class ReferenciaCustoOperacional(db.Model):
     id = db.Column(db.Integer, primary_key=True)

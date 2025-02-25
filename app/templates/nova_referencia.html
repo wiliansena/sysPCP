@@ -44,13 +44,12 @@
                     <th>Descrição</th>
                     <th>Preço</th>
                     <th>Consumo</th>
-                    <th>Preço unitário</th>
                     <th>Ação</th>
                 </tr>
             </thead>
             <tbody></tbody>
         </table>
-        
+
         <h4> Alças </h4>
         <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalAlca">
             Adicionar Alça
@@ -62,7 +61,6 @@
                     <th>Descrição</th>
                     <th>Preço</th>
                     <th>Consumo</th>
-                    <th>Preço unitário</th>
                     <th>Ação</th>
                 </tr>
             </thead>
@@ -70,7 +68,8 @@
         </table>
 
         <h4>Componentes</h4>
-        <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalComponentes">
+        <button type="button" class="btn btn-success btn-sm selecionar-componente" data-bs-toggle="modal" data-bs-target="#modalComponentes"
+            data-tipo="componente">
             Adicionar Componente
         </button>
         <table class="table table-bordered" id="tabela-componente">
@@ -86,7 +85,61 @@
             </thead>
             <tbody></tbody>
         </table>
-        
+
+        <h4>Embalagem 1</h4>
+        <button type="button" class="btn btn-success btn-sm selecionar-embalagem1" data-bs-toggle="modal" data-bs-target="#modalEmbalagem1"
+            data-tipo="embalagem1">
+            Adicionar Componente
+        </button>
+        <table class="table" id="tabela-embalagem1">
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Descrição</th>
+                    <th>Preço</th>
+                    <th>Consumo</th>
+                    <th>Ação</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+        <h4>Embalagem 2</h4>
+        <button type="button" class="btn btn-success btn-sm selecionar-embalagem2" data-bs-toggle="modal" data-bs-target="#modalEmbalagem2"
+            data-tipo="embalagem2">
+            Adicionar Componente
+        </button>
+        <table class="table" id="tabela-embalagem2">
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Descrição</th>
+                    <th>Preço</th>
+                    <th>Consumo</th>
+                    <th>Ação</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+        <h4>Embalagem 3</h4>
+        <button type="button" class="btn btn-success btn-sm selecionar-embalagem3" data-bs-toggle="modal" data-bs-target="#modalEmbalagem3"
+            data-tipo="embalagem3">
+            Adicionar Componente
+        </button>
+        <table class="table" id="tabela-embalagem3">
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Descrição</th>
+                    <th>Preço</th>
+                    <th>Consumo</th>
+                    <th>Ação</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
         <h4> Custos Operacionais</h4>
         <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalCustos">
             Adicionar Custo Operacional
@@ -98,7 +151,6 @@
                     <th>Descrição</th>
                     <th>Preço</th>
                     <th>Consumo</th>
-                    <th>Preço unitário</th>
                     <th>Ação</th>
                 </tr>
             </thead>
@@ -117,51 +169,27 @@
                     <th>Diária</th>
                     <th>Consumo</th>
                     <th>Produção</th>
-                    <th>Preço unitário</th>
                     <th>Ação</th>
                 </tr>
             </thead>
             <tbody></tbody>
         </table>
 
-        <h4>Resumo de Custos</h4>
-        <table class="table table-bordered">
-            <thead>
-                <tr>
-                    <th>Categoria</th>
-                    <th>Total (R$)</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>Solado</td>
-                    <td id="total_solado">0.00</td>
-                </tr>
-                <tr>
-                    <td>Alças</td>
-                    <td id="total_alcas">0.00</td>
-                </tr>
-                <tr>
-                    <td>Componentes</td>
-                    <td id="total_componentes">0.00</td>
-                </tr>
-                <tr>
-                    <td>Custos Operacionais</td>
-                    <td id="total_operacional">0.00</td>
-                </tr>
-                <tr>
-                    <td>Mão de Obra</td>
-                    <td id="total_mao_obra">0.00</td>
-                </tr>
-            </tbody>
-        </table>
-
         <!-- Inputs escondidos para salvar os totais -->
         <input type="hidden" name="total_solado" id="input_total_solado">
         <input type="hidden" name="total_alcas" id="input_total_alcas">
         <input type="hidden" name="total_componentes" id="input_total_componentes">
+        <input type="hidden" name="total_embalagem1" id="input_total_embalagem1">
+        <input type="hidden" name="total_embalagem2" id="input_total_embalagem2">
+        <input type="hidden" name="total_embalagem3" id="input_total_embalagem3">
         <input type="hidden" name="total_operacional" id="input_total_operacional">
         <input type="hidden" name="total_mao_obra" id="input_total_mao_obra">
+
+        <!-- Inputs escondidos para salvar totais por embalagem -->
+        <input type="hidden" name="custo_total_embalagem1" id="input_custo_total_embalagem1">
+        <input type="hidden" name="custo_total_embalagem2" id="input_custo_total_embalagem2">
+        <input type="hidden" name="custo_total_embalagem3" id="input_custo_total_embalagem3">
+
 
         <button type="submit" class="btn btn-success">Salvar</button>
         <a href="{{ url_for('routes.listar_referencias') }}" class="btn btn-secondary">Cancelar</a>

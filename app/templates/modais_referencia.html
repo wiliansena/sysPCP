@@ -103,7 +103,6 @@
                 </button>
             </div>
             <div class="modal-body">
-                <!-- Campo de filtro -->
                 <div class="mb-3">
                     <input type="text" id="filterComponentes" class="form-control" placeholder="Filtrar Componentes">
                 </div>
@@ -126,7 +125,8 @@
                                 <button type="button" class="btn btn-success btn-sm selecionar-componente"
                                     data-id="{{ componente.id }}" 
                                     data-descricao="{{ componente.descricao }}"
-                                    data-preco="{{ "%.2f"|format(componente.preco) }}">
+                                    data-preco="{{ "%.2f"|format(componente.preco) }}"
+                                    data-tipo="componente">
                                     Selecionar
                                 </button>
                             </td>
@@ -138,6 +138,139 @@
         </div>
     </div>
 </div>
+
+<!-- Modal para selecionar Embalagem 1 -->
+<div class="modal fade" id="modalEmbalagem1" tabindex="-1" aria-labelledby="modalEmbalagem1Label" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Selecionar Embalagem 1</h5>
+                <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <table class="table" id="embalagem1Table">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Descrição</th>
+                            <th>Preço</th>
+                            <th>Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for componente in componentes %}
+                        <tr>
+                            <td>{{ componente.id }}</td>
+                            <td>{{ componente.descricao }}</td>
+                            <td>R$ {{ "%.2f"|format(componente.preco) }}</td>
+                            <td>
+                                <button type="button" class="btn btn-success btn-sm selecionar-embalagem1"
+                                data-id="{{ componente.id }}" 
+                                data-descricao="{{ componente.descricao }}"
+                                data-preco="{{ "%.2f"|format(componente.preco) }}"
+                                data-tipo="embalagem1">
+                                Selecionar
+                            </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para selecionar Embalagem 2 -->
+<div class="modal fade" id="modalEmbalagem2" tabindex="-1" aria-labelledby="modalEmbalagem2Label" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Selecionar Embalagem 2</h5>
+                <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <table class="table" id="embalagem2Table">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Descrição</th>
+                            <th>Preço</th>
+                            <th>Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for componente in componentes %}
+                        <tr>
+                            <td>{{ componente.id }}</td>
+                            <td>{{ componente.descricao }}</td>
+                            <td>R$ {{ "%.2f"|format(componente.preco) }}</td>
+                            <td>
+                                <button type="button" class="btn btn-success btn-sm selecionar-embalagem2"
+                                data-id="{{ componente.id }}" 
+                                data-descricao="{{ componente.descricao }}"
+                                data-preco="{{ "%.2f"|format(componente.preco) }}"
+                                data-tipo="embalagem2">
+                                Selecionar
+                            </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para selecionar Embalagem 3 -->
+<div class="modal fade" id="modalEmbalagem3" tabindex="-1" aria-labelledby="modalEmbalagem3Label" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Selecionar Embalagem 3</h5>
+                <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <table class="table" id="embalagem3Table">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Descrição</th>
+                            <th>Preço</th>
+                            <th>Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for componente in componentes %}
+                        <tr>
+                            <td>{{ componente.id }}</td>
+                            <td>{{ componente.descricao }}</td>
+                            <td>R$ {{ "%.2f"|format(componente.preco) }}</td>
+                            <td>
+                                <button type="button" class="btn btn-success btn-sm selecionar-embalagem3"
+                                data-id="{{ componente.id }}" 
+                                data-descricao="{{ componente.descricao }}"
+                                data-preco="{{ "%.2f"|format(componente.preco) }}"
+                                data-tipo="embalagem3">
+                                Selecionar
+                            </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
 
 <!-- Modal para selecionar Custos Operacionais -->
 <div class="modal fade" id="modalCustos" tabindex="-1" aria-labelledby="modalCustosLabel" aria-hidden="true">

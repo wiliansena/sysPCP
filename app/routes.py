@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, render_template, redirect, url_for, flash, request
 from app import db
-from app.models import FormulacaoSolado, FormulacaoSoladoFriso, Referencia, Componente, CustoOperacional, ReferenciaAlca, ReferenciaComponentes, ReferenciaCustoOperacional, ReferenciaMaoDeObra, ReferenciaSolado, Salario, MaoDeObra
+from app.models import FormulacaoSolado, FormulacaoSoladoFriso, Referencia, Componente, CustoOperacional, ReferenciaAlca, ReferenciaComponentes, ReferenciaCustoOperacional, ReferenciaEmbalagem1, ReferenciaEmbalagem2, ReferenciaEmbalagem3, ReferenciaMaoDeObra, ReferenciaSolado, Salario, MaoDeObra
 from app.forms import ReferenciaForm, ComponenteForm, CustoOperacionalForm, SalarioForm, MaoDeObraForm
 import os
 #SOLADO
@@ -122,6 +122,40 @@ def nova_referencia():
                 preco_unitario=Componente.query.get(int(componente_id)).preco
             ))
 
+        # 🔹 Associa os Componentes das Embalagens 1, 2 e 3
+        for componente_id, consumo in zip(
+                request.form.getlist("componentes_embalagem1[]"),
+                request.form.getlist("consumo_embalagem1[]")
+        ):
+            db.session.add(ReferenciaEmbalagem1(
+                referencia_id=referencia.id,
+                componente_id=int(componente_id),
+                consumo=consumo if consumo else 0,
+                preco_unitario=Componente.query.get(int(componente_id)).preco
+            ))
+
+        for componente_id, consumo in zip(
+                request.form.getlist("componentes_embalagem2[]"),
+                request.form.getlist("consumo_embalagem2[]")
+        ):
+            db.session.add(ReferenciaEmbalagem2(
+                referencia_id=referencia.id,
+                componente_id=int(componente_id),
+                consumo=consumo if consumo else 0,
+                preco_unitario=Componente.query.get(int(componente_id)).preco
+            ))
+
+        for componente_id, consumo in zip(
+                request.form.getlist("componentes_embalagem3[]"),
+                request.form.getlist("consumo_embalagem3[]")
+        ):
+            db.session.add(ReferenciaEmbalagem3(
+                referencia_id=referencia.id,
+                componente_id=int(componente_id),
+                consumo=consumo if consumo else 0,
+                preco_unitario=Componente.query.get(int(componente_id)).preco
+            ))
+
         # Associa os Custos Operacionais
         for custo_id, consumo in zip(
                 request.form.getlist("custo_id[]"),
@@ -147,8 +181,8 @@ def nova_referencia():
                 producao=producao if producao else 1,
                 preco_unitario=MaoDeObra.query.get(int(mao_obra_id)).diaria
             ))
-        
-        # Recalcular os totais (o método do modelo já faz as conversões necessárias)
+
+        # 🔹 Agora, calcula os custos individuais de cada embalagem
         referencia.calcular_totais()
 
         db.session.commit()
@@ -177,6 +211,9 @@ def ver_referencia(id):
     solados = ReferenciaSolado.query.filter_by(referencia_id=referencia.id).all()
     alcas = ReferenciaAlca.query.filter_by(referencia_id=referencia.id).all()
     componentes = ReferenciaComponentes.query.filter_by(referencia_id=referencia.id).all()
+    embalagem1 = ReferenciaEmbalagem1.query.filter_by(referencia_id=referencia.id).all()
+    embalagem2 = ReferenciaEmbalagem2.query.filter_by(referencia_id=referencia.id).all()
+    embalagem3 = ReferenciaEmbalagem3.query.filter_by(referencia_id=referencia.id).all()
     custos_operacionais = ReferenciaCustoOperacional.query.filter_by(referencia_id=referencia.id).all()
     mao_de_obra = ReferenciaMaoDeObra.query.filter_by(referencia_id=referencia.id).all()
 
@@ -186,9 +223,13 @@ def ver_referencia(id):
         solados=solados,
         alcas=alcas,
         componentes=componentes,
+        embalagem1=embalagem1,
+        embalagem2=embalagem2,
+        embalagem3=embalagem3,
         custos_operacionais=custos_operacionais,
         mao_de_obra=mao_de_obra
     )
+
 
 from flask import render_template, request, redirect, url_for, flash
 from app import db
@@ -1280,5 +1321,3 @@ def excluir_alca(id):
         flash(f"Erro ao excluir a alça: {str(e)}", "danger")
 
     return redirect(url_for('routes.listar_alcas'))
-
-
