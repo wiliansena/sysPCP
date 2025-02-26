@@ -18,13 +18,20 @@ $(document).ready(function () {
         let nomeInput = `${tipo}_id[]`;
         let consumoInput = `${tipo}_consumo[]`;
 
+        let colunaProducao = tipo === "mao_obra"
+            ? `<td><input type="number" name="${tipo}_producao[]" class="form-control producao-input" step="0.000001" min="0" value="1"></td>`
+            : "";
+
         let novaLinha = `
             <tr data-id="${id}">
                 <td><input type="hidden" name="${nomeInput}" value="${id}">${id}</td>
                 <td>${descricao}</td>
-                <td>R$ ${parseFloat(preco).toFixed(2)}</td>
-                <td><input type="number" name="${consumoInput}" class="form-control consumo-input" step="0.01" min="0" value="1"></td>
-                <td><button type="button" class="btn btn-danger btn-sm remover-item">Remover</button></td>
+                <td>R$ ${parseFloat(preco).toFixed(6)}</td>
+                <td><input type="number" name="${consumoInput}" class="form-control consumo-input" step="0.000001" min="0" value="1"></td>
+                ${colunaProducao}
+                <td class="text-center" style="width: 120px;">
+                    <button type="button" class="btn btn-danger btn-sm remover-item">Remover</button>
+                </td>
             </tr>
         `;
 
@@ -45,22 +52,22 @@ $(document).ready(function () {
 
     $(document).on("click", ".selecionar-alca", function () {
         adicionarItemNaTabela("alca", $(this).data("id"), $(this).data("descricao"), $(this).data("preco"));
-        $("#modalAlca").modal("hide");
+        //$("#modalAlca").modal("hide");
     });
 
     $(document).on("click", ".selecionar-componente", function () {
         adicionarItemNaTabela("componente", $(this).data("id"), $(this).data("descricao"), $(this).data("preco"));
-        $("#modalComponentes").modal("hide");
+        //$("#modalComponentes").modal("hide");
     });
 
     $(document).on("click", ".selecionar-custo", function () {
         adicionarItemNaTabela("custo", $(this).data("id"), $(this).data("descricao"), $(this).data("preco"));
-        $("#modalCustos").modal("hide");
+        //$("#modalCustos").modal("hide");
     });
 
     $(document).on("click", ".selecionar-mao", function () {
         adicionarItemNaTabela("mao_obra", $(this).data("id"), $(this).data("descricao"), $(this).data("diaria"));
-        $("#modalMaoObra").modal("hide");
+        //$("#modalMaoObra").modal("hide");
     });
 
     // 🔹 Selecionar itens das Embalagens (1, 2 e 3)
@@ -77,7 +84,7 @@ $(document).ready(function () {
 
         console.log(`🛠️ Adicionando Embalagem: ${tipo} | ID: ${id}, Descrição: ${descricao}, Preço: ${preco}`);
         adicionarItemNaTabela(tipo, id, descricao, preco);
-        $(`#modal${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`).modal("hide");
+        //$(`#modal${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`).modal("hide");
     });
 
     // 🔹 Antes de enviar o formulário, garantir que os campos vazios tenham valores padrão
@@ -92,4 +99,5 @@ $(document).ready(function () {
 
         console.log("🔹 Formulário pronto para envio!");
     });
+
 });

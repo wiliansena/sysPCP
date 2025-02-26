@@ -29,7 +29,7 @@ $(document).ready(function () {
                 <td><input type="hidden" name="${nomeInput}" value="${id}">${id}</td>
                 <td>${descricao}</td>
                 <td>R$ ${parseFloat(preco).toFixed(2)}</td>
-                <td><input type="number" name="${consumoInput}" class="form-control consumo-input" step="0.01" min="0" value="1"></td>
+                <td><input type="number" name="${consumoInput}" class="form-control consumo-input" step="0.000001" min="0" value="1"></td>
                 <td><button type="button" class="btn btn-danger btn-sm remover-item">Remover</button></td>
             </tr>
         `;
@@ -73,7 +73,7 @@ $(document).ready(function () {
                 <td><input type="hidden" name="mao_obra_id[]" value="${id}">${id}</td>
                 <td>${descricao}</td>
                 <td>R$ ${parseFloat(diaria).toFixed(2)}</td>
-                <td><input type="number" name="mao_obra_consumo[]" class="form-control consumo-input" step="0.01" min="0" value="1"></td>
+                <td><input type="number" name="mao_obra_consumo[]" class="form-control consumo-input" step="0.000001" min="0" value="1"></td>
                 <td><input type="number" name="mao_obra_producao[]" class="form-control producao-input" step="1" min="1" value="1"></td>
                 <td><button type="button" class="btn btn-danger btn-sm remover-item">Remover</button></td>
             </tr>
@@ -115,7 +115,7 @@ $(document).ready(function () {
         adicionarItemNaTabela(tipo, id, descricao, preco);
 
         // Fechar modal corretamente
-        $("#modalComponentes").modal("hide");
+        //$("#modalComponentes").modal("hide");//
     });
 
     // 🔹 Melhorando apenas os botões de componentes e embalagens

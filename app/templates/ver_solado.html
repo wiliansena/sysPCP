@@ -48,23 +48,23 @@
             <tr>
                 <td><b>PESO MÉDIO</b></td>
                 {% for tamanho in solado.tamanhos %}
-                <td>{{ "%.3f"|format(tamanho.peso_medio) }}</td>
+                <td>{{ "%.6f"|format(tamanho.peso_medio) }}</td>
                 {% endfor %}
-                <td><b>{{ "%.3f"|format(peso_medio_total) }}</b></td>
+                <td><b>{{ "%.6f"|format(peso_medio_total) }}</b></td>
             </tr>
             <tr>
                 <td><b>PESO MÉDIO FRISO</b></td>
                 {% for tamanho in solado.tamanhos %}
-                <td>{{ "%.3f"|format(tamanho.peso_friso) }}</td>
+                <td>{{ "%.6f"|format(tamanho.peso_friso) }}</td>
                 {% endfor %}
-                <td><b>{{ "%.3f"|format(peso_friso_total) }}</b></td>
+                <td><b>{{ "%.6f"|format(peso_friso_total) }}</b></td>
             </tr>
             <tr>
                 <td><b>PESO MÉDIO SEM FRISO</b></td>
                 {% for tamanho in solado.tamanhos %}
-                <td>{{ "%.3f"|format(tamanho.peso_sem_friso) }}</td>
+                <td>{{ "%.6f"|format(tamanho.peso_sem_friso) }}</td>
                 {% endfor %}
-                <td><b>{{ "%.3f"|format(peso_sem_friso_total) }}</b></td>
+                <td><b>{{ "%.6f"|format(peso_sem_friso_total) }}</b></td>
             </tr>
         </tbody>
     </table>
@@ -93,7 +93,7 @@
                 <td>{{ "%.2f"|format(item.porcentagem) }}%</td>
                 <td>{{ "%.2f"|format(pares_por_carga) }}</td>
                 <td>{{ "%.6f"|format(item.consumo) }}</td>
-                <td>R$ {{ "%.2f"|format(item.preco_unitario) }}</td>
+                <td>R$ {{ "%.6f"|format(item.preco_unitario) }}</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -125,7 +125,7 @@
                 <td>{{ "%.2f"|format(item.porcentagem) }}%</td>
                 <td>{{ "%.2f"|format(pares_por_carga_friso) }}</td>
                 <td>{{ "%.6f"|format(item.consumo) }}</td>
-                <td>R$ {{ "%.2f"|format(item.preco_unitario) }}</td>
+                <td>R$ {{ "%.6f"|format(item.preco_unitario) }}</td>
             </tr>
             {% endfor %}
         </tbody>

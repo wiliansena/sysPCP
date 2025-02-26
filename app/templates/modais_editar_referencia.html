@@ -31,7 +31,7 @@
                             <td>
                                 <button type="button" class="btn btn-success btn-sm selecionar-solado"
                                     data-id="{{ solado.id }}" data-descricao="{{ solado.descricao }}" data-preco="{{ "
-                                    %.2f"|format(solado.custo_total) }}">
+                                    %.4f"|format(solado.custo_total) }}">
                                     Selecionar
                                 </button>
                             </td>
@@ -77,7 +77,7 @@
                             <td>
                                 <button type="button" class="btn btn-success btn-sm selecionar-alca"
                                     data-id="{{ alca.id }}" data-descricao="{{ alca.descricao }}" data-preco="{{ "
-                                    %.2f"|format(alca.preco_total) }}">
+                                    %.4f"|format(alca.preco_total) }}">
                                     Selecionar
                                 </button>
                             </td>
@@ -123,7 +123,7 @@
                             <td>
                                 <button type="button" class="btn btn-success btn-sm selecionar-componente"
                                     data-id="{{ componente.id }}" data-descricao="{{ componente.descricao }}"
-                                    data-preco="{{ " %.2f"|format(componente.preco) }}">
+                                    data-preco="{{ " %.4f"|format(componente.preco) }}">
                                     Selecionar
                                 </button>
                             </td>
@@ -147,6 +147,7 @@
                 </button>
             </div>
             <div class="modal-body">
+                <!-- Filtro para Embalagem 1 -->
                 <div class="mb-3">
                     <input type="text" id="filterEmbalagem1" class="form-control" placeholder="Filtrar Embalagem 1">
                 </div>
@@ -169,7 +170,7 @@
                                 <button type="button" class="btn btn-success btn-sm selecionar-embalagem"
                                 data-id="{{ item.id }}" 
                                 data-descricao="{{ item.descricao }}"
-                                data-preco="{{ "%.2f"|format(item.preco) }}"
+                                data-preco="{{ "%.4f"|format(item.preco) }}"
                                 data-tipo="embalagem1">
                                 Selecionar
                             </button>
@@ -216,7 +217,7 @@
                                 <button type="button" class="btn btn-success btn-sm selecionar-embalagem"
                                 data-id="{{ item.id }}" 
                                 data-descricao="{{ item.descricao }}"
-                                data-preco="{{ "%.2f"|format(item.preco) }}"
+                                data-preco="{{ "%.4f"|format(item.preco) }}"
                                 data-tipo="embalagem2">
                                 Selecionar
                             </button>
@@ -241,6 +242,7 @@
                 </button>
             </div>
             <div class="modal-body">
+                <!-- Campo de filtro -->
                 <div class="mb-3">
                     <input type="text" id="filterEmbalagem3" class="form-control" placeholder="Filtrar Embalagem 3">
                 </div>
@@ -263,7 +265,7 @@
                                 <button type="button" class="btn btn-success btn-sm selecionar-embalagem"
                                 data-id="{{ item.id }}" 
                                 data-descricao="{{ item.descricao }}"
-                                data-preco="{{ "%.2f"|format(item.preco) }}"
+                                data-preco="{{ "%.4f"|format(item.preco) }}"
                                 data-tipo="embalagem3">
                                 Selecionar
                             </button>
@@ -310,7 +312,7 @@
                             <td>
                                 <button type="button" class="btn btn-success btn-sm selecionar-custo"
                                     data-id="{{ custo.id }}" data-descricao="{{ custo.descricao }}" data-preco="{{ "
-                                    %.2f"|format(custo.preco) }}">
+                                    %.4f"|format(custo.preco) }}">
                                     Selecionar
                                 </button>
                             </td>
@@ -378,7 +380,6 @@
                 let filtro = this.value.toUpperCase();
                 let rows = document.querySelectorAll('#' + tableId + ' tbody tr');
                 rows.forEach(row => {
-                    // Busca nos dados das duas primeiras colunas (ajuste se necessário)
                     let col1 = row.querySelector('td:nth-child(1)').textContent.toUpperCase();
                     let col2 = row.querySelector('td:nth-child(2)').textContent.toUpperCase();
                     if (col1.indexOf(filtro) > -1 || col2.indexOf(filtro) > -1) {
@@ -391,9 +392,13 @@
         }
     }
 
+    // Ativar filtros para todas as tabelas
     setupFilter('filterSolado', 'soladoTable');
     setupFilter('filterAlca', 'alcaTable');
     setupFilter('filterComponentes', 'componentesTable');
+    setupFilter('filterEmbalagem1', 'embalagem1Table');
+    setupFilter('filterEmbalagem2', 'embalagem2Table');
+    setupFilter('filterEmbalagem3', 'embalagem3Table');
     setupFilter('filterCustos', 'custosTable');
     setupFilter('filterMaoObra', 'maoObraTable');
 </script>

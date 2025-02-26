@@ -45,18 +45,21 @@ class Referencia(db.Model):
         self.total_embalagem1 = sum(embalagem.custo_total for embalagem in self.embalagem1)
         self.total_embalagem2 = sum(embalagem.custo_total for embalagem in self.embalagem2)
         self.total_embalagem3 = sum(embalagem.custo_total for embalagem in self.embalagem3)
-        self.total_operacional = sum(custo.custo_total for custo in self.custos_operacionais)
+
+        # 🔹 Ajuste no cálculo dos custos operacionais
+        self.total_operacional = sum(custo.consumo * custo.preco_unitario for custo in self.custos_operacionais)
+        
         self.total_mao_de_obra = sum(mao.custo_total for mao in self.mao_de_obra)
 
         # 🔹 Cálculo do custo total para cada embalagem
         self.custo_total_embalagem1 = (self.total_solado + self.total_alcas + self.total_componentes +
-                                       self.total_embalagem1 + self.total_operacional + self.total_mao_de_obra)
+                                    self.total_embalagem1 + self.total_operacional + self.total_mao_de_obra)
 
         self.custo_total_embalagem2 = (self.total_solado + self.total_alcas + self.total_componentes +
-                                       self.total_embalagem2 + self.total_operacional + self.total_mao_de_obra)
+                                    self.total_embalagem2 + self.total_operacional + self.total_mao_de_obra)
 
         self.custo_total_embalagem3 = (self.total_solado + self.total_alcas + self.total_componentes +
-                                       self.total_embalagem3 + self.total_operacional + self.total_mao_de_obra)
+                                    self.total_embalagem3 + self.total_operacional + self.total_mao_de_obra)
 
 
 

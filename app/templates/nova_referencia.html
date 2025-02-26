@@ -35,7 +35,7 @@
 
         <h4> Solados </h4>
         <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalSolado">
-            Adicionar Solado
+            Adicionar
         </button>
         <table class="table table-bordered" id="tabela-solado">
             <thead>
@@ -52,7 +52,7 @@
 
         <h4> Alças </h4>
         <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalAlca">
-            Adicionar Alça
+            Adicionar
         </button>
         <table class="table table-bordered" id="tabela-alca">
             <thead>
@@ -68,9 +68,9 @@
         </table>
 
         <h4>Componentes</h4>
-        <button type="button" class="btn btn-success btn-sm selecionar-componente" data-bs-toggle="modal" data-bs-target="#modalComponentes"
+        <button type="button" class="btn btn-primary mb-3 selecionar-componente" data-bs-toggle="modal" data-bs-target="#modalComponentes"
             data-tipo="componente">
-            Adicionar Componente
+            Adicionar
         </button>
         <table class="table table-bordered" id="tabela-componente">
             <thead>
@@ -79,7 +79,6 @@
                     <th>Descrição</th>
                     <th>Preço</th>
                     <th>Consumo</th>
-                    <th>Preço unitário</th>
                     <th>Ação</th>
                 </tr>
             </thead>
@@ -89,7 +88,7 @@
         <h4>Embalagem 1</h4>
         <button type="button" class="btn btn-success btn-sm selecionar-embalagem1" data-bs-toggle="modal" data-bs-target="#modalEmbalagem1"
             data-tipo="embalagem1">
-            Adicionar Componente
+            Adicionar
         </button>
         <table class="table" id="tabela-embalagem1">
             <thead>
@@ -107,7 +106,7 @@
         <h4>Embalagem 2</h4>
         <button type="button" class="btn btn-success btn-sm selecionar-embalagem2" data-bs-toggle="modal" data-bs-target="#modalEmbalagem2"
             data-tipo="embalagem2">
-            Adicionar Componente
+            Adicionar
         </button>
         <table class="table" id="tabela-embalagem2">
             <thead>
@@ -125,7 +124,7 @@
         <h4>Embalagem 3</h4>
         <button type="button" class="btn btn-success btn-sm selecionar-embalagem3" data-bs-toggle="modal" data-bs-target="#modalEmbalagem3"
             data-tipo="embalagem3">
-            Adicionar Componente
+            Adicionar
         </button>
         <table class="table" id="tabela-embalagem3">
             <thead>
@@ -142,7 +141,7 @@
 
         <h4> Custos Operacionais</h4>
         <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalCustos">
-            Adicionar Custo Operacional
+            Adicionar
         </button>
         <table class="table table-bordered" id="tabela-custo">
             <thead>
@@ -159,7 +158,7 @@
 
         <h4> Custo Mão de Obra</h4>
         <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalMaoObra">
-            Adicionar Mão de Obra
+            Adicionar
         </button>
         <table class="table table-bordered" id="tabela-mao_obra">
             <thead>
@@ -198,4 +197,5 @@
 <!-- 🔹 Modais para seleção de itens -->
 {% include 'modais_referencia.html' %}
 <script src="{{ url_for('static', filename='js/referencia.js') }}"></script>
+
 {% endblock %}

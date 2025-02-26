@@ -42,7 +42,7 @@
         <!-- Solados -->
         <h4>Solados</h4>
         <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalSolado">
-            Adicionar Solado
+            Adicionar
         </button>
         <table class="table table-bordered" id="tabela-solado">
             <thead>
@@ -62,9 +62,9 @@
                         {{ solado.solado.id }}
                     </td>
                     <td>{{ solado.solado.descricao }}</td>
-                    <td>R$ {{ "%.2f"|format(solado.solado.custo_total) }}</td>
+                    <td>R$ {{ "%.6f"|format(solado.solado.custo_total) }}</td>
                     <td><input type="number" name="solado_consumo[]" value="{{ solado.consumo }}"
-                            class="form-control consumo-input"></td>
+                            class="form-control consumo-input" step="any"></td>
                     <td><button type="button" class="btn btn-danger btn-sm remover-item">Remover</button></td>
                 </tr>
                 {% endfor %}
@@ -74,7 +74,7 @@
         <!-- Alças -->
         <h4>Alças</h4>
         <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalAlca">
-            Adicionar Alça
+            Adicionar
         </button>
         <table class="table table-bordered" id="tabela-alca">
             <thead>
@@ -94,9 +94,9 @@
                         {{ alca.alca.id }}
                     </td>
                     <td>{{ alca.alca.descricao }}</td>
-                    <td>R$ {{ "%.2f"|format(alca.alca.preco_total) }}</td>
-                    <td><input type="number" name="alca_consumo[]" value="{{ alca.consumo }}"
-                            class="form-control consumo-input"></td>
+                    <td>R$ {{ "%.6f"|format(alca.alca.preco_total) }}</td>
+                    <td><input type="text" name="alca_consumo[]" value="{{ alca.consumo }}"
+                            class="form-control consumo-input" step="any"></td>
                     <td><button type="button" class="btn btn-danger btn-sm remover-item">Remover</button></td>
                 </tr>
                 {% endfor %}
@@ -107,7 +107,7 @@
         <!-- Componentes -->
         <h4>Componentes</h4>
         <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalComponentes">
-            Adicionar Componente
+            Adicionar
         </button>
         <table class="table table-bordered text-center" id="tabela-componente">
             <thead>
@@ -127,9 +127,9 @@
                         {{ componente.componente.id }}
                     </td>
                     <td>{{ componente.componente.descricao }}</td>
-                    <td>R$ {{ "%.2f"|format(componente.componente.preco) }}</td>
+                    <td>R$ {{ "%.6f"|format(componente.componente.preco) }}</td>
                     <td>
-                        <input type="number" name="componente_consumo[]" value="{{ componente.consumo }}" class="form-control">
+                        <input type="number" name="componente_consumo[]" value="{{ componente.consumo }}" class="form-control" step="any">
                     </td>
                     <td class="text-center">
                         <button type="button" class="btn btn-danger btn-sm remover-item w-100">Remover</button>
@@ -141,8 +141,8 @@
 
         <!-- Embalagem 1 -->
         <h4>Embalagem 1</h4>
-        <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalEmbalagem1">
-            Adicionar Embalagem 1
+        <button type="button" class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#modalEmbalagem1">
+            Adicionar
         </button>
         <table class="table table-bordered text-center" id="tabela-embalagem1">
             <thead>
@@ -159,8 +159,8 @@
                 <tr data-id="{{ embalagem.componente.id }}">
                     <td><input type="hidden" name="embalagem1_id[]" value="{{ embalagem.componente.id }}">{{ embalagem.componente.id }}</td>
                     <td>{{ embalagem.componente.descricao }}</td>
-                    <td>R$ {{ "%.2f"|format(embalagem.componente.preco) }}</td>
-                    <td><input type="number" name="embalagem1_consumo[]" value="{{ embalagem.consumo }}" class="form-control"></td>
+                    <td>R$ {{ "%.6f"|format(embalagem.componente.preco) }}</td>
+                    <td><input type="number" name="embalagem1_consumo[]" value="{{ embalagem.consumo }}" class="form-control" step="any"></td>
                     <td><button type="button" class="btn btn-danger btn-sm remover-item">Remover</button></td>
                 </tr>
                 {% endfor %}
@@ -169,8 +169,8 @@
 
         <!-- Embalagem 2 -->
         <h4>Embalagem 2</h4>
-        <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalEmbalagem2">
-            Adicionar Embalagem 2
+        <button type="button" class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#modalEmbalagem2">
+            Adicionar
         </button>
         <table class="table table-bordered text-center" id="tabela-embalagem2">
             <thead>
@@ -187,8 +187,8 @@
                 <tr data-id="{{ embalagem.componente.id }}">
                     <td><input type="hidden" name="embalagem2_id[]" value="{{ embalagem.componente.id }}">{{ embalagem.componente.id }}</td>
                     <td>{{ embalagem.componente.descricao }}</td>
-                    <td>R$ {{ "%.2f"|format(embalagem.componente.preco) }}</td>
-                    <td><input type="number" name="embalagem2_consumo[]" value="{{ embalagem.consumo }}" class="form-control"></td>
+                    <td>R$ {{ "%.6f"|format(embalagem.componente.preco) }}</td>
+                    <td><input type="number" name="embalagem2_consumo[]" value="{{ embalagem.consumo }}" class="form-control" step="any"></td>
                     <td><button type="button" class="btn btn-danger btn-sm remover-item">Remover</button></td>
                 </tr>
                 {% endfor %}
@@ -197,8 +197,8 @@
 
         <!-- Embalagem 3 -->
         <h4>Embalagem 3</h4>
-        <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalEmbalagem3">
-            Adicionar Embalagem 3
+        <button type="button" class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#modalEmbalagem3">
+            Adicionar
         </button>
         <table class="table table-bordered text-center" id="tabela-embalagem3">
             <thead>
@@ -215,8 +215,8 @@
                 <tr data-id="{{ embalagem.componente.id }}">
                     <td><input type="hidden" name="embalagem3_id[]" value="{{ embalagem.componente.id }}">{{ embalagem.componente.id }}</td>
                     <td>{{ embalagem.componente.descricao }}</td>
-                    <td>R$ {{ "%.2f"|format(embalagem.componente.preco) }}</td>
-                    <td><input type="number" name="embalagem3_consumo[]" value="{{ embalagem.consumo }}" class="form-control"></td>
+                    <td>R$ {{ "%.6f"|format(embalagem.componente.preco) }}</td>
+                    <td><input type="number" name="embalagem3_consumo[]" value="{{ embalagem.consumo }}" class="form-control" step="any"></td>
                     <td><button type="button" class="btn btn-danger btn-sm remover-item">Remover</button></td>
                 </tr>
                 {% endfor %}
@@ -226,7 +226,7 @@
         <!-- Custos Operacionais -->
         <h4>Custos Operacionais</h4>
         <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalCustos">
-            Adicionar Custo Operacional
+            Adicionar
         </button>
         <table class="table table-bordered text-center" id="tabela-custo">
             <thead>
@@ -246,9 +246,9 @@
                         {{ custo.custo.id }}
                     </td>
                     <td>{{ custo.custo.descricao }}</td>
-                    <td>R$ {{ "%.2f"|format(custo.custo.preco) }}</td>
+                    <td>R$ {{ "%.6f"|format(custo.custo.preco) }}</td>
                     <td>
-                        <input type="number" name="custo_consumo[]" value="{{ custo.consumo }}" class="form-control">
+                        <input type="number" name="custo_consumo[]" value="{{ custo.consumo }}" class="form-control" step="any">
                     </td>
                     <td class="text-center">
                         <button type="button" class="btn btn-danger btn-sm remover-item w-100">Remover</button>
@@ -260,7 +260,7 @@
 
         <h4>Mão de Obra</h4>
         <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalMaoObra">
-            Adicionar Mão de Obra
+            Adicionar
         </button>
         <table class="table table-bordered text-center" id="tabela-mao_obra">
             <thead>
@@ -281,16 +281,17 @@
                         {{ mao.mao_de_obra.id }}
                     </td>
                     <td>{{ mao.mao_de_obra.descricao }}</td>
-                    <td>R$ {{ "%.2f"|format(mao.mao_de_obra.diaria) }}</td>
+                    <td>R$ {{ "%.6f"|format(mao.mao_de_obra.diaria) }}</td>
                     <td>
-                        <input type="number" name="mao_obra_consumo[]" value="{{ mao.consumo }}" class="form-control">
+                        <input type="number" name="mao_obra_consumo[]" value="{{ mao.consumo }}" class="form-control" step="any">
                     </td>
                     <td>
-                        <input type="number" name="mao_obra_producao[]" value="{{ mao.producao }}" class="form-control">
+                        <input type="number" name="mao_obra_producao[]" value="{{ mao.producao }}" class="form-control" step="any">
                     </td>
-                    <td class="text-center">
-                        <button type="button" class="btn btn-danger btn-sm remover-item w-100">Remover</button>
+                    <td>
+                        <button type="button" class="btn btn-danger btn-sm remover-item">Remover</button>
                     </td>
+                    
                 </tr>
                 {% endfor %}
             </tbody>

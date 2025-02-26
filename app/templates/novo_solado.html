@@ -37,25 +37,25 @@
                 <tr>
                     <td><b>GRADE</b></td>
                     {% for i in range(8) %}
-                    <td>{{ form.tamanhos[i].quantidade(class="form-control") }}</td>
+                    <td>{{ form.tamanhos[i].quantidade(class="form-control" ) }}</td>
                     {% endfor %}
                 </tr>
                 <tr>
                     <td><b>Peso Médio</b></td>
                     {% for i in range(8) %}
-                    <td>{{ form.tamanhos[i].peso_medio(class="form-control") }}</td>
+                    <td>{{ form.tamanhos[i].peso_medio(class="form-control", step="0.000001") }}</td>
                     {% endfor %}
                 </tr>
                 <tr>
                     <td><b>Peso Médio Friso</b></td>
                     {% for i in range(8) %}
-                    <td>{{ form.tamanhos[i].peso_friso(class="form-control") }}</td>
+                    <td>{{ form.tamanhos[i].peso_friso(class="form-control", step="0.000001") }}</td>
                     {% endfor %}
                 </tr>
                 <tr>
                     <td><b>Peso Médio sem Friso</b></td>
                     {% for i in range(8) %}
-                    <td>{{ form.tamanhos[i].peso_sem_friso(class="form-control") }}</td>
+                    <td>{{ form.tamanhos[i].peso_sem_friso(class="form-control", step="0.000001") }}</td>
                     {% endfor %}
                 </tr>
             </tbody>
@@ -82,7 +82,7 @@
                 <tr data-id="{{ item.componente_id.data }}">
                     <td>
                         <input type="hidden" name="componentes[]" value="{{ item.componente_id.data }}">
-                        {{ item.componente_id.data }}
+                        {{ item.componente_id.data }} 
                     </td>
                     <td>
                         <input type="hidden" name="descricao[]" value="{{ item.descricao.data }}">
@@ -94,7 +94,7 @@
                     </td>
                     <td>
                         <input type="number" name="carga[]" class="form-control carga-input"
-                            value="{{ item.carga.data }}" step="0.01" min="0">
+                            value="{{ item.carga.data }}" step="0.000001" min="0">
                     </td>
                     <td>
                         <button type="button" class="btn btn-danger btn-sm remover-componente">Remover</button>
@@ -136,7 +136,7 @@
                     </td>
                     <td>
                         <input type="number" name="carga[]" class="form-control carga-input"
-                            value="{{ item.carga.data }}" step="0.01" min="0">
+                            value="{{ item.carga.data }}" step="0.000001" min="0">
                     </td>
                     <td>
                         <button type="button" class="btn btn-danger btn-sm remover-componente">Remover</button>
@@ -181,12 +181,12 @@
                         <tr>
                             <td>{{ componente.id }}</td>
                             <td>{{ componente.descricao }}</td>
-                            <td>R$ {{ "%.2f"|format(componente.preco) }}</td>
+                            <td>R$ {{ "%.6f"|format(componente.preco) }}</td>
                             <td>
                                 <button type="button" class="btn btn-success btn-sm selecionar-componente"
                                     data-id="{{ componente.id }}" 
                                     data-descricao="{{ componente.descricao }}"
-                                    data-preco="{{ "%.2f"|format(componente.preco) }}" 
+                                    data-preco="{{ "%.6f"|format(componente.preco) }}" 
                                     data-tipo="sem_friso">
                                     Selecionar
                                 </button>
@@ -229,12 +229,12 @@
                         <tr>
                             <td>{{ componente.id }}</td>
                             <td>{{ componente.descricao }}</td>
-                            <td>R$ {{ "%.2f"|format(componente.preco) }}</td>
+                            <td>R$ {{ "%.6f"|format(componente.preco) }}</td>
                             <td>
                                 <button type="button" class="btn btn-success btn-sm selecionar-componente"
                                     data-id="{{ componente.id }}" 
                                     data-descricao="{{ componente.descricao }}"
-                                    data-preco="{{ "%.2f"|format(componente.preco) }}" 
+                                    data-preco="{{ "%.6f"|format(componente.preco) }}" 
                                     data-tipo="friso">
                                     Selecionar
                                 </button>
@@ -298,7 +298,7 @@ setupFilter('filterComponentesFriso', 'componentesFrisoTable');
                 <td><input type="hidden" name="componentes_${tipo}[]" value="${id}">${id}</td>
                 <td>${descricao}</td>
                 <td>R$ ${preco}</td>
-                <td><input type="number" name="carga_${tipo}[]" class="form-control carga-input" step="0.01" min="0"></td>
+                <td><input type="number" name="carga_${tipo}[]" class="form-control carga-input" step="0.000001" min="0"></td>
                 <td><button type="button" class="btn btn-danger btn-sm remover-componente">Remover</button></td>
             </tr>
         `;

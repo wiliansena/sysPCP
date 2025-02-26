@@ -1,3 +1,4 @@
+from sqlite3 import IntegrityError
 from flask import Blueprint, jsonify, render_template, redirect, url_for, flash, request
 from app import db
 from app.models import FormulacaoSolado, FormulacaoSoladoFriso, Referencia, Componente, CustoOperacional, ReferenciaAlca, ReferenciaComponentes, ReferenciaCustoOperacional, ReferenciaEmbalagem1, ReferenciaEmbalagem2, ReferenciaEmbalagem3, ReferenciaMaoDeObra, ReferenciaSolado, Salario, MaoDeObra
@@ -308,15 +309,31 @@ def editar_referencia(id):
 
             for item_id, consumo in zip(ids_post, consumos_post):
                 consumo_decimal = Decimal(consumo) if consumo else Decimal(0)
+
+                # 🔹 Ajuste para buscar o preço correto
+                if modelo == ReferenciaCustoOperacional:
+                    item_banco = CustoOperacional.query.get(int(item_id))
+                else:
+                    item_banco = modelo.query.get(int(item_id))
+
+                if item_banco:
+                    preco_unitario = getattr(item_banco, chave_preco, Decimal(0))
+                else:
+                    print(f"⚠ Item {item_id} não encontrado! Definindo preço como 0.")
+                    preco_unitario = Decimal(0)
+
                 if item_id in itens_existentes_dict:
                     itens_existentes_dict[item_id].consumo = consumo_decimal
+                    itens_existentes_dict[item_id].preco_unitario = preco_unitario  # 🔹 Atualiza o preço
                 else:
-                    db.session.add(modelo(
+                    novo_item = modelo(
                         referencia_id=id,
                         **{chave_id: int(item_id)},
                         consumo=consumo_decimal,
-                        preco_unitario=getattr(modelo.query.get(int(item_id)), chave_preco)
-                    ))
+                        preco_unitario=preco_unitario
+                    )
+                    db.session.add(novo_item)
+                    db.session.flush()
 
         atualizar_itens(ReferenciaSolado, "solado", "solado_id", "solado_consumo", "custo_total")
         atualizar_itens(ReferenciaAlca, "alca", "alca_id", "alca_consumo", "preco_total")
@@ -347,13 +364,18 @@ def editar_referencia(id):
                     producao=producao_decimal,
                     preco_unitario=MaoDeObra.query.get(int(mao_id)).diaria
                 ))
-        
-        # Recalcular todos os totais, incluindo o custo_total
+
+        # 🔹 Recalcular todos os totais
         referencia.calcular_totais()
 
-        db.session.commit()
-        flash("Referência atualizada com sucesso!", "success")
-        return redirect(url_for('routes.listar_referencias'))
+        try:
+            db.session.commit()
+            flash("Referência atualizada com sucesso!", "success")
+            return redirect(url_for('routes.listar_referencias'))
+        except Exception as e:
+            db.session.rollback()
+            print(f"❌ Erro ao salvar no banco: {e}")
+            flash("Erro ao salvar as alterações. Verifique os logs.", "danger")
 
     # Recupera os dados para os modais
     solados_disponiveis = Solado.query.all()
@@ -498,23 +520,40 @@ def copiar_referencia(id):
 
 
 
+from flask import request, flash, redirect, url_for
+from sqlalchemy.exc import IntegrityError
+
 @bp.route('/referencia/excluir/<int:id>', methods=['POST'])
 def excluir_referencia(id):
-    """Exclui uma referência."""
-    referencia = Referencia.query.get_or_404(id)
-    
-    # 🔹 Excluir os relacionamentos primeiro
-    ReferenciaSolado.query.filter_by(referencia_id=referencia.id).delete()
-    ReferenciaAlca.query.filter_by(referencia_id=referencia.id).delete()
-    ReferenciaComponentes.query.filter_by(referencia_id=referencia.id).delete()
-    ReferenciaCustoOperacional.query.filter_by(referencia_id=referencia.id).delete()
-    ReferenciaMaoDeObra.query.filter_by(referencia_id=referencia.id).delete()
+    """Exclui uma referência, mas exige que o usuário digite 'excluir' para confirmar."""
 
-    # 🔹 Excluir a própria referência
-    db.session.delete(referencia)
-    db.session.commit()
-    
-    flash("Referência excluída com sucesso!", "success")
+    referencia = Referencia.query.get_or_404(id)
+
+    # 🔹 Verifica se o usuário digitou "excluir" corretamente
+    confirmacao = request.form.get("confirmacao", "").strip().lower()
+
+    if confirmacao != "excluir":
+        flash("Erro: Você deve digitar 'excluir' para confirmar a exclusão da referência.", "danger")
+        return redirect(url_for('routes.listar_referencias'))
+
+    try:
+        # 🔹 Excluir os relacionamentos primeiro
+        ReferenciaSolado.query.filter_by(referencia_id=referencia.id).delete()
+        ReferenciaAlca.query.filter_by(referencia_id=referencia.id).delete()
+        ReferenciaComponentes.query.filter_by(referencia_id=referencia.id).delete()
+        ReferenciaCustoOperacional.query.filter_by(referencia_id=referencia.id).delete()
+        ReferenciaMaoDeObra.query.filter_by(referencia_id=referencia.id).delete()
+
+        # 🔹 Excluir a própria referência
+        db.session.delete(referencia)
+        db.session.commit()
+
+        flash("Referência excluída com sucesso!", "success")
+
+    except IntegrityError:
+        db.session.rollback()
+        flash("Erro: Não foi possível excluir esta referência pois está vinculada a outros registros.", "danger")
+
     return redirect(url_for('routes.listar_referencias'))
 
 
@@ -613,9 +652,22 @@ def editar_componente(id):
 @csrf.exempt  # 🔹 Desativa CSRF apenas para essa rota
 def excluir_componente(id):
     componente = Componente.query.get_or_404(id)
-    db.session.delete(componente)
-    db.session.commit()
-    flash('Componente excluído com sucesso!', 'danger')
+
+    try:
+        db.session.delete(componente)
+        db.session.commit()
+        flash('Componente excluído com sucesso!', 'success')
+
+    except IntegrityError:
+        db.session.rollback()
+
+        # 🔹 Mensagem genérica sem listar onde o componente é usado
+        flash("Erro: Este componente não pode ser excluído porque está sendo utilizado em outras tabelas do sistema.", "danger")
+
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Erro inesperado ao excluir o componente: {str(e)}", "danger")
+
     return redirect(url_for('routes.listar_componentes'))
 
 #CUSTOS OPERACIONAIS ROTAS!
@@ -663,9 +715,22 @@ def editar_custo(id):
 @bp.route('/custo/excluir/<int:id>', methods=['POST'])
 def excluir_custo(id):
     custo = CustoOperacional.query.get_or_404(id)
-    db.session.delete(custo)
-    db.session.commit()
-    flash('Custo operacional excluído com sucesso!', 'danger')
+
+    try:
+        db.session.delete(custo)
+        db.session.commit()
+        flash('Custo operacional excluído com sucesso!', 'success')
+
+    except IntegrityError:
+        db.session.rollback()
+        
+        # 🔹 Mensagem genérica sem listar onde o custo está sendo usado
+        flash("Erro: Este custo operacional não pode ser excluído porque está sendo utilizado em outras tabelas do sistema.", "danger")
+
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Erro inesperado ao excluir o custo operacional: {str(e)}", "danger")
+
     return redirect(url_for('routes.listar_custos'))
 
         #SALARIO!
@@ -718,9 +783,22 @@ def editar_salario(id):
 @bp.route('/salario/excluir/<int:id>', methods=['POST'])
 def excluir_salario(id):
     salario = Salario.query.get_or_404(id)
-    db.session.delete(salario)
-    db.session.commit()
-    flash('Salário excluído com sucesso!', 'danger')
+
+    try:
+        db.session.delete(salario)
+        db.session.commit()
+        flash('Salário excluído com sucesso!', 'success')
+
+    except IntegrityError:
+        db.session.rollback()
+
+        # 🔹 Mensagem específica indicando a tabela "Mão de Obra"
+        flash("Erro: Este salário não pode ser excluído porque está sendo utilizado na tabela 'Mão de Obra'.", "danger")
+
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Erro inesperado ao excluir o salário: {str(e)}", "danger")
+
     return redirect(url_for('routes.listar_salarios'))
 
 @bp.route('/mao_de_obra')
@@ -785,8 +863,8 @@ def editar_mao_de_obra(id):
         mao.multiplicador = form.multiplicador.data
 
         salario = Salario.query.get(mao.salario_id)
-        mao.preco_liquido = mao.multiplicador * salario.preco
-        mao.preco_bruto = mao.preco_liquido * (1 + salario.encargos / 100)
+        mao.preco_liquido = Decimal(mao.multiplicador) * Decimal(salario.preco)
+        mao.preco_bruto = Decimal(mao.preco_liquido) * Decimal((1 + salario.encargos / 100))
 
         db.session.commit()
         flash('Mão de obra atualizada com sucesso!', 'success')
@@ -797,9 +875,22 @@ def editar_mao_de_obra(id):
 @bp.route('/mao_de_obra/excluir/<int:id>', methods=['POST'])
 def excluir_mao_de_obra(id):
     mao = MaoDeObra.query.get_or_404(id)
-    db.session.delete(mao)
-    db.session.commit()
-    flash('Mão de obra excluída com sucesso!', 'danger')
+
+    try:
+        db.session.delete(mao)
+        db.session.commit()
+        flash('Mão de obra excluída com sucesso!', 'success')
+
+    except IntegrityError:
+        db.session.rollback()
+
+        # 🔹 Mensagem genérica sem listar onde a mão de obra está sendo usada
+        flash("Erro: Esta mão de obra não pode ser excluída porque está sendo utilizada em referências!", "danger")
+
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Erro inesperado ao excluir a mão de obra: {str(e)}", "danger")
+
     return redirect(url_for('routes.listar_mao_de_obra'))
 
 
@@ -1094,25 +1185,42 @@ def copiar_solado(id):
     return redirect(url_for('routes.editar_solado', id=nova_solado.id))
 
 
+
 @bp.route('/solado/excluir/<int:id>', methods=['POST'])
 def excluir_solado(id):
     solado = Solado.query.get_or_404(id)
 
-    # Apagar a imagem do solado, se existir
-    if solado.imagem:
-        caminho_imagem = os.path.join(UPLOAD_FOLDER, solado.imagem)
-        if os.path.exists(caminho_imagem):
-            os.remove(caminho_imagem)
+    try:
+        # Remover todas as referências antes de excluir
+        Tamanho.query.filter_by(solado_id=id).delete()
 
-    # Excluir todos os tamanhos associados ao solado
-    Tamanho.query.filter_by(solado_id=id).delete()
+        db.session.delete(solado)
+        db.session.commit()
+        flash("Solado excluído com sucesso!", "success")
 
-    # Excluir o solado
-    db.session.delete(solado)
-    db.session.commit()
-    
-    flash('Solado excluído com sucesso!', 'danger')
+    except IntegrityError:
+        db.session.rollback()
+
+        # 🔹 Buscar os códigos das referências associadas a este solado
+        referencias = (
+            db.session.query(Referencia.codigo_referencia)  # Pegando o campo correto
+            .join(ReferenciaSolado, Referencia.id == ReferenciaSolado.referencia_id)
+            .filter(ReferenciaSolado.solado_id == id)
+            .all()
+        )
+
+        # Converte a lista de tuplas em uma string separada por vírgula
+        referencias_str = ", ".join([ref.codigo_referencia for ref in referencias])
+
+        flash(f"Erro: Este solado não pode ser excluído porque está associado às referências: {referencias_str}.", "danger")
+
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Erro inesperado ao excluir o solado: {str(e)}", "danger")
+
     return redirect(url_for('routes.listar_solados'))
+
+
 
     #ALCA
 
@@ -1329,6 +1437,8 @@ def ver_alca(id):
 
 
 
+from sqlalchemy.exc import IntegrityError
+
 @bp.route('/alca/excluir/<int:id>', methods=['POST'])
 def excluir_alca(id):
     alca = Alca.query.get_or_404(id)
@@ -1341,8 +1451,26 @@ def excluir_alca(id):
         db.session.delete(alca)
         db.session.commit()
         flash("Alça excluída com sucesso!", "success")
+
+    except IntegrityError:
+        db.session.rollback()
+
+        # 🔹 Buscar os códigos das referências associadas à alça
+        referencias = (
+            db.session.query(Referencia.codigo_referencia)  # Agora pegando o campo correto
+            .join(ReferenciaAlca, Referencia.id == ReferenciaAlca.referencia_id)
+            .filter(ReferenciaAlca.alca_id == id)
+            .all()
+        )
+
+        # Converte a lista de tuplas em uma string separada por vírgula
+        referencias_str = ", ".join([ref.codigo_referencia for ref in referencias])
+
+        flash(f"Erro: Esta alça não pode ser excluída porque está associada às referências: {referencias_str}.", "danger")
+
     except Exception as e:
         db.session.rollback()
-        flash(f"Erro ao excluir a alça: {str(e)}", "danger")
+        flash(f"Erro inesperado ao excluir a alça: {str(e)}", "danger")
 
     return redirect(url_for('routes.listar_alcas'))
+

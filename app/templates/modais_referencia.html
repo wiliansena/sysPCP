@@ -150,6 +150,10 @@
                 </button>
             </div>
             <div class="modal-body">
+                <!-- Filtro para Embalagem 1 -->
+                <div class="mb-3">
+                    <input type="text" id="filterEmbalagem1" class="form-control" placeholder="Filtrar Embalagem 1">
+                </div>
                 <table class="table" id="embalagem1Table">
                     <thead>
                         <tr>
@@ -194,6 +198,10 @@
                 </button>
             </div>
             <div class="modal-body">
+                <!-- Filtro para Embalagem 2 -->
+                <div class="mb-3">
+                    <input type="text" id="filterEmbalagem2" class="form-control" placeholder="Filtrar Embalagem 2">
+                </div>
                 <table class="table" id="embalagem2Table">
                     <thead>
                         <tr>
@@ -238,6 +246,10 @@
                 </button>
             </div>
             <div class="modal-body">
+                <!-- Campo de filtro emb 3 -->
+                <div class="mb-3">
+                    <input type="text" id="filterEmbalagem3" class="form-control" placeholder="Filtrar Embalagem 3">
+                </div>
                 <table class="table" id="embalagem3Table">
                     <thead>
                         <tr>
@@ -371,24 +383,32 @@
 
 <!-- Script para filtrar todas as tabelas -->
 <script>
-function setupFilter(filterId, tableId) {
-    const filterInput = document.getElementById(filterId);
-    if (filterInput) {
-        filterInput.addEventListener('keyup', function() {
-            const filtro = this.value.toUpperCase();
-            const rows = document.querySelectorAll('#' + tableId + ' tbody tr');
-            rows.forEach(row => {
-                const col1 = row.querySelector('td:nth-child(1)').textContent.toUpperCase();
-                const col2 = row.querySelector('td:nth-child(2)').textContent.toUpperCase();
-                row.style.display = (col1.indexOf(filtro) > -1 || col2.indexOf(filtro) > -1) ? '' : 'none';
+    function setupFilter(filterId, tableId) {
+        const filterInput = document.getElementById(filterId);
+        if (filterInput) {
+            filterInput.addEventListener('keyup', function () {
+                let filtro = this.value.toUpperCase();
+                let rows = document.querySelectorAll('#' + tableId + ' tbody tr');
+                rows.forEach(row => {
+                    let col1 = row.querySelector('td:nth-child(1)').textContent.toUpperCase();
+                    let col2 = row.querySelector('td:nth-child(2)').textContent.toUpperCase();
+                    if (col1.indexOf(filtro) > -1 || col2.indexOf(filtro) > -1) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
             });
-        });
+        }
     }
-}
 
-setupFilter('filterSolado', 'soladoTable');
-setupFilter('filterAlca', 'alcaTable');
-setupFilter('filterComponentes', 'componentesTable');
-setupFilter('filterCustos', 'custosTable');
-setupFilter('filterMaoObra', 'maoObraTable');
+    // Ativar filtros para todas as tabelas
+    setupFilter('filterSolado', 'soladoTable');
+    setupFilter('filterAlca', 'alcaTable');
+    setupFilter('filterComponentes', 'componentesTable');
+    setupFilter('filterEmbalagem1', 'embalagem1Table');
+    setupFilter('filterEmbalagem2', 'embalagem2Table');
+    setupFilter('filterEmbalagem3', 'embalagem3Table');
+    setupFilter('filterCustos', 'custosTable');
+    setupFilter('filterMaoObra', 'maoObraTable');
 </script>
