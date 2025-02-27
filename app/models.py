@@ -1,4 +1,5 @@
 from decimal import Decimal
+from flask_login import UserMixin
 from sqlalchemy.orm import relationship
 from app import db
 from decimal import Decimal, ROUND_HALF_UP, ROUND_CEILING
@@ -504,3 +505,21 @@ class FormulacaoAlca(db.Model):
 
         # 🔹 Arredondamento para cima
         return preco_total.quantize(Decimal('0.01'), rounding=ROUND_CEILING)
+
+
+from werkzeug.security import generate_password_hash, check_password_hash
+
+class Usuario(db.Model, UserMixin):
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(100), unique=True, nullable=False)
+    senha_hash = db.Column(db.String(200), nullable=False)
+    permissao = db.Column(db.String(50), nullable=False, default='usuario')
+
+    def set_password(self, senha):
+        self.senha_hash = generate_password_hash(senha)  # 🔹 Gera o hash corretamente
+
+    def check_password(self, senha):
+        return check_password_hash(self.senha_hash, senha)  # 🔹 Verifica a senha
+
+
+

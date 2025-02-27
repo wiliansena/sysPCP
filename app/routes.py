@@ -1,5 +1,6 @@
 from sqlite3 import IntegrityError
 from flask import Blueprint, jsonify, render_template, redirect, url_for, flash, request
+from flask_login import current_user, login_required
 from app import db
 from app.models import FormulacaoSolado, FormulacaoSoladoFriso, Referencia, Componente, CustoOperacional, ReferenciaAlca, ReferenciaComponentes, ReferenciaCustoOperacional, ReferenciaEmbalagem1, ReferenciaEmbalagem2, ReferenciaEmbalagem3, ReferenciaMaoDeObra, ReferenciaSolado, Salario, MaoDeObra
 from app.forms import ReferenciaForm, ComponenteForm, CustoOperacionalForm, SalarioForm, MaoDeObraForm
@@ -29,16 +30,17 @@ if not os.path.exists(UPLOAD_FOLDER):
 class DeleteForm(FlaskForm):
     csrf_token = HiddenField()
 
+
 @bp.route('/')
+@login_required
 def home():
     return render_template('home.html')
 
     #REFERENCIAS
 
 
-
-
 @bp.route('/referencias', methods=['GET'])
+@login_required
 def listar_referencias():
     filtro = request.args.get('filtro', '')
     if filtro:
@@ -59,6 +61,7 @@ def parse_float(value, default=0):
 
 
 @bp.route('/referencia/novo', methods=['GET', 'POST'])
+@login_required
 def nova_referencia():
     form = ReferenciaForm()
 
@@ -202,6 +205,7 @@ def nova_referencia():
 
 
 @bp.route('/referencia/ver/<int:id>', methods=['GET'])
+@login_required
 def ver_referencia(id):
     referencia = Referencia.query.get_or_404(id)
     
@@ -239,7 +243,9 @@ from app.forms import ReferenciaForm
 import os
 from werkzeug.utils import secure_filename
 
+
 @bp.route('/referencia/editar/<int:id>', methods=['GET', 'POST'])
+@login_required
 def editar_referencia(id):
     """Edita uma referência existente permitindo adicionar, atualizar ou remover itens."""
     referencia = Referencia.query.get_or_404(id)
@@ -409,6 +415,7 @@ import random, string
 import random, string
 
 @bp.route('/referencia/copiar/<int:id>', methods=['GET'])
+@login_required
 def copiar_referencia(id):
     # Recupera a referência original ou retorna 404 se não existir
     referencia = Referencia.query.get_or_404(id)
@@ -524,6 +531,7 @@ from flask import request, flash, redirect, url_for
 from sqlalchemy.exc import IntegrityError
 
 @bp.route('/referencia/excluir/<int:id>', methods=['POST'])
+@login_required
 def excluir_referencia(id):
     """Exclui uma referência, mas exige que o usuário digite 'excluir' para confirmar."""
 
@@ -561,11 +569,13 @@ def excluir_referencia(id):
 
 
 @bp.route('/colecoes')
+@login_required
 def listar_colecoes():
     colecoes = Colecao.query.all()
     return render_template('colecoes.html', colecoes=colecoes)
 
 @bp.route('/colecao/novo', methods=['GET', 'POST'])
+@login_required
 def nova_colecao():
     form = ColecaoForm()
     if form.validate_on_submit():
@@ -579,6 +589,7 @@ def nova_colecao():
     return render_template('nova_colecao.html', form=form)
 
 @bp.route('/colecao/editar/<int:id>', methods=['GET', 'POST'])
+@login_required
 def editar_colecao(id):
     colecao = Colecao.query.get_or_404(id)
     form = ColecaoForm(obj=colecao)
@@ -592,6 +603,7 @@ def editar_colecao(id):
     return render_template('editar_colecao.html', form=form, colecao=colecao)
 
 @bp.route('/colecao/excluir/<int:id>', methods=['POST'])
+@login_required
 def excluir_colecao(id):
     colecao = Colecao.query.get_or_404(id)
     db.session.delete(colecao)
@@ -603,6 +615,7 @@ def excluir_colecao(id):
         #COMPONENTES OK
 
 @bp.route('/componentes', methods=['GET'])
+@login_required
 def listar_componentes():
     filtro = request.args.get('filtro', '')
     if filtro:
@@ -613,6 +626,7 @@ def listar_componentes():
 
 
 @bp.route('/componente/novo', methods=['GET', 'POST'])
+@login_required
 def novo_componente():
     form = ComponenteForm()
     if form.validate_on_submit():
@@ -630,6 +644,7 @@ def novo_componente():
     return render_template('novo_componente.html', form=form)
 
 @bp.route('/componente/editar/<int:id>', methods=['GET', 'POST'])
+@login_required
 def editar_componente(id):
     componente = Componente.query.get_or_404(id)
     form = ComponenteForm(obj=componente)
@@ -649,6 +664,7 @@ def editar_componente(id):
 
 
 @bp.route('/componente/excluir/<int:id>', methods=['POST'])
+@login_required
 @csrf.exempt  # 🔹 Desativa CSRF apenas para essa rota
 def excluir_componente(id):
     componente = Componente.query.get_or_404(id)
@@ -672,12 +688,14 @@ def excluir_componente(id):
 
 #CUSTOS OPERACIONAIS ROTAS!
 @bp.route('/custos')
+@login_required
 def listar_custos():
     custos = CustoOperacional.query.all()
     return render_template('custos.html', custos=custos)
 
         #CUSTOS OPERACIONAIS OK
 @bp.route('/custo/novo', methods=['GET', 'POST'])
+@login_required
 def novo_custo():
     form = CustoOperacionalForm()
     if form.validate_on_submit():
@@ -695,6 +713,7 @@ def novo_custo():
     return render_template('novo_custo.html', form=form)
 
 @bp.route('/custo/editar/<int:id>', methods=['GET', 'POST'])
+@login_required
 def editar_custo(id):
     custo = CustoOperacional.query.get_or_404(id)
     form = CustoOperacionalForm(obj=custo)
@@ -713,6 +732,7 @@ def editar_custo(id):
     return render_template('editar_custo.html', form=form, custo=custo)
 
 @bp.route('/custo/excluir/<int:id>', methods=['POST'])
+@login_required
 def excluir_custo(id):
     custo = CustoOperacional.query.get_or_404(id)
 
@@ -735,11 +755,13 @@ def excluir_custo(id):
 
         #SALARIO!
 @bp.route('/salarios')
+@login_required
 def listar_salarios():
     salarios = Salario.query.all()
     return render_template('salarios.html', salarios=salarios)
 
 @bp.route('/salario/novo', methods=['GET', 'POST'])
+@login_required
 def novo_salario():
     form = SalarioForm()
     if form.validate_on_submit():
@@ -754,6 +776,7 @@ def novo_salario():
     return render_template('novo_salario.html', form=form)
 
 @bp.route('/salario/editar/<int:id>', methods=['GET', 'POST'])
+@login_required
 def editar_salario(id):
     salario = Salario.query.get_or_404(id)
     form = SalarioForm(obj=salario)
@@ -781,6 +804,7 @@ def editar_salario(id):
     return render_template('editar_salario.html', form=form, salario=salario)
 
 @bp.route('/salario/excluir/<int:id>', methods=['POST'])
+@login_required
 def excluir_salario(id):
     salario = Salario.query.get_or_404(id)
 
@@ -802,6 +826,7 @@ def excluir_salario(id):
     return redirect(url_for('routes.listar_salarios'))
 
 @bp.route('/mao_de_obra')
+@login_required
 def listar_mao_de_obra():
     mao_de_obra = MaoDeObra.query.all()
     return render_template('mao_de_obra.html', mao_de_obra=mao_de_obra)
@@ -811,6 +836,7 @@ def listar_mao_de_obra():
 from decimal import Decimal, ROUND_HALF_UP  # Importa Decimal para cálculos precisos
 
 @bp.route('/mao_de_obra/nova', methods=['GET', 'POST'])
+@login_required
 def nova_mao_de_obra():
     form = MaoDeObraForm()
     form.salario_id.choices = [(s.id, f"R$ {s.preco}") for s in Salario.query.all()]
@@ -850,6 +876,7 @@ def nova_mao_de_obra():
 
 
 @bp.route('/mao_de_obra/editar/<int:id>', methods=['GET', 'POST'])
+@login_required
 def editar_mao_de_obra(id):
     mao = MaoDeObra.query.get_or_404(id)
     form = MaoDeObraForm(obj=mao)
@@ -873,6 +900,7 @@ def editar_mao_de_obra(id):
     return render_template('editar_mao_de_obra.html', form=form, mao=mao)
 
 @bp.route('/mao_de_obra/excluir/<int:id>', methods=['POST'])
+@login_required
 def excluir_mao_de_obra(id):
     mao = MaoDeObra.query.get_or_404(id)
 
@@ -900,6 +928,7 @@ UPLOAD_FOLDER = 'app/static/uploads'
 
 
 @bp.route('/solados', methods=['GET'])
+@login_required
 def listar_solados():
     filtro = request.args.get('filtro', '')
 
@@ -913,6 +942,7 @@ def listar_solados():
 
 
 @bp.route('/solado/ver/<int:id>')
+@login_required
 def ver_solado(id):
     solado = Solado.query.get_or_404(id)
 
@@ -975,6 +1005,7 @@ def ver_solado(id):
 
 
 @bp.route('/solado/novo', methods=['GET', 'POST'])
+@login_required
 def novo_solado():
     form = SoladoForm()
     componentes = Componente.query.all()
@@ -1057,6 +1088,7 @@ def novo_solado():
 
 
 @bp.route('/solado/editar/<int:id>', methods=['GET', 'POST'])
+@login_required
 def editar_solado(id):
     solado = Solado.query.get_or_404(id)  # Busca o solado no banco
     form = SoladoForm(obj=solado)  # Preenche o formulário com os dados existentes
@@ -1128,6 +1160,7 @@ from flask import redirect, url_for, flash
 from werkzeug.utils import secure_filename
 
 @bp.route('/solado/copiar/<int:id>', methods=['GET'])
+@login_required
 def copiar_solado(id):
     # Recupera o solado original ou retorna 404 se não existir
     solado = Solado.query.get_or_404(id)
@@ -1187,6 +1220,7 @@ def copiar_solado(id):
 
 
 @bp.route('/solado/excluir/<int:id>', methods=['POST'])
+@login_required
 def excluir_solado(id):
     solado = Solado.query.get_or_404(id)
 
@@ -1235,6 +1269,7 @@ def excluir_solado(id):
 #   return render_template('alcas.html', alcas=alcas)
 
 @bp.route('/alcas', methods=['GET'])
+@login_required
 def listar_alcas():
     filtro = request.args.get('filtro', '')
 
@@ -1247,6 +1282,7 @@ def listar_alcas():
 
 
 @bp.route('/alca/nova', methods=['GET', 'POST'])
+@login_required
 def nova_alca():
     form = AlcaForm()
     componentes = Componente.query.all()
@@ -1304,6 +1340,7 @@ def nova_alca():
     return render_template('nova_alca.html', form=form, componentes=componentes)
 
 @bp.route('/alca/editar/<int:id>', methods=['GET', 'POST'])
+@login_required
 def editar_alca(id):
     alca = Alca.query.get_or_404(id)
     form = AlcaForm(obj=alca)
@@ -1364,6 +1401,7 @@ from flask import redirect, url_for, flash
 from werkzeug.utils import secure_filename
 
 @bp.route('/alca/copiar/<int:id>', methods=['GET'])
+@login_required
 def copiar_alca(id):
     # Recupera a alça original ou retorna 404 se não existir
     alca = Alca.query.get_or_404(id)
@@ -1409,6 +1447,7 @@ def copiar_alca(id):
 
 
 @bp.route('/alca/ver/<int:id>', methods=['GET'])
+@login_required
 def ver_alca(id):
     alca = Alca.query.get_or_404(id)
 
@@ -1440,6 +1479,7 @@ def ver_alca(id):
 from sqlalchemy.exc import IntegrityError
 
 @bp.route('/alca/excluir/<int:id>', methods=['POST'])
+@login_required
 def excluir_alca(id):
     alca = Alca.query.get_or_404(id)
 
