@@ -25,7 +25,9 @@
                     <th>Descrição</th>
                     <th>Linha</th>
                     <th>Imagem</th>
-                    <th>Custo total</th>
+                    <th>EMB 1</th>
+                    <th>EMB 2</th>
+                    <th>EMB 3</th>
                     <th>Ações</th>
                 </tr>
             </thead>
@@ -42,7 +44,9 @@
                                 Sem imagem
                             {% endif %}
                         </td>
-                        <td><strong>{{ referencia.custo_total }}</strong></td>
+                        <td>{{ "%.2f"|format(referencia.custo_total_embalagem1) }}</td>
+                        <td>{{ "%.2f"|format(referencia.custo_total_embalagem2) }}</td>
+                        <td>{{ "%.2f"|format(referencia.custo_total_embalagem3) }}</td>
                         <td>
                             <a href="{{ url_for('routes.ver_referencia', id=referencia.id) }}" class="btn btn-info btn-sm">Ver</a>
                             <a href="{{ url_for('routes.editar_referencia', id=referencia.id) }}" class="btn btn-warning btn-sm">Editar</a>

@@ -25,7 +25,7 @@
                     <tbody>
                         {% for solado in solados %}
                         <tr>
-                            <td>{{ solado.id }}</td>
+                            <td>{{ solado.referencia }}</td>
                             <td>{{ solado.descricao }}</td>
                             <td>R$ {{ "%.2f"|format(solado.custo_total) }}</td>
                             <td>
@@ -72,7 +72,7 @@
                     <tbody>
                         {% for alca in alcas %}
                         <tr>
-                            <td>{{ alca.id }}</td>
+                            <td>{{ alca.referencia }}</td>
                             <td>{{ alca.descricao }}</td>
                             <td>R$ {{ "%.2f"|format(alca.preco_total) }}</td>
                             <td>
@@ -118,7 +118,7 @@
                     <tbody>
                         {% for componente in componentes %}
                         <tr>
-                            <td>{{ componente.id }}</td>
+                            <td>{{ componente.codigo }}</td>
                             <td>{{ componente.descricao }}</td>
                             <td>R$ {{ "%.2f"|format(componente.preco) }}</td>
                             <td>
@@ -166,7 +166,7 @@
                     <tbody>
                         {% for componente in componentes %}
                         <tr>
-                            <td>{{ componente.id }}</td>
+                            <td>{{ componente.codigo }}</td>
                             <td>{{ componente.descricao }}</td>
                             <td>R$ {{ "%.2f"|format(componente.preco) }}</td>
                             <td>
@@ -214,7 +214,7 @@
                     <tbody>
                         {% for componente in componentes %}
                         <tr>
-                            <td>{{ componente.id }}</td>
+                            <td>{{ componente.codigo }}</td>
                             <td>{{ componente.descricao }}</td>
                             <td>R$ {{ "%.2f"|format(componente.preco) }}</td>
                             <td>
@@ -262,7 +262,7 @@
                     <tbody>
                         {% for componente in componentes %}
                         <tr>
-                            <td>{{ componente.id }}</td>
+                            <td>{{ componente.codigo }}</td>
                             <td>{{ componente.descricao }}</td>
                             <td>R$ {{ "%.2f"|format(componente.preco) }}</td>
                             <td>

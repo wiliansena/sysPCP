@@ -1,0 +1,112 @@
+/* 🔹 Estilo geral para a página */
+body {
+    background: linear-gradient(145deg, #e6e6e6, #ffffff);
+    font-family: 'Arial', sans-serif;
+}
+
+/* 🔹 Contêiner principal das páginas */
+.container {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 8px 8px 16px rgba(0, 0, 0, 0.2), -4px -4px 8px rgba(255, 255, 255, 0.6);
+    margin-top: 20px;
+}
+
+/* 🔹 Títulos com efeito 3D */
+h2, h4 {
+    font-weight: bold;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    color: #333;
+}
+
+/* 🔹 Tabelas com efeito 3D */
+.table {
+    border-collapse: separate;
+    border-spacing: 0;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 6px 6px 12px rgba(0, 0, 0, 0.2), -3px -3px 6px rgba(255, 255, 255, 0.5);
+}
+
+.table thead {
+    background: #007bff;
+    color: white;
+    text-transform: uppercase;
+    border-radius: 10px;
+}
+
+.table tbody tr {
+    transition: 0.3s;
+}
+
+.table tbody tr:hover {
+    background-color: #ececec;
+    box-shadow: inset 3px 3px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* 🔹 Campos de entrada com efeito 3D */
+.form-control {
+    border-radius: 8px;
+    border: 1px solid #ced4da;
+    background: #f4f4f9;
+    box-shadow: inset 4px 4px 8px rgba(0, 0, 0, 0.15), inset -2px -2px 4px rgba(255, 255, 255, 0.7);
+    transition: all 0.3s;
+    padding: 10px;
+}
+
+.form-control:focus {
+    box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.3), inset -1px -1px 2px rgba(255, 255, 255, 0.5);
+    border-color: #007bff;
+}
+
+/* 🔹 Botões 3D */
+.btn {
+    border-radius: 8px;
+    font-weight: bold;
+    padding: 10px 14px;
+    transition: all 0.3s ease-in-out;
+    box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.2), -2px -2px 4px rgba(255, 255, 255, 0.6);
+}
+
+.btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 6px 6px 12px rgba(0, 0, 0, 0.3), -3px -3px 6px rgba(255, 255, 255, 0.5);
+}
+
+/* 🔹 Botões coloridos específicos */
+.btn-ver {
+    background-color: #17a2b8;
+    border: none;
+    color: white;
+}
+
+.btn-editar {
+    background-color: #ffc107;
+    border: none;
+    color: black;
+}
+
+.btn-excluir {
+    background-color: #dc3545;
+    border: none;
+    color: white;
+}
+
+.btn-imprimir {
+    background-color: #28a745;
+    border: none;
+    color: white;
+}
+
+/* 🔹 Ajustando o botão ao clicar */
+.btn:active {
+    transform: translateY(2px);
+    box-shadow: inset 3px 3px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* 🔹 Modais com efeito 3D */
+.modal-content {
+    border-radius: 10px;
+    box-shadow: 8px 8px 16px rgba(0, 0, 0, 0.3), -4px -4px 8px rgba(255, 255, 255, 0.6);
+}

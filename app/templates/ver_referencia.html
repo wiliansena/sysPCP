@@ -50,7 +50,7 @@
         <tbody>
             {% for solado in referencia.solados %}
             <tr>
-                <td>{{ solado.solado.id }}</td>
+                <td>{{ solado.solado.referencia }}</td>
                 <td>{{ solado.solado.descricao }}</td>
                 <td>R$ {{ "%.6f"|format(solado.solado.custo_total) }}</td>
                 <td>{{ solado.consumo }}</td>
@@ -75,7 +75,7 @@
         <tbody>
             {% for alca in referencia.alcas %}
             <tr>
-                <td>{{ alca.alca.id }}</td>
+                <td>{{ alca.alca.referencia }}</td>
                 <td>{{ alca.alca.descricao }}</td>
                 <td>R$ {{ "%.6f"|format(alca.alca.preco_total) }}</td>
                 <td>{{ alca.consumo }}</td>
@@ -100,7 +100,7 @@
         <tbody>
             {% for componente in referencia.componentes %}
             <tr>
-                <td>{{ componente.componente.id }}</td>
+                <td>{{ componente.componente.codigo }}</td>
                 <td>{{ componente.componente.descricao }}</td>
                 <td>R$ {{ "%.6f"|format(componente.componente.preco) }}</td>
                 <td>{{ componente.consumo }}</td>
@@ -124,7 +124,7 @@
         <tbody>
             {% for item in embalagem1 %}
             <tr>
-                <td>{{ item.componente.id }}</td>
+                <td>{{ item.componente.codigo }}</td>
                 <td>{{ item.componente.descricao }}</td>
                 <td>R$ {{ "%.6f"|format(item.preco_unitario) }}</td>
                 <td>{{ item.consumo }}</td>
@@ -148,7 +148,7 @@
         <tbody>
             {% for item in embalagem2 %}
             <tr>
-                <td>{{ item.componente.id }}</td>
+                <td>{{ item.componente.codigo }}</td>
                 <td>{{ item.componente.descricao }}</td>
                 <td>R$ {{ "%.6f"|format(item.preco_unitario) }}</td>
                 <td>{{ item.consumo }}</td>
@@ -172,7 +172,7 @@
         <tbody>
             {% for item in embalagem3 %}
             <tr>
-                <td>{{ item.componente.id }}</td>
+                <td>{{ item.componente.codigo }}</td>
                 <td>{{ item.componente.descricao }}</td>
                 <td>R$ {{ "%.6f"|format(item.preco_unitario) }}</td>
                 <td>{{ item.consumo }}</td>

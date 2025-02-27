@@ -64,7 +64,7 @@
 
         <h4>Formulação do Solado</h4>
         <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalComponentes">
-            Adicionar Componente
+            Adicionar
         </button>
 
         <table class="table table-bordered">
@@ -106,7 +106,7 @@
         <h4>Formulação do Solado (Com Friso)</h4>
         <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal"
             data-bs-target="#modalComponentesFriso">
-            Adicionar Componente
+            Adicionar
         </button>
 
         <table class="table table-bordered">
@@ -179,7 +179,7 @@
                     <tbody>
                         {% for componente in componentes %}
                         <tr>
-                            <td>{{ componente.id }}</td>
+                            <td>{{ componente.codigo }}</td>
                             <td>{{ componente.descricao }}</td>
                             <td>R$ {{ "%.6f"|format(componente.preco) }}</td>
                             <td>
@@ -227,7 +227,7 @@
                     <tbody>
                         {% for componente in componentes %}
                         <tr>
-                            <td>{{ componente.id }}</td>
+                            <td>{{ componente.codigo }}</td>
                             <td>{{ componente.descricao }}</td>
                             <td>R$ {{ "%.6f"|format(componente.preco) }}</td>
                             <td>
