@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <p class="mt-6 text-center"><strong>Destalhes da margem por Pedido</strong></p>
+
+    <div class="card">
+        <div class="card-body">
+            <p><strong>Data:</strong> {{ margem.data_criacao.strftime('%d/%m/%Y') }}</p>
+            <h5 class="card-title"><strong>Referência:</strong> {{ margem.referencia.codigo_referencia }} - {{
+                margem.referencia.descricao }}</h5>
+            <p><strong>Cliente:</strong> {{ margem.cliente }}</p>
+            <p><strong>Embalagem:</strong> {{ margem.embalagem_escolhida }}</p>
+            <p><strong>Preço de Venda:</strong> R$ {{ "%.2f"|format(margem.preco_venda) }}</p>
+
+            <!-- 🔹 Despesas de Venda -->
+            <p><strong> Despesas de Venda:</strong></p>
+            <table class="table-sm">
+                <thead>
+                    <tr>
+                        <th>Descrição </th>
+                        <th>Porcentagem (%) </th>
+                        <th>Real (R$)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Comissão</td>
+                        <td>{{ margem.comissao_porcentagem }}</td>
+                        <td>R$ {{ "%.2f"|format(margem.comissao_valor) }}</td>
+                    </tr>
+                    <tr>
+                        <td>Financeiro</td>
+                        <td>{{ margem.financeiro_porcentagem }}</td>
+                        <td>R$ {{ "%.2f"|format(margem.financeiro_valor) }}</td>
+                    </tr>
+                    <tr>
+                        <td>Duvidosos</td>
+                        <td>{{ margem.duvidosos_porcentagem }}</td>
+                        <td>R$ {{ "%.2f"|format(margem.duvidosos_valor) }}</td>
+                    </tr>
+                    <tr>
+                        <td>Frete</td>
+                        <td>{{ margem.frete_porcentagem }}</td>
+                        <td>R$ {{ "%.2f"|format(margem.frete_valor) }}</td>
+                    </tr>
+                    <tr>
+                        <td>Tributos</td>
+                        <td>{{ margem.tributos_porcentagem }}</td>
+                        <td>R$ {{ "%.2f"|format(margem.tributos_valor) }}</td>
+                    </tr>
+                    <tr>
+                        <td>Outros</td>
+                        <td>{{ margem.outros_porcentagem }}</td>
+                        <td>R$ {{ "%.2f"|format(margem.outros_valor) }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Totais</strong></td>
+                        <td><strong>{{ "%.2f"|format(margem.total_despesas_porcemtagem) }}</td></strong>
+                        <td>R$ <strong>{{ "%.2f"|format(margem.total_despesas_valor) }}</td></strong></td>
+                    </tr>
+                </tbody>
+            </table>
+            <hr>
+            <!-- 🔹 Custos e Margens da Embalagem Escolhida -->
+            <h5 class="mt-6 text-center"><Strong>Custo total e Margens</Strong></h5>
+            <table class="table-sm">
+                <thead>
+                    <tr>
+                        <th>Embalagem</th>
+                        <th>Custo</th>
+                        <th>Despesa de venda</th>
+                        <th>Custo Total (R$)</th>
+                        <th>Lucro Unitário (R$)</th>
+                        <th>Margem (%)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>{{ margem.embalagem_escolhida }}</strong></td>
+                        <td>R$ {{ "%.2f"|format(margem.preco_embalagem_escolhida) }}</td>
+                        <td>R$ {{ "%.2f"|format(margem.despesas_venda) }}</td>
+                        <td>R$ {{ "%.2f"|format(margem.custo_margem_embalagem) }}</td>
+                        <td>R$ {{ "%.2f"|format(margem.lucro_unitario) }}</td>
+                        <td> {{ "%.2f"|format(margem.margem) }}%</td>
+                    </tr>
+                </tbody>
+            </table>
+            <hr>
+            <h4 class="mt-4 text-center">PREÇOS SUGERIDOS</h4>
+            <div class="table-responsive">
+                <table class="table table-sm text-center">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Margem</th>
+                            <th>5%</th>
+                            <th>7%</th>
+                            <th>10%</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Preço de Venda</strong></td>
+                            <td>R$ {{ "%.2f"|format(margem.calcular_precos_sugeridos()[5]["preco_sugerido"]) }}</td>
+                            <td>R$ {{ "%.2f"|format(margem.calcular_precos_sugeridos()[7]["preco_sugerido"]) }}</td>
+                            <td>R$ {{ "%.2f"|format(margem.calcular_precos_sugeridos()[10]["preco_sugerido"]) }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Lucro Líquido</strong></td>
+                            <td>R$ {{ "%.2f"|format(margem.calcular_precos_sugeridos()[5]["lucro"]) }}</td>
+                            <td>R$ {{ "%.2f"|format(margem.calcular_precos_sugeridos()[7]["lucro"]) }}</td>
+                            <td>R$ {{ "%.2f"|format(margem.calcular_precos_sugeridos()[10]["lucro"]) }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <!-- 🔹 Tabela para 12%, 15% e 20% -->
+                <table class="table table-sm text-center mt-3">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Margem</th>
+                            <th>12%</th>
+                            <th>15%</th>
+                            <th>20%</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Preço de Venda</strong></td>
+                            <td>R$ {{ "%.2f"|format(margem.calcular_precos_sugeridos()[12]["preco_sugerido"]) }}</td>
+                            <td>R$ {{ "%.2f"|format(margem.calcular_precos_sugeridos()[15]["preco_sugerido"]) }}</td>
+                            <td>R$ {{ "%.2f"|format(margem.calcular_precos_sugeridos()[20]["preco_sugerido"]) }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Lucro Líquido</strong></td>
+                            <td>R$ {{ "%.2f"|format(margem.calcular_precos_sugeridos()[12]["lucro"]) }}</td>
+                            <td>R$ {{ "%.2f"|format(margem.calcular_precos_sugeridos()[15]["lucro"]) }}</td>
+                            <td>R$ {{ "%.2f"|format(margem.calcular_precos_sugeridos()[20]["lucro"]) }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <a href="{{ url_for('routes.listar_margens') }}" class="btn btn-secondary">Voltar</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

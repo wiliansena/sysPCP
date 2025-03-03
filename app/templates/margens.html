@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Lista de Margens</h2>
+    <a href="{{ url_for('routes.nova_margem') }}" class="btn btn-success mb-3">Nova Margem</a>
+
+    <h5>Buscar Referência</h5>
+
+    <!-- 🔎 Campo de busca -->
+    <div class="row mb-3">
+        <div class="col-md-4"> <!-- Define um tamanho menor para o campo -->
+            <form method="GET" action="{{ url_for('routes.listar_margens') }}" class="d-flex">
+                <input type="text" name="filtro" class="form-control form-control-sm" placeholder="Buscar referência"
+                    value="{{ request.args.get('filtro', '') }}">
+                <button type="submit" class="btn btn-primary btn-sm ms-2">Buscar</button>
+            </form>
+        </div>
+    </div>
+    
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Ref</th>
+                <th>Cliente</th>
+                <th>Preço de Venda</th>
+                <th>Custo total</th>
+                <th>Lucro liquído</th>
+                <th>Margem %</th>
+                <th>EMB</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for margem in margens %}
+            <tr>
+                <td>{{ margem.id }}</td>
+                <td>{{ margem.referencia.codigo_referencia }}</td>
+                <td>{{ margem.cliente }}</td>
+                <td>R$ {{ margem.preco_venda }}</td>
+                <td>R$  {{ "%.2f"|format(margem.custo_margem_embalagem) }}</td>
+                <td>R$  {{ "%.2f"|format(margem.lucro_unitario) }}</td>
+                <td>  {{ "%.2f"|format(margem.margem) }}%</td>
+                <td>  {{ margem.embalagem_escolhida }}</td>
+                <td>
+                    <a href="{{ url_for('routes.ver_margem', id=margem.id) }}" class="btn btn-info btn-sm">Ver</a>
+                    <a href="{{ url_for('routes.editar_margem', id=margem.id) }}" class="btn btn-warning btn-sm">Editar</a>
+                    <a href="{{ url_for('routes.copiar_margem', id=margem.id) }}" class="btn btn-primary">Copiar</a>
+                    <form action="{{ url_for('routes.excluir_margem', id=margem.id) }}" method="POST" class="d-inline">
+                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Tem certeza que deseja excluir esta margem?')">Excluir</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

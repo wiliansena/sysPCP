@@ -110,3 +110,15 @@ h2, h4 {
     border-radius: 10px;
     box-shadow: 8px 8px 16px rgba(0, 0, 0, 0.3), -4px -4px 8px rgba(255, 255, 255, 0.6);
 }
+
+@media print {
+
+    /* Esconde botões, navbar, rodapé e elementos desnecessários */
+    .btn, .no-print, .navbar, .footer, .card-header {
+        display: none !important;
+    }
+
+        /* Faz as tabelas ocuparem toda a largura e remove estilos extras */
+    
+}
+

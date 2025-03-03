@@ -1,13 +1,12 @@
 from typing import Optional
 from flask_wtf import FlaskForm
-from wtforms import DecimalField, HiddenField, SelectMultipleField, StringField, SubmitField, FloatField, FileField
+from wtforms import DateField, DecimalField, HiddenField, SelectMultipleField, StringField, SubmitField, FloatField, FileField
 from wtforms.validators import DataRequired
 from wtforms import SelectField
-#SOLADO
 from flask_wtf import FlaskForm
 from wtforms import StringField, FloatField, IntegerField, FileField, FieldList, FormField, SubmitField
-from wtforms.validators import DataRequired
-from wtforms.validators import Optional
+from wtforms.validators import DataRequired, NumberRange, Optional
+from datetime import date
 
 
 class ColecaoForm(FlaskForm):
@@ -142,6 +141,56 @@ class ReferenciaMaoDeObraForm(FlaskForm):
     consumo = DecimalField('Consumo', places=4, validators=[DataRequired()])
     producao = IntegerField('Produção', validators=[DataRequired()])
     submit = SubmitField('Adicionar Mão de Obra')
+
+
+
+from flask_wtf import FlaskForm
+from wtforms import StringField, DecimalField, SelectField, SubmitField, HiddenField
+from wtforms.validators import DataRequired, NumberRange, Optional
+from datetime import date
+
+class MargemForm(FlaskForm):
+    referencia_id = HiddenField('Referência', validators=[DataRequired()])
+    cliente = StringField('Cliente', validators=[Optional()])
+    
+    # 🔹 Seleção da Embalagem
+    embalagem_escolhida = SelectField(
+        'Embalagem Escolhida', 
+        choices=[('Cartucho', 'Cartucho'), ('Colmeia', 'Colmeia'), ('Saco', 'Saco')],
+        validators=[DataRequired()]
+    )
+
+    preco_venda = DecimalField('Preço de Venda', places=2, validators=[DataRequired(), NumberRange(min=0)])
+    
+    # 🔹 Despesas de Venda
+    comissao_porcentagem = DecimalField('Comissão (%)', places=2, default=0, validators=[Optional()])
+    comissao_valor = DecimalField('Comissão (R$)', places=2, default=0, validators=[Optional()])
+    financeiro_porcentagem = DecimalField('Financeiro (%)', places=2, default=0, validators=[Optional()])
+    financeiro_valor = DecimalField('Financeiro (R$)', places=2, default=0, validators=[Optional()])
+    duvidosos_porcentagem = DecimalField('Duvidosos (%)', places=2, default=0, validators=[Optional()])
+    duvidosos_valor = DecimalField('Duvidosos (R$)', places=2, default=0, validators=[Optional()])
+    frete_porcentagem = DecimalField('Frete (%)', places=2, default=0, validators=[Optional()])
+    frete_valor = DecimalField('Frete (R$)', places=2, default=0, validators=[Optional()])
+    tributos_porcentagem = DecimalField('Tributos (%)', places=2, default=0, validators=[Optional()])
+    tributos_valor = DecimalField('Tributos (R$)', places=2, default=0, validators=[Optional()])
+    outros_porcentagem = DecimalField('Outros (%)', places=2, default=0, validators=[Optional()])
+    outros_valor = DecimalField('Outros (R$)', places=2, default=0, validators=[Optional()])
+    
+    # 🔹 Campos ocultos para cálculo automático
+    custo_venda = HiddenField()
+    custo_margem_embalagem = HiddenField()
+    lucro_unitario = HiddenField()
+    margem = HiddenField()
+    
+    # 🔹 Data de Criação (oculta no formulário, mas preenchida automaticamente)
+    data_criacao = HiddenField(default=date.today())
+
+    submit = SubmitField('Salvar Margem')
+
+
+
+
+
 
 
 

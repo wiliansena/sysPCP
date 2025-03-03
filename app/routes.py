@@ -2,8 +2,8 @@ from sqlite3 import IntegrityError
 from flask import Blueprint, jsonify, render_template, redirect, url_for, flash, request
 from flask_login import current_user, login_required
 from app import db
-from app.models import FormulacaoSolado, FormulacaoSoladoFriso, Referencia, Componente, CustoOperacional, ReferenciaAlca, ReferenciaComponentes, ReferenciaCustoOperacional, ReferenciaEmbalagem1, ReferenciaEmbalagem2, ReferenciaEmbalagem3, ReferenciaMaoDeObra, ReferenciaSolado, Salario, MaoDeObra
-from app.forms import ReferenciaForm, ComponenteForm, CustoOperacionalForm, SalarioForm, MaoDeObraForm
+from app.models import FormulacaoSolado, FormulacaoSoladoFriso, Referencia, Componente, CustoOperacional, ReferenciaAlca, ReferenciaComponentes, ReferenciaCustoOperacional, ReferenciaEmbalagem1, ReferenciaEmbalagem2, ReferenciaEmbalagem3, ReferenciaMaoDeObra, ReferenciaSolado, Salario, MaoDeObra, Margem
+from app.forms import MargemForm, ReferenciaForm, ComponenteForm, CustoOperacionalForm, SalarioForm, MaoDeObraForm
 import os
 #SOLADO
 from flask import render_template, redirect, url_for, flash, request
@@ -1514,3 +1514,214 @@ def excluir_alca(id):
 
     return redirect(url_for('routes.listar_alcas'))
 
+
+# Rota para listar todas as margens
+"""@bp.route('/margens', methods=['GET'])
+@login_required
+def listar_margens():
+    margens = Margem.query.all()
+    return render_template('margens.html', margens=margens)"""
+
+@bp.route('/margens', methods=['GET'])
+@login_required
+def listar_margens():
+    filtro = request.args.get('filtro', '')
+
+    if filtro:
+        margens = Margem.query.join(Referencia).filter(
+            Referencia.codigo_referencia.ilike(f"%{filtro}%") | 
+            Referencia.descricao.ilike(f"%{filtro}%")
+        ).all()
+    else:
+        margens = Margem.query.all()
+
+    return render_template('margens.html', margens=margens)
+
+
+# Rota para criar uma nova margem
+@bp.route('/margem/nova', methods=['GET', 'POST'])
+@login_required
+def nova_margem():
+    form = MargemForm()
+    referencias = Referencia.query.all()
+    
+    # 🔹 Preenche as opções do campo de referência
+    form.referencia_id.choices = [(r.id, f"{r.codigo_referencia} - {r.descricao}") for r in referencias]
+
+    if form.validate_on_submit():
+        referencia = Referencia.query.get(form.referencia_id.data)
+
+        if not referencia:
+            flash("Erro: Referência não encontrada.", "danger")
+            return redirect(url_for('routes.nova_margem'))
+
+        # 🔹 Criar a nova margem e associar à referência
+        nova_margem = Margem(
+            cliente=form.cliente.data,
+            referencia_id=form.referencia_id.data,
+            referencia=referencia,
+            preco_venda=form.preco_venda.data,
+            embalagem_escolhida=form.embalagem_escolhida.data,  # 🔹 Guarda a embalagem escolhida
+            
+            comissao_porcentagem=form.comissao_porcentagem.data or Decimal(0),
+            comissao_valor=form.comissao_valor.data or Decimal(0),
+            financeiro_porcentagem=form.financeiro_porcentagem.data or Decimal(0),
+            financeiro_valor=form.financeiro_valor.data or Decimal(0),
+            duvidosos_porcentagem=form.duvidosos_porcentagem.data or Decimal(0),
+            duvidosos_valor=form.duvidosos_valor.data or Decimal(0),
+            frete_porcentagem=form.frete_porcentagem.data or Decimal(0),
+            frete_valor=form.frete_valor.data or Decimal(0),
+            tributos_porcentagem=form.tributos_porcentagem.data or Decimal(0),
+            tributos_valor=form.tributos_valor.data or Decimal(0),
+            outros_porcentagem=form.outros_porcentagem.data or Decimal(0),
+            outros_valor=form.outros_valor.data or Decimal(0)
+        )
+
+        # 🔹 Adicionamos a margem à sessão ANTES de calcular os custos
+        db.session.add(nova_margem)
+
+        # 🔹 Agora chamamos o cálculo dos custos com a referência já associada
+        nova_margem.calcular_custos()
+
+        db.session.commit()
+
+        flash("Margem cadastrada com sucesso!", "success")
+        return redirect(url_for('routes.listar_margens'))
+
+    return render_template('nova_margem.html', form=form, referencias=referencias)
+
+
+
+@bp.route('/margem/editar/<int:id>', methods=['GET', 'POST'])
+@login_required
+def editar_margem(id):
+    """
+    Rota para editar uma margem existente.
+    """
+    margem = Margem.query.get_or_404(id)  # Busca a margem pelo ID ou retorna erro 404
+    form = MargemForm(obj=margem)  # Preenche o formulário com os dados da margem existente
+    referencias = Referencia.query.all()
+    
+    # 🔹 Preenche as opções do campo de referência corretamente
+    form.referencia_id.choices = [(r.id, f"{r.codigo_referencia} - {r.descricao}") for r in referencias]
+
+    if form.validate_on_submit():
+        referencia = Referencia.query.get(form.referencia_id.data)
+
+        if not referencia:
+            flash("Erro: Referência não encontrada.", "danger")
+            return redirect(url_for('routes.editar_margem', id=id))
+
+        # 🔹 Atualiza os dados da margem existente
+        margem.cliente = form.cliente.data
+        margem.referencia_id = referencia.id  # Garante que o ID seja atualizado corretamente
+        margem.referencia = referencia  # Garante que o objeto seja atualizado
+        margem.preco_venda = form.preco_venda.data
+        margem.embalagem_escolhida = form.embalagem_escolhida.data
+        
+        margem.comissao_porcentagem = form.comissao_porcentagem.data or Decimal(0)
+        margem.comissao_valor = form.comissao_valor.data or Decimal(0)
+        margem.financeiro_porcentagem = form.financeiro_porcentagem.data or Decimal(0)
+        margem.financeiro_valor = form.financeiro_valor.data or Decimal(0)
+        margem.duvidosos_porcentagem = form.duvidosos_porcentagem.data or Decimal(0)
+        margem.duvidosos_valor = form.duvidosos_valor.data or Decimal(0)
+        margem.frete_porcentagem = form.frete_porcentagem.data or Decimal(0)
+        margem.frete_valor = form.frete_valor.data or Decimal(0)
+        margem.tributos_porcentagem = form.tributos_porcentagem.data or Decimal(0)
+        margem.tributos_valor = form.tributos_valor.data or Decimal(0)
+        margem.outros_porcentagem = form.outros_porcentagem.data or Decimal(0)
+        margem.outros_valor = form.outros_valor.data or Decimal(0)
+
+        # 🔹 Recalcula os custos
+        margem.calcular_custos()
+
+        db.session.commit()
+
+        flash("Margem atualizada com sucesso!", "success")
+        return redirect(url_for('routes.listar_margens'))
+
+    return render_template('editar_margem.html', form=form, referencias=referencias, margem=margem)
+
+
+
+
+
+@bp.route('/margem/copiar/<int:id>', methods=['GET'])
+@login_required
+def copiar_margem(id):
+    """
+    Rota para copiar uma margem existente e redirecionar para edição.
+    """
+    margem_original = Margem.query.get_or_404(id)
+
+    referencia = Referencia.query.get(margem_original.referencia_id)  # Garante que a referência seja buscada corretamente
+
+    if not referencia:
+        flash("Erro: Referência não encontrada para cópia.", "danger")
+        return redirect(url_for('routes.listar_margens'))
+
+    # Gerar um identificador temporário para a cópia
+    random_string = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+    cliente_temp = f"{margem_original.cliente}-COPIA-{random_string}" if margem_original.cliente else f"COPIA-{random_string}"
+
+    # Criar nova margem copiando os dados da original
+    nova_margem = Margem(
+        cliente=cliente_temp,
+        referencia_id=referencia.id,  # Garante que o ID da referência seja copiado corretamente
+        referencia=referencia,  # Garante que o objeto seja atualizado corretamente
+        preco_venda=margem_original.preco_venda,
+        embalagem_escolhida=margem_original.embalagem_escolhida,
+
+        # Copiando despesas
+        comissao_porcentagem=margem_original.comissao_porcentagem,
+        comissao_valor=margem_original.comissao_valor,
+        financeiro_porcentagem=margem_original.financeiro_porcentagem,
+        financeiro_valor=margem_original.financeiro_valor,
+        duvidosos_porcentagem=margem_original.duvidosos_porcentagem,
+        duvidosos_valor=margem_original.duvidosos_valor,
+        frete_porcentagem=margem_original.frete_porcentagem,
+        frete_valor=margem_original.frete_valor,
+        tributos_porcentagem=margem_original.tributos_porcentagem,
+        tributos_valor=margem_original.tributos_valor,
+        outros_porcentagem=margem_original.outros_porcentagem,
+        outros_valor=margem_original.outros_valor
+    )
+
+    # Adicionar e salvar no banco
+    db.session.add(nova_margem)
+    db.session.flush()  # Garante que o ID da nova margem seja gerado antes do commit
+
+    # Calcular custos para a nova margem antes de salvar
+    nova_margem.calcular_custos()
+
+    db.session.commit()
+
+    flash("Margem copiada com sucesso! Atualize os dados conforme necessário.", "success")
+    return redirect(url_for('routes.editar_margem', id=nova_margem.id))
+
+
+
+@bp.route('/margem/<int:id>', methods=['GET'])
+@login_required
+def ver_margem(id):
+    """
+    Rota para exibir os detalhes de uma margem específica.
+    """
+    margem = Margem.query.get_or_404(id)  # Busca a margem ou retorna erro 404 se não existir
+    return render_template('ver_margem.html', margem=margem)
+
+
+
+
+
+
+
+# Rota para excluir uma margem
+@bp.route('/margem/excluir/<int:id>', methods=['POST'])
+@login_required
+def excluir_margem(id):
+    margem = Margem.query.get_or_404(id)
+    db.session.delete(margem)
+    db.session.commit()
+    flash('Margem excluída com sucesso!', 'success')
+    return redirect(url_for('routes.listar_margens'))

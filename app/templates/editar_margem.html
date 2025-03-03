@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Editar Margem</h2>
+
+    <form method="POST">
+        {{ form.hidden_tag() }}
+
+        <!-- Cliente -->
+        <div class="mb-3">
+            <label for="cliente">Cliente:</label>
+            {{ form.cliente(class="form-control") }}
+        </div>
+
+        <!-- 🔹 Seleção da Referência -->
+        <h4>Referência</h4>
+        <div class="row">
+            <div class="col-md-4">
+                <input type="text" id="referencia_codigo" class="form-control" readonly
+                    value="{{ margem.referencia.codigo_referencia if margem.referencia else '' }}">
+                <input type="hidden" id="referencia_id" name="referencia_id"
+                    value="{{ margem.referencia.id if margem.referencia else '' }}">
+            </div>
+            <div class="col-md-6">
+                <input type="text" id="referencia_descricao" class="form-control" readonly
+                    value="{{ margem.referencia.descricao if margem.referencia else '' }}">
+            </div>
+            <div class="col-md-2">
+                <button type="button" class="btn btn-primary w-100" data-bs-toggle="modal"
+                    data-bs-target="#modalReferencias">
+                    Selecionar
+                </button>
+            </div>
+        </div>
+
+
+        <!-- Preço de Venda -->
+        <div class="mb-3">
+            <label for="preco_venda">Preço de Venda:</label>
+            {{ form.preco_venda(class="form-control") }}
+        </div>
+
+        <!-- Embalagem Escolhida -->
+        <div class="mb-3">
+            <label for="embalagem_escolhida">Embalagem Escolhida:</label>
+            {{ form.embalagem_escolhida(class="form-select") }}
+        </div>
+
+        <!-- 🔹 Despesas de Venda -->
+        <h4>Despesas de Venda</h4>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Descrição</th>
+                    <th>Porcentagem (%)</th>
+                    <th>Real (R$)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Comissão</td>
+                    <td>{{ form.comissao_porcentagem(class="form-control") }}</td>
+                    <td>{{ form.comissao_valor(class="form-control") }}</td>
+                </tr>
+                <tr>
+                    <td>Financeiro</td>
+                    <td>{{ form.financeiro_porcentagem(class="form-control") }}</td>
+                    <td>{{ form.financeiro_valor(class="form-control") }}</td>
+                </tr>
+                <tr>
+                    <td>Duvidosos</td>
+                    <td>{{ form.duvidosos_porcentagem(class="form-control") }}</td>
+                    <td>{{ form.duvidosos_valor(class="form-control") }}</td>
+                </tr>
+                <tr>
+                    <td>Frete</td>
+                    <td>{{ form.frete_porcentagem(class="form-control") }}</td>
+                    <td>{{ form.frete_valor(class="form-control") }}</td>
+                </tr>
+                <tr>
+                    <td>Tributos</td>
+                    <td>{{ form.tributos_porcentagem(class="form-control") }}</td>
+                    <td>{{ form.tributos_valor(class="form-control") }}</td>
+                </tr>
+                <tr>
+                    <td>Outros</td>
+                    <td>{{ form.outros_porcentagem(class="form-control") }}</td>
+                    <td>{{ form.outros_valor(class="form-control") }}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Botões -->
+        <button type="submit" class="btn btn-success">Salvar Alterações</button>
+        <a href="{{ url_for('routes.listar_margens') }}" class="btn btn-secondary">Cancelar</a>
+    </form>
+
+    <!-- 🔹 Modal para Selecionar Referência -->
+    <div class="modal fade" id="modalReferencias" tabindex="-1" aria-labelledby="modalReferenciasLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Selecionar Referência</h5>
+                    <button type="button" class="close" data-bs-dismiss="modal" aria-label="Fechar">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <!-- Campo de filtro -->
+                    <div class="mb-3">
+                        <input type="text" id="filterReferencia" class="form-control" placeholder="Filtrar Referência">
+                    </div>
+                    <!-- 🔹 Tabela para listar referências -->
+                    <table class="table" id="referenciaTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Código</th>
+                                <th>Descrição</th>
+                                <th>Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for referencia in referencias %}
+                            <tr>
+                                <td>{{ referencia.id }}</td>
+                                <td>{{ referencia.codigo_referencia }}</td>
+                                <td>{{ referencia.descricao }}</td>
+                                <td>
+                                    <button type="button" class="btn btn-success btn-sm" onclick="selecionarReferencia(
+                                        '{{ referencia.id }}', 
+                                        '{{ referencia.codigo_referencia }}', 
+                                        '{{ referencia.descricao }}'
+                                    )">
+                                        Selecionar
+                                    </button>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center text-danger">Nenhuma referência encontrada</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🔹 Script para Selecionar Referência -->
+    <script>
+        function selecionarReferencia(id, codigo, descricao) {
+            document.getElementById('referencia_id').value = id;
+            document.getElementById('referencia_codigo').value = codigo;
+            document.getElementById('referencia_descricao').value = descricao;
+
+            $('#modalReferencias').modal('hide');
+        }
+    </script>
+
+</div>
+{% endblock %}
