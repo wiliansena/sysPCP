@@ -529,10 +529,9 @@ class Margem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     preco_venda = db.Column(db.Numeric(10,2), nullable=False, default=Decimal(0))
     cliente = db.Column(db.String(20), nullable=True)
-    data_criacao = db.Column(db.Date, default=date.today)  # 🔹 Data automática
-
-    # Tipo de Embalagem Escolhida pelo Usuário
-    embalagem_escolhida = db.Column(db.String(10), nullable=False)  
+    data_criacao = db.Column(db.Date, default=date.today)
+    
+    embalagem_escolhida = db.Column(db.String(10), nullable=False)
 
     # Despesas de venda
     comissao_porcentagem = db.Column(db.Numeric(10,2), default=Decimal(0))
@@ -548,27 +547,36 @@ class Margem(db.Model):
     outros_porcentagem = db.Column(db.Numeric(10,2), default=Decimal(0))
     outros_valor = db.Column(db.Numeric(10,2), default=Decimal(0))
 
-    # Custos
+    # Custos FIXOS armazenados no banco
+    custo_total = db.Column(db.Numeric(10,2), nullable=False, default=Decimal(0))
     total_despesas_valor = db.Column(db.Numeric(10,2), default=Decimal(0))
-    total_despesas_porcemtagem = db.Column(db.Numeric(10,2), default=Decimal(0))
+    total_despesas_porcentagem = db.Column(db.Numeric(10,2), default=Decimal(0))
     despesas_venda = db.Column(db.Numeric(10,2), default=Decimal(0))
-    custo_venda = db.Column(db.Numeric(10,2), nullable=False, default=Decimal(0))
-    custo_margem_embalagem = db.Column(db.Numeric(10,2), nullable=False, default=Decimal(0))
-
-    # Relação com a referência
+    
+    # Novos campos para armazenar valores fixos
+    preco_embalagem_escolhida = db.Column(db.Numeric(10,2), nullable=False, default=Decimal(0))
+    lucro_unitario = db.Column(db.Numeric(10,2), nullable=False, default=Decimal(0))
+    margem = db.Column(db.Numeric(10,2), nullable=False, default=Decimal(0))
+    
+    # Campos para armazenar preços sugeridos
+    preco_sugerido_5 = db.Column(db.Numeric(10,2), nullable=False, default=Decimal(0))
+    preco_sugerido_7 = db.Column(db.Numeric(10,2), nullable=False, default=Decimal(0))
+    preco_sugerido_10 = db.Column(db.Numeric(10,2), nullable=False, default=Decimal(0))
+    preco_sugerido_12 = db.Column(db.Numeric(10,2), nullable=False, default=Decimal(0))
+    preco_sugerido_15 = db.Column(db.Numeric(10,2), nullable=False, default=Decimal(0))
+    preco_sugerido_20 = db.Column(db.Numeric(10,2), nullable=False, default=Decimal(0))
+    
     referencia_id = db.Column(db.Integer, db.ForeignKey('referencia.id', ondelete='CASCADE'), nullable=False)
     referencia = db.relationship('Referencia', backref=db.backref('margens', lazy=True, cascade="all, delete-orphan"))
 
     def calcular_custos(self):
-        """ Calcula todas as despesas, custo da venda e custo total da embalagem escolhida. """
-
-        # 🔹 Somando despesas fixas e percentuais sobre o preço de venda
+        """ Calcula as despesas fixas da margem e armazena no banco """
         self.total_despesas_valor = (
             self.comissao_valor + self.financeiro_valor + self.duvidosos_valor +
-            self.frete_valor + self.tributos_valor + self.outros_valor    
+            self.frete_valor + self.tributos_valor + self.outros_valor
         )
         
-        self.total_despesas_porcemtagem = (
+        self.total_despesas_porcentagem = (
             (self.preco_venda * (self.comissao_porcentagem / 100)) +
             (self.preco_venda * (self.financeiro_porcentagem / 100)) +
             (self.preco_venda * (self.duvidosos_porcentagem / 100)) +
@@ -577,9 +585,8 @@ class Margem(db.Model):
             (self.preco_venda * (self.outros_porcentagem / 100))
         )
         
-        self.despesas_venda = self.total_despesas_valor + self.total_despesas_porcemtagem
+        self.despesas_venda = self.total_despesas_valor + self.total_despesas_porcentagem
 
-        # 🔹 Garante que a referência foi associada corretamente
         if self.referencia:
             custo_embalagem = Decimal(0)
 
@@ -589,91 +596,32 @@ class Margem(db.Model):
                 custo_embalagem = self.referencia.custo_total_embalagem2 or Decimal(0)
             elif self.embalagem_escolhida.lower() == "saco":
                 custo_embalagem = self.referencia.custo_total_embalagem3 or Decimal(0)
-
-            # 🔹 Somamos corretamente as despesas à embalagem escolhida
-            self.custo_margem_embalagem = custo_embalagem + self.despesas_venda
-
-            # 🔍 **Depuração**
-            print(f"📌 Custo Embalagem: {custo_embalagem}")
-            print(f"📌 Despesas Venda: {self.despesas_venda}")
-            print(f"✅ Custo Total Calculado: {self.custo_margem_embalagem}")
             
+            # Agora armazenamos os valores fixos no banco
+            self.preco_embalagem_escolhida = custo_embalagem
+            self.custo_total = custo_embalagem + self.despesas_venda
+            self.lucro_unitario = self.preco_venda - self.custo_total
+            self.margem = self.lucro_unitario / (self.preco_venda / 100) if self.preco_venda > 0 else Decimal(0)
             
-            
-    @property
-    def preco_embalagem_escolhida(self):
-        """Retorna o preço da embalagem escolhida pelo usuário sem precisar armazená-lo no banco."""
-        if not self.referencia:
-            return Decimal(0)
-
-        if self.embalagem_escolhida.lower() == "cartucho":
-            return self.referencia.custo_total_embalagem1 or Decimal(0)
-        elif self.embalagem_escolhida.lower() == "colmeia":
-            return self.referencia.custo_total_embalagem2 or Decimal(0)
-        elif self.embalagem_escolhida.lower() == "saco":
-            return self.referencia.custo_total_embalagem3 or Decimal(0)
-
-        return Decimal(0)  # Retorna 0 caso a embalagem escolhida não seja válida
-
-    # 🔹 Lucro Unitário
-    @property
-    def lucro_unitario(self):
-        return self.preco_venda - self.custo_margem_embalagem
-
-    # 🔹 Margem %
-    @property
-    def margem(self):
-        return self.lucro_unitario / (self.preco_venda / 100) if self.preco_venda > 0 else Decimal(0)
-    
-     # 🔹 Cálculo dos preços sugeridos
-    def calcular_precos_sugeridos(self):
-            """Calcula os preços sugeridos para diferentes margens."""
-            precos = {}
-            margens = [5, 7, 10, 12, 15, 20]  # Margens fixas a serem calculadas
-
-            for margem in margens:
-                percentual = Decimal(margem) / 100  # Converte a margem para decimal
-                divisor = Decimal(1) - percentual - (self.total_despesas_porcemtagem / self.preco_venda)
-
-                if divisor > 0:
-                    preco_sugerido = (self.preco_embalagem_escolhida + self.total_despesas_valor) / divisor
-                    lucro = preco_sugerido - (self.preco_embalagem_escolhida + self.total_despesas_valor)
-                else:
-                    preco_sugerido = Decimal(0)
-                    lucro = Decimal(0)
-
-                precos[margem] = {
-                    "preco_sugerido": round(preco_sugerido, 2),
-                    "lucro": round(lucro, 2)
-                }
-
-                # 🔍 Debug: Mostra os valores calculados para cada margem
-                print(f"\n🔹 Margem: {margem}%")
-                print(f"   📌 Percentual Margem Decimal: {percentual}")
-                print(f"   📌 Total Despesas % Decimal (ajustado): {self.total_despesas_porcemtagem / self.preco_venda}")
-                print(f"   📌 Divisor Corrigido: {divisor}")
-                print(f"   💰 Preço Sugerido: {precos[margem]['preco_sugerido']}")
-                print(f"   💰 Lucro: {precos[margem]['lucro']}")
-
-            return precos
-
-
-
-
-
-
-
-
-    
-
-
-
-
-
-
-
-
-
+            # Cálculo dos preços sugeridos
+            for margem in [5, 7, 10, 12, 15, 20]:
+                percentual = Decimal(margem) / 100
+                divisor = Decimal(1) - percentual - (self.total_despesas_porcentagem / self.preco_venda)
+                preco_sugerido = (self.preco_embalagem_escolhida + self.total_despesas_valor) / divisor if divisor > 0 else Decimal(0)
+                
+                setattr(self, f'preco_sugerido_{margem}', round(preco_sugerido, 2))
+                
+                
+    def calcular_lucros_sugeridos(self):
+        """ Calcula o lucro baseado nos preços sugeridos armazenados no banco."""
+        return {
+            5: round(self.preco_sugerido_5 - self.custo_total, 2),
+            7: round(self.preco_sugerido_7 - self.custo_total, 2),
+            10: round(self.preco_sugerido_10 - self.custo_total, 2),
+            12: round(self.preco_sugerido_12 - self.custo_total, 2),
+            15: round(self.preco_sugerido_15 - self.custo_total, 2),
+            20: round(self.preco_sugerido_20 - self.custo_total, 2)
+        }
 
 
 

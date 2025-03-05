@@ -21,7 +21,6 @@
     <table class="table table-striped">
         <thead>
             <tr>
-                <th>ID</th>
                 <th>Ref</th>
                 <th>Cliente</th>
                 <th>Preço de Venda</th>
@@ -35,14 +34,13 @@
         <tbody>
             {% for margem in margens %}
             <tr>
-                <td>{{ margem.id }}</td>
                 <td>{{ margem.referencia.codigo_referencia }}</td>
                 <td>{{ margem.cliente }}</td>
                 <td>R$ {{ margem.preco_venda }}</td>
-                <td>R$  {{ "%.2f"|format(margem.custo_margem_embalagem) }}</td>
+                <td>R$  {{ "%.2f"|format(margem.custo_total) }}</td>
                 <td>R$  {{ "%.2f"|format(margem.lucro_unitario) }}</td>
                 <td>  {{ "%.2f"|format(margem.margem) }}%</td>
-                <td>  {{ margem.embalagem_escolhida }}</td>
+                <td><strong> {{ margem.embalagem_escolhida }}</strong></td>
                 <td>
                     <a href="{{ url_for('routes.ver_margem', id=margem.id) }}" class="btn btn-info btn-sm">Ver</a>
                     <a href="{{ url_for('routes.editar_margem', id=margem.id) }}" class="btn btn-warning btn-sm">Editar</a>

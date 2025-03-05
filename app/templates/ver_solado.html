@@ -133,16 +133,14 @@
     {% endif %}
 
 
-<h4><strong>SEM FRISO - TOTAL: R$ {{ "%.2f"|format(preco_total) }}</strong></h4>
-<h4><strong>COM FRISO - TOTAL: R$ {{ "%.2f"|format(preco_total_friso) }}</strong></h4>
-<h3 class="text-primary"><strong>CUSTO TOTAL DA SOLA: R$ {{ "%.2f"|format(custo_total) }}</strong></h3>
+<h5><strong>SEM FRISO - TOTAL: R$ {{ "%.2f"|format(preco_total) }}</strong></h5>
+<h5><strong>COM FRISO - TOTAL: R$ {{ "%.2f"|format(preco_total_friso) }}</strong></h5>
+<h4 class="text-primary"><strong>CUSTO TOTAL DA SOLA: R$ {{ "%.2f"|format(custo_total) }}</strong></h4>
 <hr>
     <a href="{{ url_for('routes.listar_solados') }}" class="btn btn-secondary">Sair</a>
     <a href="{{ url_for('routes.editar_solado', id=solado.id) }}" class="btn btn-warning btn-sm">Editar</a>    
     <button class="btn btn-primary" onclick="window.print()">
         <i class="fa fa-print"></i> Imprimir
     </button>
-<hr>
-<br>
 </div>
 {% endblock %}

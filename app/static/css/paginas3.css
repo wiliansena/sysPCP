@@ -112,13 +112,53 @@ h2, h4 {
 }
 
 @media print {
+    /* Remove sombras, bordas e fundo das divs */
+    .container, .card, .table, .modal-content {
+        background: none !important;
+        box-shadow: none !important;
+        border: none !important;
+    }
 
-    /* Esconde botões, navbar, rodapé e elementos desnecessários */
+    body {
+        zoom: 80%; /* Ajusta o tamanho para caber melhor em A4 */
+    }
+    .container {
+        max-width: 100%;
+        padding: 10px;
+    }
+    .card-body {
+        font-size: 10pt;
+    }
+    .table-sm {
+        font-size: 9pt;
+    }
+    .btn, .no-print {
+        display: none !important;
+    }
+
+    /* Remove efeitos de botões e elementos desnecessários na impressão */
     .btn, .no-print, .navbar, .footer, .card-header {
         display: none !important;
     }
 
-        /* Faz as tabelas ocuparem toda a largura e remove estilos extras */
-    
+    /* Faz as tabelas ocuparem toda a largura da página */
+    .table {
+        width: 100%;
+        border-collapse: collapse !important;
+    }
+
+    .table th, .table td {
+        border: 1px solid black !important; /* Mantém a borda da tabela para organização */
+        padding: 5px;
+        text-align: center;
+    }
+
+    /* Ajusta fontes para melhor legibilidade na impressão */
+    body {
+        font-size: 12pt;
+        color: black;
+        background: white !important;
+    }
 }
+
 

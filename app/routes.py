@@ -1545,24 +1545,20 @@ def nova_margem():
     form = MargemForm()
     referencias = Referencia.query.all()
     
-    # 🔹 Preenche as opções do campo de referência
     form.referencia_id.choices = [(r.id, f"{r.codigo_referencia} - {r.descricao}") for r in referencias]
 
     if form.validate_on_submit():
         referencia = Referencia.query.get(form.referencia_id.data)
-
         if not referencia:
             flash("Erro: Referência não encontrada.", "danger")
             return redirect(url_for('routes.nova_margem'))
 
-        # 🔹 Criar a nova margem e associar à referência
         nova_margem = Margem(
             cliente=form.cliente.data,
             referencia_id=form.referencia_id.data,
             referencia=referencia,
             preco_venda=form.preco_venda.data,
-            embalagem_escolhida=form.embalagem_escolhida.data,  # 🔹 Guarda a embalagem escolhida
-            
+            embalagem_escolhida=form.embalagem_escolhida.data,
             comissao_porcentagem=form.comissao_porcentagem.data or Decimal(0),
             comissao_valor=form.comissao_valor.data or Decimal(0),
             financeiro_porcentagem=form.financeiro_porcentagem.data or Decimal(0),
@@ -1574,23 +1570,29 @@ def nova_margem():
             tributos_porcentagem=form.tributos_porcentagem.data or Decimal(0),
             tributos_valor=form.tributos_valor.data or Decimal(0),
             outros_porcentagem=form.outros_porcentagem.data or Decimal(0),
-            outros_valor=form.outros_valor.data or Decimal(0)
+            outros_valor=form.outros_valor.data or Decimal(0),
+            
+            # Campos fixos armazenados no banco
+            custo_total=Decimal(0),
+            preco_embalagem_escolhida=Decimal(0),
+            lucro_unitario=Decimal(0),
+            margem=Decimal(0),
+            preco_sugerido_5=Decimal(0),
+            preco_sugerido_7=Decimal(0),
+            preco_sugerido_10=Decimal(0),
+            preco_sugerido_12=Decimal(0),
+            preco_sugerido_15=Decimal(0),
+            preco_sugerido_20=Decimal(0)
         )
 
-        # 🔹 Adicionamos a margem à sessão ANTES de calcular os custos
         db.session.add(nova_margem)
-
-        # 🔹 Agora chamamos o cálculo dos custos com a referência já associada
         nova_margem.calcular_custos()
-
         db.session.commit()
 
         flash("Margem cadastrada com sucesso!", "success")
         return redirect(url_for('routes.listar_margens'))
 
     return render_template('nova_margem.html', form=form, referencias=referencias)
-
-
 
 @bp.route('/margem/editar/<int:id>', methods=['GET', 'POST'])
 @login_required
@@ -1644,35 +1646,25 @@ def editar_margem(id):
 
 
 
-
-
 @bp.route('/margem/copiar/<int:id>', methods=['GET'])
 @login_required
 def copiar_margem(id):
-    """
-    Rota para copiar uma margem existente e redirecionar para edição.
-    """
     margem_original = Margem.query.get_or_404(id)
-
-    referencia = Referencia.query.get(margem_original.referencia_id)  # Garante que a referência seja buscada corretamente
-
+    referencia = Referencia.query.get(margem_original.referencia_id)
+    
     if not referencia:
         flash("Erro: Referência não encontrada para cópia.", "danger")
         return redirect(url_for('routes.listar_margens'))
 
-    # Gerar um identificador temporário para a cópia
     random_string = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
     cliente_temp = f"{margem_original.cliente}-COPIA-{random_string}" if margem_original.cliente else f"COPIA-{random_string}"
 
-    # Criar nova margem copiando os dados da original
     nova_margem = Margem(
         cliente=cliente_temp,
-        referencia_id=referencia.id,  # Garante que o ID da referência seja copiado corretamente
-        referencia=referencia,  # Garante que o objeto seja atualizado corretamente
+        referencia_id=referencia.id,
+        referencia=referencia,
         preco_venda=margem_original.preco_venda,
         embalagem_escolhida=margem_original.embalagem_escolhida,
-
-        # Copiando despesas
         comissao_porcentagem=margem_original.comissao_porcentagem,
         comissao_valor=margem_original.comissao_valor,
         financeiro_porcentagem=margem_original.financeiro_porcentagem,
@@ -1684,21 +1676,26 @@ def copiar_margem(id):
         tributos_porcentagem=margem_original.tributos_porcentagem,
         tributos_valor=margem_original.tributos_valor,
         outros_porcentagem=margem_original.outros_porcentagem,
-        outros_valor=margem_original.outros_valor
+        outros_valor=margem_original.outros_valor,
+        
+        custo_total=margem_original.custo_total,
+        preco_embalagem_escolhida=margem_original.preco_embalagem_escolhida,
+        lucro_unitario=margem_original.lucro_unitario,
+        margem=margem_original.margem,
+        preco_sugerido_5=margem_original.preco_sugerido_5,
+        preco_sugerido_7=margem_original.preco_sugerido_7,
+        preco_sugerido_10=margem_original.preco_sugerido_10,
+        preco_sugerido_12=margem_original.preco_sugerido_12,
+        preco_sugerido_15=margem_original.preco_sugerido_15,
+        preco_sugerido_20=margem_original.preco_sugerido_20
     )
 
-    # Adicionar e salvar no banco
     db.session.add(nova_margem)
-    db.session.flush()  # Garante que o ID da nova margem seja gerado antes do commit
-
-    # Calcular custos para a nova margem antes de salvar
     nova_margem.calcular_custos()
-
     db.session.commit()
 
-    flash("Margem copiada com sucesso! Atualize os dados conforme necessário.", "success")
+    flash("Margem copiada com sucesso!", "success")
     return redirect(url_for('routes.editar_margem', id=nova_margem.id))
-
 
 
 @bp.route('/margem/<int:id>', methods=['GET'])

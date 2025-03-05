@@ -153,7 +153,6 @@ class MargemForm(FlaskForm):
     referencia_id = HiddenField('Referência', validators=[DataRequired()])
     cliente = StringField('Cliente', validators=[Optional()])
     
-    # 🔹 Seleção da Embalagem
     embalagem_escolhida = SelectField(
         'Embalagem Escolhida', 
         choices=[('Cartucho', 'Cartucho'), ('Colmeia', 'Colmeia'), ('Saco', 'Saco')],
@@ -162,7 +161,7 @@ class MargemForm(FlaskForm):
 
     preco_venda = DecimalField('Preço de Venda', places=2, validators=[DataRequired(), NumberRange(min=0)])
     
-    # 🔹 Despesas de Venda
+    # Despesas de Venda
     comissao_porcentagem = DecimalField('Comissão (%)', places=2, default=0, validators=[Optional()])
     comissao_valor = DecimalField('Comissão (R$)', places=2, default=0, validators=[Optional()])
     financeiro_porcentagem = DecimalField('Financeiro (%)', places=2, default=0, validators=[Optional()])
@@ -176,15 +175,22 @@ class MargemForm(FlaskForm):
     outros_porcentagem = DecimalField('Outros (%)', places=2, default=0, validators=[Optional()])
     outros_valor = DecimalField('Outros (R$)', places=2, default=0, validators=[Optional()])
     
-    # 🔹 Campos ocultos para cálculo automático
-    custo_venda = HiddenField()
-    custo_margem_embalagem = HiddenField()
+    # Campos ocultos para cálculos automáticos
+    custo_total = HiddenField()
+    preco_embalagem_escolhida = HiddenField()
     lucro_unitario = HiddenField()
     margem = HiddenField()
     
-    # 🔹 Data de Criação (oculta no formulário, mas preenchida automaticamente)
-    data_criacao = HiddenField(default=date.today())
-
+    # Campos para armazenar preços sugeridos
+    preco_sugerido_5 = HiddenField()
+    preco_sugerido_7 = HiddenField()
+    preco_sugerido_10 = HiddenField()
+    preco_sugerido_12 = HiddenField()
+    preco_sugerido_15 = HiddenField()
+    preco_sugerido_20 = HiddenField()
+    
+    data_criacao = HiddenField()
+    
     submit = SubmitField('Salvar Margem')
 
 
