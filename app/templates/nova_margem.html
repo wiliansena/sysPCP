@@ -1,184 +1,209 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="pt">
 
-{% block content %}
-<div class="container mt-4">
-    <h2>Cadastrar Nova Margem</h2>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>Cadastrar Margem</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/margens_mobile.css') }}">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</head>
 
-    <form method="POST" action="{{ url_for('routes.nova_margem') }}">
-        {{ form.hidden_tag() }}
+<body>
 
-        <!-- 🔹 CLIENTE -->
-        <div class="form-group">
-            <h4>CLIENTE</h4>
-            {{ form.cliente(class="form-control") }}
-        </div>
+    <!-- 🔹 Cabeçalho no estilo de aplicativo -->
+    <header class="app-header">
+        <h1>Nova Margem</h1>
+    </header>
 
-        <!-- 🔹 Seleção da Referência -->
-        <h4>Referência</h4>
-        <div class="row">
-            <div class="col-md-4">
-                <input type="text" id="referencia_codigo" class="form-control" readonly placeholder="Código">
-                <input type="hidden" id="referencia_id" name="referencia_id">
-            </div>
-            <div class="col-md-6">
-                <input type="text" id="referencia_descricao" class="form-control" readonly placeholder="Descrição">
-            </div>
-            <div class="col-md-2">
-                <button type="button" class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#modalReferencias">
-                    Selecionar
-                </button>
-            </div>
-        </div>
+    <!-- 🔹 Container Principal -->
+    <div class="container mt-3">
+        <form method="POST" action="{{ url_for('routes.nova_margem') }}">
+            {{ form.hidden_tag() }}
 
-        <!-- 🔹 Seleção da Embalagem -->
-        <h4 class="mt-3">Escolha a Embalagem</h4>
-        <div class="form-group">
-            {{ form.embalagem_escolhida(class="form-select") }}
-        </div>
-
-        <!-- 🔹 Preço de Venda -->
-        <div class="form-group">
-            <h4>Preço de Venda</h4>
-            {{ form.preco_venda(class="form-control") }}
-        </div>
-
-        <!-- 🔹 Despesas de Venda -->
-        <h4>Despesas de Venda</h4>
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Descrição</th>
-                    <th>Porcentagem (%)</th>
-                    <th>Valor (R$)</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>Comissão</td>
-                    <td>{{ form.comissao_porcentagem(class="form-control") }}</td>
-                    <td>{{ form.comissao_valor(class="form-control") }}</td>
-                </tr>
-                <tr>
-                    <td>Financeiro</td>
-                    <td>{{ form.financeiro_porcentagem(class="form-control") }}</td>
-                    <td>{{ form.financeiro_valor(class="form-control") }}</td>
-                </tr>
-                <tr>
-                    <td>Duvidosos</td>
-                    <td>{{ form.duvidosos_porcentagem(class="form-control") }}</td>
-                    <td>{{ form.duvidosos_valor(class="form-control") }}</td>
-                </tr>
-                <tr>
-                    <td>Frete</td>
-                    <td>{{ form.frete_porcentagem(class="form-control") }}</td>
-                    <td>{{ form.frete_valor(class="form-control") }}</td>
-                </tr>
-                <tr>
-                    <td>Tributos</td>
-                    <td>{{ form.tributos_porcentagem(class="form-control") }}</td>
-                    <td>{{ form.tributos_valor(class="form-control") }}</td>
-                </tr>
-                <tr>
-                    <td>Outros</td>
-                    <td>{{ form.outros_porcentagem(class="form-control") }}</td>
-                    <td>{{ form.outros_valor(class="form-control") }}</td>
-                </tr>
-            </tbody>
-        </table>
-
-        <button type="submit" class="btn btn-success">Salvar</button>
-        <a href="{{ url_for('routes.listar_margens') }}" class="btn btn-secondary">Cancelar</a>
-    </form>
-</div>
-
-<!-- 🔹 Modal para Selecionar Referência -->
-<div class="modal fade" id="modalReferencias" tabindex="-1" aria-labelledby="modalReferenciasLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Selecionar Referência</h5>
-                <button type="button" class="close" data-bs-dismiss="modal" aria-label="Fechar">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <!-- Campo de filtro -->
-                <div class="mb-3">
-                    <input type="text" id="filterReferencia" class="form-control" placeholder="Filtrar Referência">
+            <!-- 🔹 Cliente -->
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Cliente</h5>
+                    {{ form.cliente(class="form-control") }}
                 </div>
-                <!-- 🔹 Tabela para listar referências -->
-                <table class="table" id="referenciaTable">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Código</th>
-                            <th>Descrição</th>
-                            <th>Ação</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for referencia in referencias %}
-                        <tr>
-                            <td>{{ referencia.id }}</td>
-                            <td>{{ referencia.codigo_referencia }}</td>
-                            <td>{{ referencia.descricao }}</td>
-                            <td>
-                                <button type="button" class="btn btn-success btn-sm" 
-                                    onclick="selecionarReferencia(
-                                        '{{ referencia.id }}', 
-                                        '{{ referencia.codigo_referencia }}', 
-                                        '{{ referencia.descricao }}'
-                                    )">
-                                    Selecionar
-                                </button>
-                            </td>
-                        </tr>
-                        {% else %}
-                        <tr>
-                            <td colspan="4" class="text-center text-danger">Nenhuma referência encontrada</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+            </div>
+
+            <!-- 🔹 Seleção da Referência -->
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h5 class="card-title">Referência</h5>
+                    <div class="input-group">
+                        <input type="text" id="referencia_codigo" class="form-control" readonly placeholder="Código">
+                        <input type="hidden" id="referencia_id" name="referencia_id">
+                        <input type="text" id="referencia_descricao" class="form-control" readonly
+                            placeholder="Descrição">
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal"
+                            data-bs-target="#modalReferencias">Selecionar</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 🔹 Escolha da Embalagem -->
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h5 class="card-title">Escolha a Embalagem</h5>
+                    {{ form.embalagem_escolhida(class="form-select") }}
+                </div>
+            </div>
+
+            <!-- 🔹 Preço de Venda -->
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h5 class="card-title">Preço de Venda</h5>
+                    {{ form.preco_venda(class="form-control") }}
+                </div>
+            </div>
+
+            <!-- 🔹 Despesas de Venda -->
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h5 class="card-title">Despesas de Venda</h5>
+                    <ul class="list-group">
+                        <li class="list-group-item"><strong>Comissão </strong><strong>% </strong>{{
+                            form.comissao_porcentagem(class="form-control") }}<strong> R$ </strong>{{
+                            form.comissao_valor(class="form-control") }}</li>
+                        <li class="list-group-item"><strong>Financeiro </strong><strong>% </strong>{{
+                            form.financeiro_porcentagem(class="form-control") }}<strong> R$ </strong>{{
+                            form.financeiro_valor(class="form-control") }}</li>
+                        <li class="list-group-item"><strong>Duvidosos </strong><strong>% </strong>{{
+                            form.duvidosos_porcentagem(class="form-control") }}<strong> R$ </strong>{{
+                            form.duvidosos_valor(class="form-control") }}</li>
+                        <li class="list-group-item"><strong>Frete&nbsp;&nbsp;&nbsp;</strong><strong>% </strong>{{
+                            form.frete_porcentagem(class="form-control") }}<strong> R$ </strong>{{
+                            form.frete_valor(class="form-control") }}</li>
+                        <li class="list-group-item"><strong>Tributo</strong><strong>% </strong>{{
+                            form.tributos_porcentagem(class="form-control") }}<strong> R$ </strong>{{
+                            form.tributos_valor(class="form-control") }}</li>
+                        <li class="list-group-item"><strong>Outros</strong><strong>% </strong>{{
+                            form.outros_porcentagem(class="form-control") }}<strong> R$ </strong>{{
+                            form.outros_valor(class="form-control") }}</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 🔹 Botões de Ação -->
+            <div class="d-grid gap-2 mt-4">
+                <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Salvar</button>
+                <a href="{{ url_for('routes.listar_margens') }}" class="btn btn-secondary">Cancelar</a>
+            </div>
+        </form>
+    </div>
+
+    <!-- 🔹 Modal para Selecionar Referência -->
+    <div class="modal fade" id="modalReferencias" tabindex="-1" aria-labelledby="modalReferenciasLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Selecionar Referência</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Campo de filtro -->
+                    <div class="mb-3">
+                        <input type="text" id="filterReferencia" class="form-control" placeholder="Filtrar Referência">
+                    </div>
+                    <!-- 🔹 Tabela para listar referências -->
+                    <table class="table table-sm" id="referenciaTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Código</th>
+                                <th>Descrição</th>
+                                <th>Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for referencia in referencias %}
+                            <tr>
+                                <td>{{ referencia.id }}</td>
+                                <td>{{ referencia.codigo_referencia }}</td>
+                                <td>{{ referencia.descricao }}</td>
+                                <td>
+                                    <button type="button" class="btn btn-success btn-sm select-referencia"
+                                        data-id="{{ referencia.id }}" data-codigo="{{ referencia.codigo_referencia }}"
+                                        data-descricao="{{ referencia.descricao }}">
+                                        Selecionar
+                                    </button>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center text-danger">Nenhuma referência encontrada</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Script para filtrar todas as tabelas -->
-<script>
-    function setupFilter(filterId, tableId) {
-        const filterInput = document.getElementById(filterId);
-        if (filterInput) {
-            filterInput.addEventListener('keyup', function () {
-                let filtro = this.value.toUpperCase();
-                let rows = document.querySelectorAll('#' + tableId + ' tbody tr');
-                rows.forEach(row => {
-                    let col1 = row.querySelector('td:nth-child(1)').textContent.toUpperCase();
-                    let col2 = row.querySelector('td:nth-child(2)').textContent.toUpperCase();
-                    if (col1.indexOf(filtro) > -1 || col2.indexOf(filtro) > -1) {
-                        row.style.display = '';
-                    } else {
-                        row.style.display = 'none';
+    <!-- 🔹 Script para Selecionar Referência -->
+    <script>
+        $(document).ready(function () {
+            $(".select-referencia").click(function () {
+                let id = $(this).data("id");
+                let codigo = $(this).data("codigo");
+                let descricao = $(this).data("descricao");
+
+                $("#referencia_id").val(id);
+                $("#referencia_codigo").val(codigo);
+                $("#referencia_descricao").val(descricao);
+
+                $("#modalReferencias").modal("hide");
+            });
+
+            // 🔹 Ativar filtro na tabela de referências
+            $("#filterReferencia").on("keyup", function () {
+                let filtro = $(this).val().toUpperCase();
+                $("#referenciaTable tbody tr").each(function () {
+                    let codigo = $(this).find("td:eq(1)").text().toUpperCase();
+                    let descricao = $(this).find("td:eq(2)").text().toUpperCase();
+                    $(this).toggle(codigo.indexOf(filtro) > -1 || descricao.indexOf(filtro) > -1);
+                });
+            });
+        });
+    </script>
+
+    <script>
+        window.addEventListener("resize", function () {
+            document.querySelectorAll(".table-responsive").forEach(function (el) {
+                el.scrollLeft = 0;
+            });
+        });
+
+        /* 🔹 Passar automaticamente para o próximo campo ao digitar */
+        document.addEventListener("DOMContentLoaded", function () {
+            let inputs = document.querySelectorAll("input, select, textarea");
+
+            inputs.forEach((input, index) => {
+                input.addEventListener("keydown", function (event) {
+                    if (event.key === "Enter") {
+                        event.preventDefault();
+                        let nextInput = inputs[index + 1];
+                        if (nextInput) {
+                            nextInput.focus();
+                        }
                     }
                 });
             });
-        }
-    }
+        });
+    </script>
 
-    // Ativar filtros
-    setupFilter('filterReferencia', 'referenciaTable');
-</script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/margens_mobile.css') }}">
+    <script src="{{ url_for('static', filename='js/formatacao_numeros.js') }}"></script>
 
-<!-- 🔹 Script para Selecionar Referência -->
-<script>
-function selecionarReferencia(id, codigo, descricao) {
-    document.getElementById('referencia_id').value = id;
-    document.getElementById('referencia_codigo').value = codigo;
-    document.getElementById('referencia_descricao').value = descricao;
 
-    $('#modalReferencias').modal('hide');
-}
-</script>
+</body>
 
-{% endblock %}
+</html>

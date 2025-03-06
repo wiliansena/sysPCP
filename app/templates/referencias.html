@@ -3,16 +3,22 @@
 {% block content %}
     <h2>REFERÊNCIAS</h2>
     <br>
-    <a href="{{ url_for('routes.nova_referencia') }}" class="btn btn-success mb-3">Nova Referência</a>
+    <a href="{{ url_for('routes.nova_referencia') }}" class="btn btn-success mb-3">
+        <i class="fas fa-plus"></i> Nova Referência
+    </a>
+    
     <hr>
 
     <!-- 🔎 Campo de busca -->
     <div class="row mb-3">
         <div class="col-md-4"> <!-- Define um tamanho menor para o campo -->
-            <form method="GET" action="{{ url_for('routes.listar_referencias') }}" class="d-flex">
+            <form method="GET" action="{{ url_for('routes.listar_referencias') }}" class="d-flex gap-2">
                 <input type="text" name="filtro" class="form-control form-control-sm" placeholder="Buscar referência"
                     value="{{ request.args.get('filtro', '') }}">
                 <button type="submit" class="btn btn-primary btn-sm ms-2">Buscar</button>
+                <a href="{{ url_for('routes.listar_referencias') }}" class="btn btn-secondary btn-sm">
+                    <i class="fas fa-sync-alt"></i> <!-- Ícone de atualização -->
+                </a>
             </form>
         </div>
     </div>
@@ -25,9 +31,9 @@
                     <th>Descrição</th>
                     <th>Linha</th>
                     <th>Imagem</th>
-                    <th>EMB 1</th>
-                    <th>EMB 2</th>
-                    <th>EMB 3</th>
+                    <th>CARTUCHO</th>
+                    <th>COLMEIA</th>
+                    <th>SACO</th>
                     <th>Ações</th>
                 </tr>
             </thead>
@@ -49,9 +55,12 @@
                         <td>{{ "%.2f"|format(referencia.custo_total_embalagem3) }}</td>
                         <td>
                             <a href="{{ url_for('routes.ver_referencia', id=referencia.id) }}" class="btn btn-info btn-sm">Ver</a>
-                            <a href="{{ url_for('routes.editar_referencia', id=referencia.id) }}" class="btn btn-warning btn-sm">Editar</a>
-                            <a href="{{ url_for('routes.copiar_referencia', id=referencia.id) }}" class="btn btn-primary btn-sm">Copiar</a>
-                            <form action="{{ url_for('routes.excluir_referencia', id=referencia.id) }}" method="POST" class="form-excluir" style="display:inline;">
+                            <a href="{{ url_for('routes.editar_referencia', id=referencia.id) }}"
+                               class="btn btn-warning btn-sm">Editar</a>
+                            <a href="{{ url_for('routes.copiar_referencia', id=referencia.id) }}" 
+                               class="btn btn-primary btn-sm">Copiar</a>
+                            <form action="{{ url_for('routes.excluir_referencia', id=referencia.id) }}"
+                               method="POST" class="form-excluir" style="display:inline;">
                                 <input type="hidden" name="confirmacao">
                                 <button type="submit" class="btn btn-danger btn-sm btn-excluir">Excluir</button>
                             </form>

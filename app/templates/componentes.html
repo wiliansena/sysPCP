@@ -1,49 +1,66 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <h2>COMPONENTES</h2>
-    <br>
-    <a href="{{ url_for('routes.novo_componente') }}" class="btn btn-success mb-3">Novo Componente</a>
-    <hr>
+<h2>COMPONENTES</h2>
+<br>
+<a href="{{ url_for('routes.novo_componente') }}" class="btn btn-success mb-3">Novo Componente</a>
+<hr>
 
-        <!-- 🔎 Campo de busca -->
-        <div class="row mb-3">
-            <div class="col-md-4"> <!-- Define um tamanho menor para o campo -->
-                <form method="GET" action="{{ url_for('routes.listar_componentes') }}" class="d-flex">
-                    <input type="text" name="filtro" class="form-control form-control-sm" placeholder="Buscar Descrição"
-                        value="{{ request.args.get('filtro', '') }}">
-                    <button type="submit" class="btn btn-primary btn-sm ms-2">Buscar</button>
+<!-- 🔎 Campo de busca -->
+<div class="row mb-3">
+    <div class="col-md-4"> <!-- Define um tamanho menor para o campo -->
+        <form method="GET" action="{{ url_for('routes.listar_componentes') }}" class="d-flex gap-2">
+            <input type="text" name="filtro" class="form-control form-control-sm" placeholder="Buscar Descrição"
+                value="{{ request.args.get('filtro', '') }}">
+            <button type="submit" class="btn btn-primary btn-sm">Buscar</button>
+            <a href="{{ url_for('routes.listar_componentes') }}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-sync-alt"></i> <!-- Ícone de atualização -->
+            </a>
+        </form>
+
+
+    </div>
+</div>
+
+<h5>Filtrar Componente</h5>
+<a href="{{ url_for('routes.listar_componentes', filtro='TODOS') }}" class="btn btn-dark">TODOS</a>
+<a href="{{ url_for('routes.listar_componentes', filtro='PVC') }}" class="btn btn-dark">PVC</a>
+<a href="{{ url_for('routes.listar_componentes', filtro='ENF EMB') }}" class="btn btn-dark">ENF EMB</a>
+<a href="{{ url_for('routes.listar_componentes', filtro='ENF ABS') }}" class="btn btn-dark">ENF ABS</a>
+<a href="{{ url_for('routes.listar_componentes', filtro='ENF') }}" class="btn btn-dark">ENF</a>
+<a href="{{ url_for('routes.listar_componentes', filtro='PIG') }}" class="btn btn-dark">PIG</a>
+<a href="{{ url_for('routes.listar_componentes', filtro='TINTA') }}" class="btn btn-dark">TINTA</a>
+
+<table class="table table-striped mt-3">
+    <thead>
+        <tr>
+            <th>Código</th>
+            <th>Descrição</th>
+            <th>Tipo</th>
+            <th>UN / MED</th>
+            <th>Preço</th>
+            <th>Ações</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for componente in componentes %}
+        <tr>
+            <td>{{ componente.codigo }}</td>
+            <td>{{ componente.descricao }}</td>
+            <td>{{ componente.tipo }}</td>
+            <td>{{ componente.unidade_medida }}</td>
+            <td>R$ {{ "%.2f"|format(componente.preco) }}</td>
+            <td>
+                <a href="{{ url_for('routes.editar_componente', id=componente.id) }}"
+                    class="btn btn-warning btn-sm">Editar</a>
+                <form action="{{ url_for('routes.excluir_componente', id=componente.id) }}" method="post"
+                    style="display:inline;">
+                    <button type="submit" class="btn btn-danger btn-sm"
+                        onclick="return confirm('Tem certeza que deseja excluir?')">Excluir</button>
                 </form>
-            </div>
-        </div>
-
-    <table class="table table-striped mt-3">
-        <thead>
-            <tr>
-                <th>Código</th>
-                <th>Descrição</th>
-                <th>Tipo</th>
-                <th>UN / MED</th>
-                <th>Preço</th>
-                <th>Ações</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for componente in componentes %}
-                <tr>
-                    <td>{{ componente.codigo }}</td>
-                    <td>{{ componente.descricao }}</td>
-                    <td>{{ componente.tipo }}</td>
-                    <td>{{ componente.unidade_medida }}</td>
-                    <td>R$ {{ "%.2f"|format(componente.preco) }}</td>
-                    <td>
-                        <a href="{{ url_for('routes.editar_componente', id=componente.id) }}" class="btn btn-warning btn-sm">Editar</a>
-                        <form action="{{ url_for('routes.excluir_componente', id=componente.id) }}" method="post" style="display:inline;">
-                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Tem certeza que deseja excluir?')">Excluir</button>
-                        </form>
-                    </td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
 {% endblock %}

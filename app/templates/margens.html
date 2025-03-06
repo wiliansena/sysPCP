@@ -1,57 +1,126 @@
-{% extends 'base.html' %}
+<!DOCTYPE html>
+<html lang="pt">
 
-{% block content %}
-<div class="container mt-4">
-    <h2>Lista de Margens</h2>
-    <a href="{{ url_for('routes.nova_margem') }}" class="btn btn-success mb-3">Nova Margem</a>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>Lista de Margens</title>
+    <!-- Ícone para iPhones e iPads -->
+    <!-- Ícone para iPhone e iPad -->
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='img/apple-touch-icon.png') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/margens_mobile.css') }}">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/favicon.png') }}">
+</head>
 
-    <h5>Buscar Referência</h5>
+<body>
 
-    <!-- 🔎 Campo de busca -->
-    <div class="row mb-3">
-        <div class="col-md-4"> <!-- Define um tamanho menor para o campo -->
-            <form method="GET" action="{{ url_for('routes.listar_margens') }}" class="d-flex">
-                <input type="text" name="filtro" class="form-control form-control-sm" placeholder="Buscar referência"
-                    value="{{ request.args.get('filtro', '') }}">
-                <button type="submit" class="btn btn-primary btn-sm ms-2">Buscar</button>
-            </form>
+    <!-- 🔹 Cabeçalho no estilo de aplicativo -->
+    <header class="app-header">
+        <h1>Lista de Margens</h1>
+        <hr>
+
+    </header>
+
+    <!-- 🔹 Botão de Nova Margem -->
+    <div class="container mt-3">
+        <div class="row mb-3">
+            <div class="col-md-6"><a href="{{ url_for('routes.home') }}" class="btn btn-secondary btn-3d w-100 mb-3"><i
+                        class="fas fa-home"></i> Home</a></div>
+
+
         </div>
-    </div>
-    
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Ref</th>
-                <th>Cliente</th>
-                <th>Preço de Venda</th>
-                <th>Custo total</th>
-                <th>Lucro liquído</th>
-                <th>Margem %</th>
-                <th>EMB</th>
-                <th>Ações</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for margem in margens %}
-            <tr>
-                <td>{{ margem.referencia.codigo_referencia }}</td>
-                <td>{{ margem.cliente }}</td>
-                <td>R$ {{ margem.preco_venda }}</td>
-                <td>R$  {{ "%.2f"|format(margem.custo_total) }}</td>
-                <td>R$  {{ "%.2f"|format(margem.lucro_unitario) }}</td>
-                <td>  {{ "%.2f"|format(margem.margem) }}%</td>
-                <td><strong> {{ margem.embalagem_escolhida }}</strong></td>
-                <td>
-                    <a href="{{ url_for('routes.ver_margem', id=margem.id) }}" class="btn btn-info btn-sm">Ver</a>
-                    <a href="{{ url_for('routes.editar_margem', id=margem.id) }}" class="btn btn-warning btn-sm">Editar</a>
-                    <a href="{{ url_for('routes.copiar_margem', id=margem.id) }}" class="btn btn-primary">Copiar</a>
-                    <form action="{{ url_for('routes.excluir_margem', id=margem.id) }}" method="POST" class="d-inline">
-                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Tem certeza que deseja excluir esta margem?')">Excluir</button>
+
+        <a href="{{ url_for('routes.nova_margem') }}" class="btn btn-success btn-3d w-100 mb-3">+ Nova Margem</a>
+
+        <!-- 🔎 Campo de busca -->
+        <div class="row mb-3">
+            <div class="col-md-6"> <!-- Ajuste para um tamanho melhor -->
+                <form method="GET" action="{{ url_for('routes.listar_margens') }}" class="d-flex">
+                    <input type="text" name="filtro" class="form-control" placeholder="Buscar referência..."
+                        value="{{ request.args.get('filtro', '') }}">
+                    <button type="submit" class="btn btn-primary ms-2"><i class="fas fa-search"></i> Buscar</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- 🔹 Lista de Margens -->
+        {% for margem in margens %}
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title text-center"><strong>{{ margem.referencia.codigo_referencia }}</strong></h5>
+
+
+                <!-- 🔹 Exibir Imagem da Referência -->
+                {% if margem.referencia.imagem %}
+                <img src="{{ url_for('static', filename='uploads/' + margem.referencia.imagem) }}"
+                    alt="Imagem da Referência" class="img-fluid zoomable" alt="Imagem" onclick="openModal(this)"
+                    style="max-width: 120px; max-height: 120px; position: absolute; left:62%; top:20%;">
+                <!-- Modal de Zoom -->
+                <div id="zoomModal" class="modalz">
+                    <span class="closez" onclick="closeModal()">&times;</span>
+                    <img class="modal-contentz" id="zoomedImage">
+                </div>
+                {% else %}
+                <p class="text-muted">Sem imagem</p>
+                {% endif %}
+
+                <p><strong>Data:</strong> {{ margem.data_criacao.strftime('%d/%m/%Y %H:%M') }}</p>
+                <p><strong>Cliente:</strong> {{ margem.cliente }}</p>
+                <p><strong>Embalagem:</strong> {{ margem.embalagem_escolhida }}</p>
+                <p><strong>Preço de Venda:</strong> R$ {{ margem.preco_venda }}</p>
+                <p><strong>Custo Total:</strong> R$ {{ "%.2f"|format(margem.custo_total) }}</p>
+                <p><strong>Lucro Líquido:</strong> R$ {{ "%.2f"|format(margem.lucro_unitario) }}</p>
+                <p><strong>Margem:</strong> {{ "%.2f"|format(margem.margem) }}%</p>
+
+
+                <!-- 🔹 Botões de Ação -->
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('routes.ver_margem', id=margem.id) }}" class="btn btn-info btn-sm btn-3d">
+                        <i class="fas fa-eye"></i> Ver
+                    </a>
+
+                    <a href="{{ url_for('routes.editar_margem', id=margem.id) }}" class="btn btn-warning btn-sm btn-3d">
+                        <i class="fas fa-edit"></i> Editar
+                    </a>
+
+                    <a href="{{ url_for('routes.copiar_margem', id=margem.id) }}" class="btn btn-primary btn-sm btn-3d">
+                        <i class="fas fa-copy"></i> Copiar
+                    </a>
+
+                    <form action="{{ url_for('routes.excluir_margem', id=margem.id) }}" method="POST">
+                        <button type="submit" class="btn btn-danger btn-sm btn-3d"
+                            onclick="return confirm('Tem certeza que deseja excluir esta margem?')">
+                            <i class="fas fa-trash"></i> Excluir
+                        </button>
                     </form>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
-{% endblock %}
+                </div>
+
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <script>
+        function openModal(imgElement) {
+            var modal = document.getElementById("zoomModal");
+            var modalImg = document.getElementById("zoomedImage");
+            modal.style.display = "block";
+            modalImg.src = imgElement.src;
+        }
+
+        function closeModal() {
+            document.getElementById("zoomModal").style.display = "none";
+        }
+    </script>
+
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/margens_mobile.css') }}">
+
+
+</body>
+
+</html>

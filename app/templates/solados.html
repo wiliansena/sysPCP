@@ -12,10 +12,13 @@
     <!-- 🔎 Campo de busca -->
     <div class="row mb-3">
         <div class="col-md-4"> <!-- Define um tamanho menor para o campo -->
-            <form method="GET" action="{{ url_for('routes.listar_solados') }}" class="d-flex">
+            <form method="GET" action="{{ url_for('routes.listar_solados') }}" class="d-flex gap-2">
                 <input type="text" name="filtro" class="form-control form-control-sm" placeholder="Buscar referência"
                     value="{{ request.args.get('filtro', '') }}">
                 <button type="submit" class="btn btn-primary btn-sm ms-2">Buscar</button>
+                <a href="{{ url_for('routes.listar_solados') }}" class="btn btn-secondary btn-sm">
+                    <i class="fas fa-sync-alt"></i> <!-- Ícone de atualização -->
+                </a>
             </form>
         </div>
     </div>
@@ -27,7 +30,7 @@
                 <th>Descrição</th>
                 <th>Imagem</th>
                 <th>Custo</th>
-                <th>Custo Friso</th>
+                <th>Friso</th>
                 <th>Custo Total</th>
                 <th>Ações</th>
             </tr>

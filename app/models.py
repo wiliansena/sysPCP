@@ -3,7 +3,7 @@ from flask_login import UserMixin
 from sqlalchemy.orm import relationship
 from app import db
 from decimal import Decimal, ROUND_HALF_UP, ROUND_CEILING
-from datetime import date
+from datetime import date, datetime
 
 
 
@@ -511,6 +511,8 @@ class FormulacaoAlca(db.Model):
 from werkzeug.security import generate_password_hash, check_password_hash
 
 class Usuario(db.Model, UserMixin):
+    __tablename__ = "usuario"
+    
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100), unique=True, nullable=False)
     senha_hash = db.Column(db.String(200), nullable=False)
@@ -523,13 +525,23 @@ class Usuario(db.Model, UserMixin):
         return check_password_hash(self.senha_hash, senha)  # 🔹 Verifica a senha
 
 
+class LogAcao(db.Model):
+    __tablename__ = "log_acao"  # 🔹 Nome da tabela no banco
+
+    id = db.Column(db.Integer, primary_key=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)  # 🔹 Corrigido para "usuario.id"
+    usuario_nome = db.Column(db.String(100), nullable=False)  # 🔹 Tamanho ajustado para compatibilidade
+    acao = db.Column(db.String(255), nullable=False)
+    data_hora = db.Column(db.DateTime, default=lambda: datetime.now().replace(microsecond=0))  # 🔹 Adicionando data e hora exata
+
+    usuario = db.relationship('Usuario', backref=db.backref('logs', lazy=True))  # 🔹 Relacionamento com a tabela Usuario
 
 
 class Margem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     preco_venda = db.Column(db.Numeric(10,2), nullable=False, default=Decimal(0))
-    cliente = db.Column(db.String(20), nullable=True)
-    data_criacao = db.Column(db.Date, default=date.today)
+    cliente = db.Column(db.String(60), nullable=True)
+    data_criacao = db.Column(db.DateTime, default=lambda: datetime.now().replace(microsecond=0))
     
     embalagem_escolhida = db.Column(db.String(10), nullable=False)
 
@@ -622,8 +634,6 @@ class Margem(db.Model):
             15: round(self.preco_sugerido_15 - self.custo_total, 2),
             20: round(self.preco_sugerido_20 - self.custo_total, 2)
         }
-
-
 
 
 
