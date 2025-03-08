@@ -5,14 +5,18 @@ from app.models import Usuario
 from app.auth.forms import LoginForm  # Importa o formulário
 from app.auth import bp  # Importa o Blueprint
 
+from flask import request
+
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
-        return redirect(url_for('routes.home'))
+        return redirect(url_for('routes.home'))  # 🔹 Se já estiver logado, redireciona
 
     form = LoginForm()
-    if form.validate_on_submit():
+
+    if form.validate_on_submit():  # 🔹 Verifica se o formulário foi enviado
         user = Usuario.query.filter_by(nome=form.nome.data).first()
+
         if user and user.check_password(form.senha.data):
             login_user(user)
 
@@ -21,12 +25,19 @@ def login():
             session.modified = True  # 🔹 Atualiza a sessão ao fazer login
             
             flash('Login realizado com sucesso!', 'success')
-            next_page = request.args.get('next')
-            return redirect(next_page) if next_page else redirect(url_for('routes.home'))  # 🔹 Redireciona corretamente
-        else:
-            flash('Nome ou senha incorretos.', 'danger')
 
-    return render_template('auth/login.html', form=form)
+            # 🔹 Detecta se o usuário está em um dispositivo móvel
+            user_agent = request.user_agent.string.lower()
+            is_mobile = "mobile" in user_agent
+
+            # 🔹 Decide para onde redirecionar com base no dispositivo
+            return redirect(url_for('routes.home_mobile' if is_mobile else 'routes.home'))
+        
+        else:
+            flash('Nome ou senha incorretos.', 'danger')  # 🔥 Só mostra o erro se houve tentativa de login
+
+    return render_template('auth/login.html', form=form)  # 🔹 Não adiciona flash se não houve submissão
+
 
 @bp.route('/logout')
 @login_required

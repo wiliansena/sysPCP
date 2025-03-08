@@ -61,6 +61,7 @@ h2, h4 {
 }
 
 /* 🔹 Botões 3D */
+
 .btn {
     border-radius: 8px;
     font-weight: bold;
@@ -111,6 +112,95 @@ h2, h4 {
     box-shadow: 8px 8px 16px rgba(0, 0, 0, 0.3), -4px -4px 8px rgba(255, 255, 255, 0.6);
 }
 
+/* 🔹 Barra superior fixa */
+.top-bar {
+    background-color: #004766; /* Cor azul escuro */
+    color: white;
+    padding: 10px 20px;
+    font-size: 16px;
+    font-weight: bold;
+    position: fixed; /* 🔥 Mantém a barra fixa */
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1050; /* 🔥 Mantém acima de todos os elementos */
+    height: 50px;
+    display: flex;
+    justify-content: center; /* Mantém o título centralizado */
+    align-items: center;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2); /* 🔥 Adiciona um leve efeito de sombra */
+}
+
+/* 🔹 Ajusta o conteúdo para não ficar escondido sob a barra */
+.content {
+    margin-top: 60px !important; /* 🔥 Garante que o conteúdo não fique escondido */
+}
+
+
+/* 🔹 Estilo do título do sistema */
+.system-title {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%); /* Centraliza corretamente o texto */
+}
+
+/* 🔹 Estilo do nome do usuário */
+.user-info {
+    position: absolute;
+    right: 20px; /* Mantém no lado direito */
+    font-weight: bold;
+    font-size: 15px;
+    color: #f8d210; /* Cor amarela para destaque */
+}
+
+
+/* 🔹 Sidebar lateral */
+.sidebar {
+    position: fixed;
+    top: 50px;
+    left: 0;
+    height: calc(100vh - 50px);
+    width: 250px;
+    background-color: #343a40;
+    padding-top: 20px;
+    color: white;
+    overflow-y: auto;
+}
+
+
+.sidebar h4 {
+    color: white !important;
+    font-size: 20px;
+    font-weight: bold;
+    text-align: center;
+}
+
+
+.sidebar a {
+    color: white;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    font-size: 16px;
+}
+
+.sidebar a i {
+    margin-right: 10px;
+}
+
+.sidebar a:hover {
+    background-color: #495057;
+}
+
+/* 🔹 Ajuste do conteúdo */
+.content {
+    margin-left: 260px;
+    margin-top: 70px;
+    padding: 20px;
+}
+
+
 @media print {
     /* Remove sombras, bordas e fundo das divs */
     .container, .card, .table, .modal-content {
@@ -119,25 +209,43 @@ h2, h4 {
         border: none !important;
     }
 
+    /* 🔹 Esconde a sidebar APENAS na impressão */
+    .sidebar {
+        display: none !important;
+    }
+
+    /* 🔹 Ajusta a área do conteúdo para ocupar toda a largura na impressão */
+    .content {
+        margin-left: 0 !important; 
+        width: 100% !important;
+    }
+
     body {
         zoom: 80%; /* Ajusta o tamanho para caber melhor em A4 */
+        margin: 0 !important; /* 🔥 Remove qualquer margem no corpo */
+        padding: 0 !important;
     }
+
     .container {
         max-width: 100%;
         padding: 10px;
+        margin: 0 !important; /* 🔥 Remove qualquer margem que sobrou */
     }
+
     .card-body {
         font-size: 10pt;
     }
+
     .table-sm {
         font-size: 9pt;
     }
+
     .btn, .no-print {
         display: none !important;
     }
 
     /* Remove efeitos de botões e elementos desnecessários na impressão */
-    .btn, .no-print, .navbar, .footer, .card-header {
+    .btn, .no-print, .navbar, .footer, .card-header, .top-bar {
         display: none !important;
     }
 

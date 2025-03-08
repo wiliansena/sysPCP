@@ -41,6 +41,12 @@ def listar_logs():
 def home():
     return render_template('home.html')
 
+@bp.route('/home_mobile')
+@login_required
+def home_mobile():
+    return render_template('home_mobile.html')
+
+
     #REFERENCIAS
 
 
@@ -379,8 +385,6 @@ def editar_referencia(id):
         db.session.add(referencia)
 
         try:
-            db.session.commit()
-
             # 🔹 Salva o log
             log = LogAcao(
                 usuario_id=current_user.id,
@@ -388,7 +392,7 @@ def editar_referencia(id):
                 acao=f"Editou a Referência: {referencia.codigo_referencia}"
             )
             db.session.add(log)
-
+            db.session.commit()
             flash("Referência atualizada com sucesso!", "success")
             return redirect(url_for('routes.listar_referencias'))
         except Exception as e:
@@ -993,25 +997,6 @@ def ver_solado(id):
     
     custo_total = solado.custo_total  # Novo cálculo
 
-    # 🔹 Logs para depuração
-    print("\n===== DEPURAÇÃO =====")
-    print(f"Total Grade: {total_grade}")
-    print(f"Peso Médio Total: {peso_medio_total}")
-    print(f"Peso Friso Total: {peso_friso_total}")
-    print(f"Peso Sem Friso Total: {peso_sem_friso_total}")
-
-    print(f"\nFormulação SEM Friso:")
-    print(f"Carga Total: {carga_total}")
-    print(f"Pares por Carga: {pares_por_carga}")
-    print(f"Preço Total: R$ {preco_total}")
-
-    print(f"\nFormulação COM Friso:")
-    print(f"Carga Total Friso: {carga_total_friso}")
-    print(f"Pares por Carga Friso: {pares_por_carga_friso}")
-    print(f"Preço Total Friso: R$ {preco_total_friso}")
-    print(f"Preço Custo total: R$ {custo_total}")
-    print("=====================\n")
-
     return render_template('ver_solado.html', solado=solado,
                            total_grade=total_grade,
                            peso_medio_total=peso_medio_total,
@@ -1063,12 +1048,6 @@ def novo_solado():
                     peso_sem_friso=tamanho_data["peso_sem_friso"]
                 )
                 db.session.add(tamanho)
-
-        # 🔹 Debug: Verifica se os dados chegaram corretamente
-        print("Componentes Sem Friso:", request.form.getlist("componentes_sem_friso[]"))
-        print("Cargas Sem Friso:", request.form.getlist("carga_sem_friso[]"))
-        print("Componentes Com Friso:", request.form.getlist("componentes_friso[]"))
-        print("Cargas Com Friso:", request.form.getlist("carga_friso[]"))
 
         # Adiciona os componentes da formulação (Sem Friso)
         componentes_ids = request.form.getlist("componentes_sem_friso[]")
@@ -1169,10 +1148,8 @@ def editar_solado(id):
                     carga=float(carga) if carga else 0
                 )
                 db.session.add(nova_formulacao_friso)
-
-        # 🔹 Commitando as alterações no banco
-        db.session.commit()
-        
+                
+                
         # 🔹 Salva o log
         log = LogAcao(
             usuario_id=current_user.id,
@@ -1180,6 +1157,9 @@ def editar_solado(id):
             acao=f"Editou o Solado: {solado.referencia}"
         )
         db.session.add(log)
+
+        # 🔹 Commitando as alterações no banco
+        db.session.commit()
         
         flash("Solado atualizado com sucesso!", "success")
         return redirect(url_for('routes.listar_solados'))
@@ -1297,15 +1277,6 @@ def excluir_solado(id):
 
     #ALCA
 
-#@bp.route('/alcas', methods=['GET'])
-#def listar_alcas():
-#    filtro = request.args.get('filtro', '')
-#    if filtro:
-#        alcas = Alca.query.filter(Alca.referencia.startswith(filtro)).all()
-#   else:
-#       alcas = Alca.query.all()
-#   
-#   return render_template('alcas.html', alcas=alcas)
 
 @bp.route('/alcas', methods=['GET'])
 @login_required
@@ -1378,6 +1349,8 @@ def nova_alca():
 
     return render_template('nova_alca.html', form=form, componentes=componentes)
 
+
+
 @bp.route('/alca/editar/<int:id>', methods=['GET', 'POST'])
 @login_required
 def editar_alca(id):
@@ -1427,9 +1400,7 @@ def editar_alca(id):
                     carga=carga_valor
                 )
                 alca.formulacao.append(nova_formulacao)
-
-        db.session.commit()
-        
+                
         # 🔹 Salva o log
         log = LogAcao(
             usuario_id=current_user.id,
@@ -1437,7 +1408,7 @@ def editar_alca(id):
             acao=f"Editou a alca: {alca.referencia}"
         )
         db.session.add(log)
-        
+        db.session.commit()
         flash("Alça atualizada com sucesso!", "success")
         return redirect(url_for('routes.listar_alcas'))
 
@@ -1572,11 +1543,6 @@ def excluir_alca(id):
 
 
 # Rota para listar todas as margens
-"""@bp.route('/margens', methods=['GET'])
-@login_required
-def listar_margens():
-    margens = Margem.query.all()
-    return render_template('margens.html', margens=margens)"""
 
 @bp.route('/margens', methods=['GET'])
 @login_required
@@ -1692,8 +1658,6 @@ def editar_margem(id):
 
         # 🔹 Recalcula os custos
         margem.calcular_custos()
-
-        db.session.commit()
         
         # 🔹 Salva o log
         log = LogAcao(
@@ -1703,6 +1667,7 @@ def editar_margem(id):
         )
         db.session.add(log)
 
+        db.session.commit()
         flash("Margem atualizada com sucesso!", "success")
         return redirect(url_for('routes.listar_margens'))
 
