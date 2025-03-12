@@ -167,6 +167,19 @@ h2, h4 {
     overflow-y: auto;
 }
 
+.sidebar a {
+    display: flex;
+    align-items: center; /* Alinha verticalmente o texto com o ícone */
+    text-decoration: none;
+    font-size: 16px;
+    padding: 10px 20px; /* Espaçamento uniforme */
+}
+
+.sidebar a i {
+    width: 20px; /* Mantém um tamanho fixo para os ícones */
+    text-align: center;
+    margin-right: 10px;
+}
 
 .sidebar h4 {
     color: white !important;

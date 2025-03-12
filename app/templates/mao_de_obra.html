@@ -2,16 +2,17 @@
 
 {% block content %}
     <h2>Mão de Obra (Mensal) </h2>
-    <a href="{{ url_for('routes.nova_mao_de_obra') }}" class="btn btn-primary"><i class="fas fa-plus"></i> Adicionar</a>
+    <a href="{{ url_for('routes.nova_mao_de_obra') }}" class="btn btn-success"><i class="fas fa-plus"></i> Adicionar</a>
 
     <table class="table table-striped mt-3">
         <thead>
             <tr>
                 <th>Descrição</th>
                 <th>Salário</th>
-                <th>Multiplicador</th>
-                <th>Preço Líquido</th>
-                <th>Preço Bruto</th>
+                <th>Mult(*)</th>
+                <th>Preço<br>Líquido</th>
+                <th>Preço<br>Bruto</th>
+                <th>Diária</th>
                 <th>Ações</th>
             </tr>
         </thead>
@@ -20,9 +21,10 @@
                 <tr>
                     <td>{{ mao.descricao }}</td>
                     <td>R$ {{ "%.2f"|format(mao.salario.preco if mao.salario else 0) }}</td>
-                    <td>{{ mao.multiplicador }}</td>
+                    <td>{{ "%.2f"|format(mao.multiplicador) }}</td>
                     <td>R$ {{ "%.2f"|format(mao.preco_liquido) }}</td>
                     <td>R$ {{ "%.2f"|format(mao.preco_bruto) }}</td>
+                    <td>R$ {{ "%.2f"|format(mao.diaria) }}</td>
                     <td>
                         <a href="{{ url_for('routes.editar_mao_de_obra', id=mao.id) }}" class="btn btn-warning btn-sm">Editar</a>
                         <form action="{{ url_for('routes.excluir_mao_de_obra', id=mao.id) }}" method="post" style="display:inline;">

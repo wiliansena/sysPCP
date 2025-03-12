@@ -868,36 +868,24 @@ def nova_mao_de_obra():
     form.salario_id.choices = [(s.id, f"R$ {s.preco}") for s in Salario.query.all()]
 
     if form.validate_on_submit():
-        salario = Salario.query.get(form.salario_id.data)
+        try:
+            mao_de_obra = MaoDeObra(
+                descricao=form.descricao.data,
+                salario_id=form.salario_id.data,
+                multiplicador=form.multiplicador.data
+            )
 
-        # 🔹 Convertendo os valores para Decimal para cálculos precisos
-        multiplicador = Decimal(str(form.multiplicador.data))
-        preco_liquido = multiplicador * salario.preco  # ✅ Calcula o Preço Líquido
+            # 🔹 Chama o método para calcular todos os valores (incluindo diária)
+            mao_de_obra.calcular_valores()
 
-        # 🔹 Pegando o encargo da tabela Salario e garantindo que seja Decimal
-        encargos = Decimal(str(salario.encargos)) if salario.encargos else Decimal(1)
+            db.session.add(mao_de_obra)
+            db.session.commit()
 
-        # 🔹 Ccálculo do Preço Bruto
-        preco_bruto = preco_liquido * encargos
+            flash('Mão de obra adicionada com sucesso!', 'success')
+            return redirect(url_for('routes.listar_mao_de_obra'))
+        except ValueError as e:
+            flash(str(e), 'danger')
 
-        # 🔹 Arredondando os valores para evitar casas decimais excessivas
-        preco_liquido = preco_liquido.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-        preco_bruto = preco_bruto.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-
-        # 🔹 Criando o objeto MaoDeObra com os valores já convertidos corretamente
-        mao_de_obra = MaoDeObra(
-            descricao=form.descricao.data,
-            salario_id=form.salario_id.data,
-            multiplicador=multiplicador,  
-            preco_liquido=preco_liquido,  
-            preco_bruto=preco_bruto  
-        )
-
-        db.session.add(mao_de_obra)
-        db.session.commit()
-        flash('Mão de obra adicionada com sucesso!', 'success')
-        return redirect(url_for('routes.listar_mao_de_obra'))
-    
     return render_template('nova_mao_de_obra.html', form=form)
 
 
@@ -911,19 +899,22 @@ def editar_mao_de_obra(id):
     form.salario_id.choices = [(s.id, f"R$ {s.preco}") for s in Salario.query.all()]
 
     if form.validate_on_submit():
-        mao.descricao = form.descricao.data
-        mao.salario_id = form.salario_id.data
-        mao.multiplicador = form.multiplicador.data
+        try:
+            mao.descricao = form.descricao.data
+            mao.salario_id = form.salario_id.data
+            mao.multiplicador = form.multiplicador.data
 
-        salario = Salario.query.get(mao.salario_id)
-        mao.preco_liquido = Decimal(mao.multiplicador) * Decimal(salario.preco)
-        mao.preco_bruto = Decimal(mao.preco_liquido) * Decimal((1 + salario.encargos / 100))
+            # 🔹 Chama o método para recalcular os valores (incluindo diária)
+            mao.calcular_valores()
 
-        db.session.commit()
-        flash('Mão de obra atualizada com sucesso!', 'success')
-        return redirect(url_for('routes.listar_mao_de_obra'))
+            db.session.commit()
+            flash('Mão de obra atualizada com sucesso!', 'success')
+            return redirect(url_for('routes.listar_mao_de_obra'))
+        except ValueError as e:
+            flash(str(e), 'danger')
 
     return render_template('editar_mao_de_obra.html', form=form, mao=mao)
+
 
 @bp.route('/mao_de_obra/excluir/<int:id>', methods=['POST'])
 @login_required
@@ -1428,7 +1419,7 @@ def copiar_alca(id):
     # Gera o código temporário baseado no campo "referencia" da alça
     # Se alca.referencia estiver definido, usa os primeiros 7 caracteres; caso contrário, usa "ALCA"
     prefix = alca.referencia[:7] if alca.referencia else "ALCA"
-    random_string = ''.join(random.choices(string.ascii_lowercase, k=6))
+    random_string = ''.join(random.choices(string.ascii_lowercase, k=4))
     codigo_temporario = f"{prefix}-cópia-{random_string}"
     
     # Cria a nova instância de Alca com o código temporário e demais dados copiados

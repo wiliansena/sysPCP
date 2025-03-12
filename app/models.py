@@ -225,6 +225,7 @@ class Salario(db.Model):
     preco = db.Column(db.Numeric(10,4), nullable=False, default=Decimal(0))
     encargos = db.Column(db.Numeric(10,4), nullable=False, default=Decimal(0))
 
+
 class MaoDeObra(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     descricao = db.Column(db.String(100), nullable=False)
@@ -232,15 +233,29 @@ class MaoDeObra(db.Model):
     multiplicador = db.Column(db.Numeric(10,4), nullable=False, default=Decimal(0))
     preco_liquido = db.Column(db.Numeric(10,4), nullable=False, default=Decimal(0))
     preco_bruto = db.Column(db.Numeric(10,4), nullable=False, default=Decimal(0))
-    
-    @property
-    def diaria(self):
-        """ Calcula a diária como preco_bruto / 21, garantindo que não ocorra divisão por zero. """
-        return (self.preco_bruto / Decimal(21)).quantize(Decimal('0.0001'),
-                                                         rounding=ROUND_HALF_UP) if self.preco_bruto > 0 else Decimal(0)
+    diaria = db.Column(db.Numeric(10,4), nullable=False, default=Decimal(0))  # 🔹 Agora a diária será salva!
 
     # Relacionamento com Salario
     salario = db.relationship('Salario', backref=db.backref('mao_de_obra', lazy=True))
+
+    def calcular_valores(self):
+        """ Calcula preco_liquido, preco_bruto e diária automaticamente. """
+        salario = Salario.query.get(self.salario_id)
+        if not salario:
+            raise ValueError("Salário não encontrado!")
+
+        # ✅ Converte multiplicador explicitamente para Decimal
+        multiplicador = Decimal(str(self.multiplicador))  
+
+        self.preco_liquido = (multiplicador * salario.preco).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        encargos = Decimal(str(salario.encargos)) if salario.encargos else Decimal(1)
+        self.preco_bruto = (self.preco_liquido * encargos).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
+        # 🔹 Cálculo da diária (salva no banco)
+        self.diaria = (self.preco_bruto / Decimal(21)).quantize(Decimal('0.0001'), rounding=ROUND_HALF_UP) if self.preco_bruto > 0 else Decimal(0)
+
+
+
 
 
 class Componente(db.Model):
