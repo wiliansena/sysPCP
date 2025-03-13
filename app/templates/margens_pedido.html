@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Lista de Margens por Pedido</h2>
+    <a href="{{ url_for('routes.nova_margem_pedido') }}" class="btn btn-primary mb-3">Nova Margem por Pedido</a>
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Pedido</th>
+                <th>Nota<br>Fiscal</th>
+                <th>Cliente</th>
+                <th>Total<br>Custo</th>
+                <th>Total<br>Preço Venda</th>
+                <th>Lucro<br>Total</th>
+                <th>Margem<br>Média (%)</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for margem in margens %}
+            <tr>
+                <td>{{ margem.id }}</td>
+                <td>{{ margem.pedido }}</td>
+                <td>{{ margem.nota_fiscal }}</td>
+                <td>{{ margem.cliente }}</td>
+                <td>R$ {{ margem.total_custo }}</td>
+                <td>R$ {{ margem.total_preco_venda }}</td>
+                <td>R$ {{ margem.lucro_total }}</td>
+                <td>{{ margem.margem_media }}%</td>
+                <td>
+                    <a href="{{ url_for('routes.ver_margem_pedido', id=margem.id) }}"
+                        class="btn btn-info btn-sm">Ver</a>
+                    <a href="{{ url_for('routes.editar_margem_pedido', id=margem.id) }}" class="btn btn-warning btn-sm">
+                        <i class="fas fa-edit"></i> Editar
+                    </a>
+                    <form action="{{ url_for('routes.excluir_margem_pedido', id=margem.id) }}" method="POST"
+                        onsubmit="return confirm('Tem certeza que deseja excluir esta margem por pedido?');">
+                        <button type="submit" class="btn btn-danger">Excluir</button>
+                    </form>
+
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="9" class="text-center">Nenhuma margem cadastrada.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

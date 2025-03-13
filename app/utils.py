@@ -1,6 +1,7 @@
 from app import db
 from app.models import LogAcao
 from flask_login import current_user
+from flask import current_app
 
 def registrar_log(acao):
     """
@@ -14,3 +15,7 @@ def registrar_log(acao):
         )
         db.session.add(novo_log)
         db.session.commit()
+
+def allowed_file(filename):
+    """ Verifica se o arquivo possui uma extensão permitida. """
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in current_app.config["ALLOWED_EXTENSIONS"]

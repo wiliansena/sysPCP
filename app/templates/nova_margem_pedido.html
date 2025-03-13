@@ -1,0 +1,234 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Nova Margem por Pedido</h2>
+    <form method="POST" action="{{ url_for('routes.nova_margem_pedido') }}">
+        {{ form.hidden_tag() }}
+
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Pedido</h5>
+                {{ form.pedido(class="form-control") }}
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Nota Fiscal</h5>
+                {{ form.nota_fiscal(class="form-control") }}
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Cliente</h5>
+                {{ form.cliente(class="form-control") }}
+            </div>
+        </div>
+        <!-- Botão para Importar Arquivo -->
+        <h5><strong>Importar Pedido</strong></h5>
+        <h6>(XLSX,CSV)</h6>
+        <div class="d-flex align-items-center">
+            <input type="file" id="fileInput" class="form-control w-auto">
+            <button type="button" class="btn btn-success ms-2" onclick="importarArquivo()">Importar Arquivo</button>
+        </div>
+
+
+        <!-- Seção de Referências -->
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Referências Selecionadas</h5>
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal"
+                    data-bs-target="#modalReferencias">Selecionar Referências</button>
+                <table class="table table-sm mt-3">
+                    <thead>
+                        <tr>
+                            <th>Código Referência</th>
+                            <th>Descrição</th>
+                            <th>Quantidade</th>
+                            <th>Embalagem</th>
+                            <th>Preço Venda</th>
+                            <th>Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody id="referencias-selecionadas"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Seção de Despesas de Venda -->
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Despesas de Venda</h5>
+                <div class="row">
+                    {% for field in [
+                    ('comissao_porcentagem', 'comissao_valor'),
+                    ('financeiro_porcentagem', 'financeiro_valor'),
+                    ('duvidosos_porcentagem', 'duvidosos_valor'),
+                    ('frete_porcentagem', 'frete_valor'),
+                    ('tributos_porcentagem', 'tributos_valor'),
+                    ('outros_porcentagem', 'outros_valor')
+                    ] %}
+                    <div class="col-md-6">
+                        <label>{{ form[field[0]].label }}</label>
+                        <div class="input-group">
+                            {{ form[field[0]](class="form-control") }}
+                            <span class="input-group-text">%</span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label>{{ form[field[1]].label }}</label>
+                        <div class="input-group">
+                            <span class="input-group-text">R$</span>
+                            {{ form[field[1]](class="form-control") }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="d-grid gap-2 mt-4">
+            <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Salvar</button>
+            <a href="{{ url_for('routes.listar_margens_pedido') }}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+
+<!-- Modal para Selecionar Referências -->
+<div class="modal fade" id="modalReferencias" tabindex="-1" aria-labelledby="modalReferenciasLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Selecionar Referências</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table table-sm" id="referenciaTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Código Referência</th>
+                            <th>Descrição</th>
+                            <th>Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for referencia in referencias %}
+                        <tr>
+                            <td>{{ referencia.id }}</td>
+                            <td>{{ referencia.codigo_referencia }}</td>
+                            <td>{{ referencia.descricao }}</td>
+                            <td>
+                                <button type="button" class="btn btn-success btn-sm select-referencia"
+                                    data-id="{{ referencia.id }}" data-codigo="{{ referencia.codigo_referencia }}"
+                                    data-descricao="{{ referencia.descricao }}">
+                                    Selecionar
+                                </button>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center text-danger">Nenhuma referência encontrada</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Script para manipular seleção de referências -->
+<script>
+    $(document).ready(function () {
+        $(".select-referencia").click(function () {
+            let id = $(this).data("id");
+            let codigo = $(this).data("codigo");
+            let descricao = $(this).data("descricao");
+
+            let row = `<tr id='referencia_${id}'>
+                <input type='hidden' name='referencia_id[]' value='${id}'>
+                <td>${codigo}</td>
+                <td>${descricao}</td>
+                <td><input type='number' name='quantidade_${id}' class='form-control' min='1' value='1'></td>
+                <td>
+                    <select name='embalagem_${id}' class='form-select'>
+                        <option value='Cartucho'>Cartucho</option>
+                        <option value='Colmeia'>Colmeia</option>
+                        <option value='Saco'>Saco</option>
+                    </select>
+                </td>
+                <td><input type='number' step='0.01' name='preco_venda_${id}' class='form-control'></td>
+                <td><button type='button' class='btn btn-danger btn-sm remove-referencia' data-id='${id}'>Remover</button></td>
+            </tr>`;
+
+            $("#referencias-selecionadas").append(row);
+            $("#modalReferencias").modal("hide");
+        });
+
+        $(document).on("click", ".remove-referencia", function () {
+            let id = $(this).data("id");
+            $(`#referencia_${id}`).remove();
+        });
+    });
+</script>
+
+<!-- Script para processar o arquivo e preencher a tabela -->
+<script>
+    function importarArquivo() {
+        let file = document.getElementById('fileInput').files[0];
+        if (!file) {
+            alert('Por favor, selecione um arquivo.');
+            return;
+        }
+
+        let formData = new FormData();
+        formData.append("file", file);
+
+        fetch("{{ url_for('routes.importar_referencias') }}", {
+            method: "POST",
+            body: formData
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    data.referencias.forEach(ref => {
+                        let row = `<tr id='referencia_${ref.codigo}'>
+                        <input type='hidden' name='referencia_id[]' value='${ref.codigo}'>  <!-- Enviando CÓDIGO, não ID -->
+                        <td>${ref.codigo}</td>
+                        <td>${ref.descricao}</td>
+                        <td><input type='number' name='quantidade_${ref.codigo}' class='form-control' min='1' value='${ref.quantidade}'></td>
+                        <td>
+                            <select name='embalagem_${ref.codigo}' class='form-select'>
+                                <option value='Cartucho' ${ref.embalagem === 'Cartucho' ? 'selected' : ''}>Cartucho</option>
+                                <option value='Colmeia' ${ref.embalagem === 'Colmeia' ? 'selected' : ''}>Colmeia</option>
+                                <option value='Saco' ${ref.embalagem === 'Saco' ? 'selected' : ''}>Saco</option>
+                            </select>
+                        </td>
+                        <td><input type='number' step='0.01' name='preco_venda_${ref.codigo}' class='form-control' value='${ref.preco_venda}'></td>
+                        <td><button type='button' class='btn btn-danger btn-sm remove-referencia' data-id='${ref.codigo}'>Remover</button></td>
+                    </tr>`;
+
+                        document.getElementById("referencias-selecionadas").innerHTML += row;
+                    });
+                } else {
+                    alert("Erro ao processar o arquivo.");
+                }
+            })
+            .catch(error => console.error('Erro:', error));
+    }
+
+
+    // Evento para remover referência da lista
+    document.addEventListener("click", function (event) {
+        if (event.target.classList.contains("remove-referencia")) {
+            let codigo = event.target.getAttribute("data-codigo");
+            document.getElementById(`referencia_${codigo}`).remove();
+        }
+    });
+</script>
+
+
+{% endblock %}

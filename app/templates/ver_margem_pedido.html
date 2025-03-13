@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Detalhes da Margem por Pedido</h2>
+
+    <!-- 🔹 Informações Gerais -->
+    <div class="card mb-3">
+        <div class="card-body">
+            <h5 class="card-title">Informações do Pedido</h5>
+            <p><strong>Pedido:</strong> {{ margem.pedido }}</p>
+            <p><strong>Nota Fiscal:</strong> {{ margem.nota_fiscal }}</p>
+            <p><strong>Cliente:</strong> {{ margem.cliente }}</p>
+        </div>
+    </div>
+
+    <!-- 🔹 Referências Selecionadas -->
+    <div class="card mb-3">
+        <div class="card-body">
+            <h5 class="card-title">Referências</h5>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Descrição</th>
+                        <th>Embalagem</th>
+                        <th>Quantidade</th>
+                        <th>Preço de Venda</th>
+                        <th>Total Preço Venda</th>
+                        <th>Total Custo</th>
+                        
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for referencia in margem.referencias %}
+                    <tr>
+                        <td>{{ referencia.referencia.codigo_referencia }}</td>
+                        <td>{{ referencia.referencia.descricao }}</td>
+                        <td>{{ referencia.embalagem_escolhida }}</td>
+                        <td>{{ referencia.quantidade }}</td>
+                        <td>R$ {{ "%.2f"|format(referencia.preco_venda) }}</td>
+                        <td>R$ {{ "%.2f"|format(referencia.total_preco_venda) }}</td>
+                        <td>R$ {{ "%.2f"|format(referencia.total_custo) }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center text-danger">Nenhuma referência adicionada</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 🔹 Despesas de Venda -->
+    <div class="card mb-3">
+        <div class="card-body">
+            <h5 class="card-title">Despesas de Venda</h5>
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Tipo</th>
+                        <th>Porcentagem (%)</th>
+                        <th>Valor (R$)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Comissão</td>
+                        <td>{{ "%.2f"|format(margem.comissao_porcentagem) }}</td>
+                        <td>R$ {{ "%.2f"|format(margem.comissao_valor) }}</td>
+                    </tr>
+                    <tr>
+                        <td>Financeiro</td>
+                        <td>{{ "%.2f"|format(margem.financeiro_porcentagem) }}</td>
+                        <td>R$ {{ "%.2f"|format(margem.financeiro_valor) }}</td>
+                    </tr>
+                    <tr>
+                        <td>Duvidosos</td>
+                        <td>{{ "%.2f"|format(margem.duvidosos_porcentagem) }}</td>
+                        <td>R$ {{ "%.2f"|format(margem.duvidosos_valor) }}</td>
+                    </tr>
+                    <tr>
+                        <td>Frete</td>
+                        <td>{{ "%.2f"|format(margem.frete_porcentagem) }}</td>
+                        <td>R$ {{ "%.2f"|format(margem.frete_valor) }}</td>
+                    </tr>
+                    <tr>
+                        <td>Tributos</td>
+                        <td>{{ "%.2f"|format(margem.tributos_porcentagem) }}</td>
+                        <td>R$ {{ "%.2f"|format(margem.tributos_valor) }}</td>
+                    </tr>
+                    <tr>
+                        <td>Outros</td>
+                        <td>{{ "%.2f"|format(margem.outros_porcentagem) }}</td>
+                        <td>R$ {{ "%.2f"|format(margem.outros_valor) }}</td>
+                    </tr>
+                    <tr class="table-warning">
+                        <td><strong>Total Despesas</strong></td>
+                        <td><strong>{{ "%.2f"|format(margem.total_porcentagem) }}</strong></td>
+                        <td><strong>R$ {{ "%.2f"|format(margem.total_valor) }}</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 🔹 Totais -->
+    <div class="card mb-3">
+        <div class="card-body">
+            <h5 class="card-title">Totais</h5>
+            <p><strong>Total Preço Venda:</strong> R$ {{ "%.2f"|format(margem.total_preco_venda) }}</p>
+            <p><strong>Total Custo:</strong> R$ {{ "%.2f"|format(margem.total_custo) }}</p>
+            <p><strong>Lucro Total:</strong> R$ {{ "%.2f"|format(margem.lucro_total) }}</p>
+            <p><strong>Margem Média:</strong> {{ "%.2f"|format(margem.margem_media) }}%</p>
+        </div>
+    </div>
+
+    <!-- 🔹 Ações -->
+    <a href="{{ url_for('routes.listar_margens_pedido') }}" class="btn btn-secondary">Sair</a>
+    <a href="{{ url_for('routes.editar_margem_pedido', id=margem.id) }}" class="btn btn-warning btn-sm">
+        <i class="fas fa-edit"></i> Editar
+    </a>
+    <button class="btn btn-primary" onclick="window.print()">
+        <i class="fa fa-print"></i> Imprimir
+    </button>
+</div>
+{% endblock %}

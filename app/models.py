@@ -552,6 +552,9 @@ class LogAcao(db.Model):
     usuario = db.relationship('Usuario', backref=db.backref('logs', lazy=True))  # 🔹 Relacionamento com a tabela Usuario
 
 
+
+#####   MARGEM   #########
+
 class Margem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     preco_venda = db.Column(db.Numeric(10,2), nullable=False, default=Decimal(0))
@@ -649,6 +652,121 @@ class Margem(db.Model):
             15: round(self.preco_sugerido_15 - self.custo_total, 2),
             20: round(self.preco_sugerido_20 - self.custo_total, 2)
         }
+
+
+
+
+class MargemPorPedido(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    pedido = db.Column(db.String(50), nullable=False)  # Número do pedido
+    nota_fiscal = db.Column(db.String(50), nullable=True)
+    cliente = db.Column(db.String(100), nullable=True)
+
+    referencias = db.relationship('MargemPorPedidoReferencia', backref='margem_pedido', cascade="all, delete-orphan")
+
+    # Despesas de venda
+    comissao_porcentagem = db.Column(db.Numeric(10,2), default=Decimal(0))
+    comissao_valor = db.Column(db.Numeric(10,2), default=Decimal(0))
+    financeiro_porcentagem = db.Column(db.Numeric(10,2), default=Decimal(0))
+    financeiro_valor = db.Column(db.Numeric(10,2), default=Decimal(0))
+    duvidosos_porcentagem = db.Column(db.Numeric(10,2), default=Decimal(0))
+    duvidosos_valor = db.Column(db.Numeric(10,2), default=Decimal(0))
+    frete_porcentagem = db.Column(db.Numeric(10,2), default=Decimal(0))
+    frete_valor = db.Column(db.Numeric(10,2), default=Decimal(0))
+    tributos_porcentagem = db.Column(db.Numeric(10,2), default=Decimal(0))
+    tributos_valor = db.Column(db.Numeric(10,2), default=Decimal(0))
+    outros_porcentagem = db.Column(db.Numeric(10,2), default=Decimal(0))
+    outros_valor = db.Column(db.Numeric(10,2), default=Decimal(0))
+
+    # Totais calculados
+    total_porcentagem = db.Column(db.Numeric(10,2), default=Decimal(0))  # 🔹 Agora será calculado corretamente em R$
+    total_valor = db.Column(db.Numeric(10,2), default=Decimal(0))
+    total_despesas_venda = db.Column(db.Numeric(10,2), default=Decimal(0))
+    total_custo = db.Column(db.Numeric(10,2), default=Decimal(0))
+    total_preco_venda = db.Column(db.Numeric(10,2), default=Decimal(0))
+    lucro_total = db.Column(db.Numeric(10,2), default=Decimal(0))
+    margem_media = db.Column(db.Numeric(10,2), default=Decimal(0))
+
+    def calcular_totais(self):
+        """ 
+        Calcula os totais corretamente, incluindo total_porcentagem baseado em total_preco_venda.
+        """
+        # 🔹 Calculamos primeiro o total_preco_venda para poder usá-lo no cálculo de total_porcentagem
+        self.total_preco_venda = sum(ref.total_preco_venda for ref in self.referencias)
+
+        # 🔹 Agora, total_porcentagem é calculado em reais com base no total_preco_venda
+        self.total_porcentagem = (
+            (self.total_preco_venda * (self.comissao_porcentagem / 100)) +
+            (self.total_preco_venda * (self.financeiro_porcentagem / 100)) +
+            (self.total_preco_venda * (self.duvidosos_porcentagem / 100)) +
+            (self.total_preco_venda * (self.frete_porcentagem / 100)) +
+            (self.total_preco_venda * (self.tributos_porcentagem / 100)) +
+            (self.total_preco_venda * (self.outros_porcentagem / 100))
+        )
+
+        # 🔹 Agora calculamos total_valor (valores já informados pelo usuário)
+        self.total_valor = (
+            self.comissao_valor + self.financeiro_valor + self.duvidosos_valor +
+            self.frete_valor + self.tributos_valor + self.outros_valor
+        )
+
+        # 🔹 Agora, total_despesas_venda é a soma correta de total_porcentagem e total_valor
+        self.total_despesas_venda = self.total_porcentagem + self.total_valor
+
+        # 🔹 Agora, total_custo inclui as despesas de venda corretamente
+        self.total_custo = sum(ref.total_custo for ref in self.referencias) + self.total_despesas_venda
+
+        # 🔹 Cálculo do lucro total
+        self.lucro_total = self.total_preco_venda - self.total_custo
+
+        # 🔹 Cálculo da margem média
+        self.margem_media = (self.lucro_total / self.total_preco_venda * 100) if self.total_preco_venda > 0 else 0
+
+
+class MargemPorPedidoReferencia(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    margem_pedido_id = db.Column(db.Integer, db.ForeignKey('margem_por_pedido.id'), nullable=False)
+    referencia_id = db.Column(db.Integer, db.ForeignKey('referencia.id'), nullable=False)
+
+    quantidade = db.Column(db.Integer, nullable=False)
+    preco_venda = db.Column(db.Numeric(10,2), nullable=False)  # 🔹 Usuário digita o preço de venda
+    embalagem_escolhida = db.Column(db.String(20), nullable=False)
+
+    total_custo = db.Column(db.Numeric(10,2), nullable=False)  # 🔹 Agora sem despesas de venda
+    total_preco_venda = db.Column(db.Numeric(10,2), nullable=False)  # 🔹 Calculado por referência
+
+    referencia = db.relationship("Referencia")
+
+    def calcular_totais(self):
+        """ 
+        Calcula o custo e preço de venda da referência no pedido.
+        """
+        # 🔹 Verifica se a referência está associada corretamente
+        if not self.referencia:
+            self.referencia = Referencia.query.get(self.referencia_id)  # 🔹 Tenta carregar manualmente
+            if not self.referencia:
+                print(f"⚠️ ERRO: Referência ID {self.referencia_id} não encontrada no banco!")
+                return  # 🔹 Sai da função sem fazer cálculos se a referência não for encontrada
+
+        custo_unitario = Decimal(0)
+
+        # 🔹 Usa os preços de acordo com a embalagem escolhida
+        if self.embalagem_escolhida.lower() == "cartucho":
+            custo_unitario = self.referencia.custo_total_embalagem1 or Decimal(0)
+        elif self.embalagem_escolhida.lower() == "colmeia":
+            custo_unitario = self.referencia.custo_total_embalagem2 or Decimal(0)
+        elif self.embalagem_escolhida.lower() == "saco":
+            custo_unitario = self.referencia.custo_total_embalagem3 or Decimal(0)
+
+        # 🔹 Total custo = custo da embalagem * quantidade
+        self.total_custo = custo_unitario * self.quantidade
+
+        # 🔹 Total preço venda = preço unitário digitado * quantidade
+        self.total_preco_venda = self.preco_venda * self.quantidade
+
+        print(f"✔️ Cálculo feito: Ref {self.referencia_id} | Total Custo: {self.total_custo} | Total Preço Venda: {self.total_preco_venda}")
+
+
 
 
 

@@ -1,3 +1,4 @@
+from decimal import Decimal
 from typing import Optional
 from flask_wtf import FlaskForm
 from wtforms import DateField, DecimalField, HiddenField, SelectMultipleField, StringField, SubmitField, FloatField, FileField
@@ -144,11 +145,6 @@ class ReferenciaMaoDeObraForm(FlaskForm):
 
 
 
-from flask_wtf import FlaskForm
-from wtforms import StringField, DecimalField, SelectField, SubmitField, HiddenField
-from wtforms.validators import DataRequired, NumberRange, Optional
-from datetime import date
-
 class MargemForm(FlaskForm):
     referencia_id = HiddenField('Referência', validators=[DataRequired()])
     cliente = StringField('Cliente', validators=[Optional()])
@@ -194,6 +190,50 @@ class MargemForm(FlaskForm):
     submit = SubmitField('Salvar Margem')
 
 
+class MargemPorPedidoForm(FlaskForm):
+    """ Formulário para criar uma nova Margem por Pedido """
+    pedido = StringField('Pedido', validators=[DataRequired()])
+    nota_fiscal = StringField('Nota Fiscal', validators=[Optional()])
+    cliente = StringField('Cliente', validators=[Optional()])
+
+    # Campos das despesas de venda
+    comissao_porcentagem = DecimalField('Comissão (%)', places=2, default=Decimal(0))
+    comissao_valor = DecimalField('Comissão (R$)', places=2, default=Decimal(0))
+    financeiro_porcentagem = DecimalField('Financeiro (%)', places=2, default=Decimal(0))
+    financeiro_valor = DecimalField('Financeiro (R$)', places=2, default=Decimal(0))
+    duvidosos_porcentagem = DecimalField('Duvidosos (%)', places=2, default=Decimal(0))
+    duvidosos_valor = DecimalField('Duvidosos (R$)', places=2, default=Decimal(0))
+    frete_porcentagem = DecimalField('Frete (%)', places=2, default=Decimal(0))
+    frete_valor = DecimalField('Frete (R$)', places=2, default=Decimal(0))
+    tributos_porcentagem = DecimalField('Tributos (%)', places=2, default=Decimal(0))
+    tributos_valor = DecimalField('Tributos (R$)', places=2, default=Decimal(0))
+    outros_porcentagem = DecimalField('Outros (%)', places=2, default=Decimal(0))
+    outros_valor = DecimalField('Outros (R$)', places=2, default=Decimal(0))
+
+    # 🔹 Campos de totais calculados no modelo
+    total_porcentagem = DecimalField('Total Porcentagem', places=2, default=Decimal(0))
+    total_valor = DecimalField('Total Valor', places=2, default=Decimal(0))
+    total_despesas_venda = DecimalField('Total Despesas Venda', places=2, default=Decimal(0))
+    total_custo = DecimalField('Total Custo', places=2, default=Decimal(0))
+    total_preco_venda = DecimalField('Total Preço Venda', places=2, default=Decimal(0))
+    lucro_total = DecimalField('Lucro Total', places=2, default=Decimal(0))
+    margem_media = DecimalField('Margem Média (%)', places=2, default=Decimal(0))
+
+    submit = SubmitField('Salvar Margem por Pedido')
+
+
+class MargemPorPedidoReferenciaForm(FlaskForm):
+    """ Formulário para adicionar referências a um Pedido """
+    referencia_id = SelectMultipleField('Referências', coerce=int)
+    embalagem_escolhida = SelectField(
+        'Embalagem Escolhida', 
+        choices=[('Cartucho', 'Cartucho'), ('Colmeia', 'Colmeia'), ('Saco', 'Saco')],
+        validators=[DataRequired()]
+    )
+    quantidade = IntegerField('Quantidade', validators=[DataRequired()])
+    preco_venda = DecimalField('Preço de Venda', places=2, validators=[DataRequired()])
+
+    submit = SubmitField('Adicionar Referência')
 
 
 

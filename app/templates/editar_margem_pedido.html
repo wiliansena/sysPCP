@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Editar Margem por Pedido</h2>
+    <form method="POST" action="{{ url_for('routes.editar_margem_pedido', id=margem_pedido.id) }}">
+        {{ form.hidden_tag() }}
+
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Pedido</h5>
+                {{ form.pedido(class="form-control") }}
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Nota Fiscal</h5>
+                {{ form.nota_fiscal(class="form-control") }}
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Cliente</h5>
+                {{ form.cliente(class="form-control") }}
+            </div>
+        </div>
+
+        <!-- Seção de Referências -->
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Referências Selecionadas</h5>
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalReferencias">
+                    Selecionar Referências
+                </button>
+                <table class="table table-sm mt-3">
+                    <thead>
+                        <tr>
+                            <th>Código Referência</th>
+                            <th>Descrição</th>
+                            <th>Quantidade</th>
+                            <th>Embalagem</th>
+                            <th>Preço Venda</th>
+                            <th>Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody id="referencias-selecionadas">
+                        {% for ref in margem_pedido.referencias %}
+                        <tr id="referencia_{{ ref.referencia_id }}">
+                            <input type="hidden" name="referencia_id[]" value="{{ ref.referencia_id }}">
+                            <td>{{ ref.referencia.codigo_referencia }}</td>
+                            <td>{{ ref.referencia.descricao }}</td>
+                            <td><input type="number" name="quantidade_{{ ref.referencia_id }}" class="form-control" min="1" value="{{ ref.quantidade }}"></td>
+                            <td>
+                                <select name="embalagem_{{ ref.referencia_id }}" class="form-select">
+                                    <option value="Cartucho" {% if ref.embalagem_escolhida == 'Cartucho' %}selected{% endif %}>Cartucho</option>
+                                    <option value="Colmeia" {% if ref.embalagem_escolhida == 'Colmeia' %}selected{% endif %}>Colmeia</option>
+                                    <option value="Saco" {% if ref.embalagem_escolhida == 'Saco' %}selected{% endif %}>Saco</option>
+                                </select>
+                            </td>
+                            <td><input type="number" step="0.01" name="preco_venda_{{ ref.referencia_id }}" class="form-control" value="{{ ref.preco_venda }}"></td>
+                            <td><button type="button" class="btn btn-danger btn-sm remove-referencia" data-id="{{ ref.referencia_id }}">Remover</button></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Seção de Despesas de Venda -->
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Despesas de Venda</h5>
+                <div class="row">
+                    {% for field in [
+                        ('comissao_porcentagem', 'comissao_valor'),
+                        ('financeiro_porcentagem', 'financeiro_valor'),
+                        ('duvidosos_porcentagem', 'duvidosos_valor'),
+                        ('frete_porcentagem', 'frete_valor'),
+                        ('tributos_porcentagem', 'tributos_valor'),
+                        ('outros_porcentagem', 'outros_valor')
+                    ] %}
+                    <div class="col-md-6">
+                        <label>{{ form[field[0]].label }}</label>
+                        <div class="input-group">
+                            {{ form[field[0]](class="form-control") }}
+                            <span class="input-group-text">%</span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label>{{ form[field[1]].label }}</label>
+                        <div class="input-group">
+                            <span class="input-group-text">R$</span>
+                            {{ form[field[1]](class="form-control") }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="d-grid gap-2 mt-4">
+            <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Salvar Alterações</button>
+            <a href="{{ url_for('routes.listar_margens_pedido') }}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+
+<!-- Modal para Selecionar Referências -->
+<div class="modal fade" id="modalReferencias" tabindex="-1" aria-labelledby="modalReferenciasLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Selecionar Referências</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Código Referência</th>
+                            <th>Descrição</th>
+                            <th>Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for referencia in referencias %}
+                        <tr>
+                            <td>{{ referencia.id }}</td>
+                            <td>{{ referencia.codigo_referencia }}</td>
+                            <td>{{ referencia.descricao }}</td>
+                            <td>
+                                <button type="button" class="btn btn-success btn-sm select-referencia" 
+                                        data-id="{{ referencia.id }}" 
+                                        data-codigo="{{ referencia.codigo_referencia }}"
+                                        data-descricao="{{ referencia.descricao }}">
+                                    Selecionar
+                                </button>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center text-danger">Nenhuma referência encontrada</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Script para manipular seleção de referências -->
+<script>
+    $(document).ready(function () {
+        $(".select-referencia").click(function () {
+            let id = $(this).data("id");
+            let codigo = $(this).data("codigo");
+            let descricao = $(this).data("descricao");
+
+            let row = `<tr id='referencia_${id}'>
+                <input type='hidden' name='referencia_id[]' value='${id}'>
+                <td>${codigo}</td>
+                <td>${descricao}</td>
+                <td><input type='number' name='quantidade_${id}' class='form-control' min='1' value='1'></td>
+                <td>
+                    <select name='embalagem_${id}' class='form-select'>
+                        <option value='Cartucho'>Cartucho</option>
+                        <option value='Colmeia'>Colmeia</option>
+                        <option value='Saco'>Saco</option>
+                    </select>
+                </td>
+                <td><input type='number' step='0.01' name='preco_venda_${id}' class='form-control'></td>
+                <td><button type='button' class='btn btn-danger btn-sm remove-referencia' data-id='${id}'>Remover</button></td>
+            </tr>`;
+
+            $("#referencias-selecionadas").append(row);
+            $("#modalReferencias").modal("hide");
+        });
+
+        $(document).on("click", ".remove-referencia", function () {
+            let id = $(this).data("id");
+            $(`#referencia_${id}`).remove();
+        });
+    });
+</script>
+
+{% endblock %}

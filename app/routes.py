@@ -2,8 +2,8 @@ from sqlite3 import IntegrityError
 from flask import Blueprint, jsonify, render_template, redirect, url_for, flash, request
 from flask_login import current_user, login_required
 from app import db
-from app.models import FormulacaoSolado, FormulacaoSoladoFriso, LogAcao, Referencia, Componente, CustoOperacional, ReferenciaAlca, ReferenciaComponentes, ReferenciaCustoOperacional, ReferenciaEmbalagem1, ReferenciaEmbalagem2, ReferenciaEmbalagem3, ReferenciaMaoDeObra, ReferenciaSolado, Salario, MaoDeObra, Margem
-from app.forms import MargemForm, ReferenciaForm, ComponenteForm, CustoOperacionalForm, SalarioForm, MaoDeObraForm
+from app.models import FormulacaoSolado, FormulacaoSoladoFriso, LogAcao, MargemPorPedido, MargemPorPedidoReferencia, Referencia, Componente, CustoOperacional, ReferenciaAlca, ReferenciaComponentes, ReferenciaCustoOperacional, ReferenciaEmbalagem1, ReferenciaEmbalagem2, ReferenciaEmbalagem3, ReferenciaMaoDeObra, ReferenciaSolado, Salario, MaoDeObra, Margem
+from app.forms import MargemForm, MargemPorPedidoForm, MargemPorPedidoReferenciaForm, ReferenciaForm, ComponenteForm, CustoOperacionalForm, SalarioForm, MaoDeObraForm
 import os
 from flask import render_template, redirect, url_for, flash, request
 from app import db
@@ -19,6 +19,14 @@ from app import db, csrf  # 🔹 Importando o `csrf` que foi definido no __init_
 from flask.views import MethodView
 from decimal import Decimal, ROUND_HALF_UP  # Importa Decimal para cálculos precisos
 from sqlalchemy.exc import SQLAlchemyError
+import pandas as pd
+from flask import request, jsonify
+from werkzeug.utils import secure_filename
+
+from app.utils import allowed_file
+
+
+
 
 bp = Blueprint('routes', __name__)
 
@@ -225,8 +233,10 @@ def nova_referencia():
 def ver_referencia(id):
     referencia = Referencia.query.get_or_404(id)
     
-    # 🔹 Certifique-se de calcular os totais antes de exibir a referência
+    # 🔹 Sempre recalcula os totais antes de exibir
     referencia.calcular_totais()
+    db.session.commit()  # 🔹 Salva os valores atualizados no banco
+    
 
     # Recuperando os itens associados
     solados = ReferenciaSolado.query.filter_by(referencia_id=referencia.id).all()
@@ -238,6 +248,12 @@ def ver_referencia(id):
     custos_operacionais = ReferenciaCustoOperacional.query.filter_by(referencia_id=referencia.id).all()
     mao_de_obra = ReferenciaMaoDeObra.query.filter_by(referencia_id=referencia.id).all()
 
+    
+    # ✅ Pega os valores diretamente da referência
+    custo_total_embalagem1 = referencia.custo_total_embalagem1
+    custo_total_embalagem2 = referencia.custo_total_embalagem2
+    custo_total_embalagem3 = referencia.custo_total_embalagem3
+
     return render_template(
         'ver_referencia.html',
         referencia=referencia,
@@ -248,7 +264,10 @@ def ver_referencia(id):
         embalagem2=embalagem2,
         embalagem3=embalagem3,
         custos_operacionais=custos_operacionais,
-        mao_de_obra=mao_de_obra
+        mao_de_obra=mao_de_obra,
+        custo_total_embalagem1=custo_total_embalagem1,
+        custo_total_embalagem2=custo_total_embalagem2,
+        custo_total_embalagem3=custo_total_embalagem3
     )
 
 
@@ -1748,6 +1767,228 @@ def excluir_margem(id):
     db.session.commit()
     flash('Margem excluída com sucesso!', 'success')
     return redirect(url_for('routes.listar_margens'))
+
+
+@bp.route('/margens_pedido')
+@login_required
+def listar_margens_pedido():
+    """ Lista todas as margens por pedido """
+    margens = MargemPorPedido.query.all()
+    
+    return render_template('margens_pedido.html', margens=margens)
+
+
+
+@bp.route('/margem_pedido/novo', methods=['GET', 'POST'])
+@login_required
+def nova_margem_pedido():
+    form = MargemPorPedidoForm()
+    referencia_form = MargemPorPedidoReferenciaForm()
+    referencias = Referencia.query.all()
+
+    if form.validate_on_submit():
+        # Criar o pedido principal
+        margem_pedido = MargemPorPedido(
+            pedido=form.pedido.data,
+            nota_fiscal=form.nota_fiscal.data,
+            cliente=form.cliente.data,
+            comissao_porcentagem=Decimal(form.comissao_porcentagem.data),
+            comissao_valor=Decimal(form.comissao_valor.data),
+            financeiro_porcentagem=Decimal(form.financeiro_porcentagem.data),
+            financeiro_valor=Decimal(form.financeiro_valor.data),
+            duvidosos_porcentagem=Decimal(form.duvidosos_porcentagem.data),
+            duvidosos_valor=Decimal(form.duvidosos_valor.data),
+            frete_porcentagem=Decimal(form.frete_porcentagem.data),
+            frete_valor=Decimal(form.frete_valor.data),
+            tributos_porcentagem=Decimal(form.tributos_porcentagem.data),
+            tributos_valor=Decimal(form.tributos_valor.data),
+            outros_porcentagem=Decimal(form.outros_porcentagem.data),
+            outros_valor=Decimal(form.outros_valor.data)
+        )
+        db.session.add(margem_pedido)
+        db.session.flush()  # Garante que a ID do pedido seja gerada antes de associar referências
+
+        # Captura os CÓDIGOS das referências enviadas no formulário
+        referencias_codigos = request.form.getlist("referencia_id[]")
+
+        for codigo in referencias_codigos:
+            quantidade = request.form.get(f"quantidade_{codigo}", type=int)
+            embalagem_escolhida = request.form.get(f"embalagem_{codigo}")
+            preco_venda = Decimal(request.form.get(f"preco_venda_{codigo}", "0.00"))
+
+            # ✅ BUSCA O ID DA REFERÊNCIA NO BANCO USANDO O `codigo_referencia`
+            referencia = Referencia.query.filter_by(codigo_referencia=codigo).first()
+            if referencia:
+                ref_margem = MargemPorPedidoReferencia(
+                    margem_pedido_id=margem_pedido.id,
+                    referencia_id=referencia.id,  # Usa o ID correto do banco
+                    embalagem_escolhida=embalagem_escolhida,
+                    quantidade=quantidade,
+                    preco_venda=preco_venda
+                )
+                ref_margem.calcular_totais()  # 🔹 Faz o cálculo no modelo
+                db.session.add(ref_margem)
+            else:
+                flash(f"Erro: Referência {codigo} não encontrada no banco de dados.", "danger")
+
+        # 🔹 Agora chama os cálculos do pedido após adicionar todas as referências
+        margem_pedido.calcular_totais()
+        db.session.commit()
+
+        flash("Margem por pedido salva com sucesso!", "success")
+        return redirect(url_for('routes.listar_margens_pedido'))
+
+    return render_template(
+        'nova_margem_pedido.html',
+        form=form,
+        referencia_form=referencia_form,
+        referencias=referencias
+    )
+
+
+
+@bp.route('/margem_pedido/editar/<int:id>', methods=['GET', 'POST'])
+@login_required
+def editar_margem_pedido(id):
+    """ Edita uma margem por pedido existente """
+    margem_pedido = MargemPorPedido.query.get_or_404(id)
+    form = MargemPorPedidoForm(obj=margem_pedido)
+    referencia_form = MargemPorPedidoReferenciaForm()
+    referencias = Referencia.query.all()
+
+    if form.validate_on_submit():
+        # Atualizar os dados principais
+        margem_pedido.pedido = form.pedido.data
+        margem_pedido.nota_fiscal = form.nota_fiscal.data
+        margem_pedido.cliente = form.cliente.data
+        margem_pedido.comissao_porcentagem = Decimal(form.comissao_porcentagem.data)
+        margem_pedido.comissao_valor = Decimal(form.comissao_valor.data)
+        margem_pedido.financeiro_porcentagem = Decimal(form.financeiro_porcentagem.data)
+        margem_pedido.financeiro_valor = Decimal(form.financeiro_valor.data)
+        margem_pedido.duvidosos_porcentagem = Decimal(form.duvidosos_porcentagem.data)
+        margem_pedido.duvidosos_valor = Decimal(form.duvidosos_valor.data)
+        margem_pedido.frete_porcentagem = Decimal(form.frete_porcentagem.data)
+        margem_pedido.frete_valor = Decimal(form.frete_valor.data)
+        margem_pedido.tributos_porcentagem = Decimal(form.tributos_porcentagem.data)
+        margem_pedido.tributos_valor = Decimal(form.tributos_valor.data)
+        margem_pedido.outros_porcentagem = Decimal(form.outros_porcentagem.data)
+        margem_pedido.outros_valor = Decimal(form.outros_valor.data)
+
+        # Excluir referências antigas
+        MargemPorPedidoReferencia.query.filter_by(margem_pedido_id=id).delete()
+
+        # Adicionar novas referências associadas
+        referencias_ids = request.form.getlist("referencia_id[]")
+
+        for ref_id in referencias_ids:
+            quantidade = request.form.get(f"quantidade_{ref_id}", type=int)
+            embalagem_escolhida = request.form.get(f"embalagem_{ref_id}")
+            preco_venda = Decimal(request.form.get(f"preco_venda_{ref_id}", "0.00"))
+
+            referencia = Referencia.query.get(ref_id)
+            if referencia:
+                ref_margem = MargemPorPedidoReferencia(
+                    margem_pedido_id=margem_pedido.id,
+                    referencia_id=referencia.id,
+                    embalagem_escolhida=embalagem_escolhida,
+                    quantidade=quantidade,
+                    preco_venda=preco_venda
+                )
+                ref_margem.calcular_totais()  # 🔹 Faz o cálculo no modelo
+                db.session.add(ref_margem)
+
+        # Recalcular totais
+        margem_pedido.calcular_totais()
+        db.session.commit()
+
+        flash("Margem por pedido editada com sucesso!", "success")
+        return redirect(url_for('routes.listar_margens_pedido'))
+
+    return render_template(
+        'editar_margem_pedido.html',
+        form=form,
+        referencia_form=referencia_form,
+        referencias=referencias,
+        margem_pedido=margem_pedido
+    )
+
+
+
+@bp.route('/margem_pedido/ver/<int:id>')
+@login_required
+def ver_margem_pedido(id):
+    """ Exibe os detalhes de uma margem por pedido """
+    margem = MargemPorPedido.query.get_or_404(id)
+    return render_template('ver_margem_pedido.html', margem=margem)
+
+
+@bp.route('/margem_pedido/excluir/<int:id>', methods=['GET', 'POST'])
+@login_required
+def excluir_margem_pedido(id):
+    """ Exclui apenas a margem por pedido """
+    margem = MargemPorPedido.query.get_or_404(id)
+
+    try:
+        db.session.delete(margem)  
+        db.session.commit()
+        flash("Margem por pedido excluída com sucesso!", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Erro ao excluir margem: {str(e)}", "danger")
+
+    return redirect(url_for('routes.listar_margens_pedido'))
+
+
+
+
+
+from flask import current_app
+
+@bp.route('/margem_pedido/importar', methods=['POST'])
+@login_required
+def importar_referencias():
+    if 'file' not in request.files:
+        return jsonify({"success": False, "error": "Nenhum arquivo enviado"})
+
+    file = request.files['file']
+
+    if file.filename == '' or not allowed_file(file.filename):
+        return jsonify({"success": False, "error": "Arquivo inválido"})
+
+    from werkzeug.utils import secure_filename
+    import pandas as pd
+    import os
+
+    filename = secure_filename(file.filename)
+    filepath = os.path.join('app/static/uploads', filename)
+    file.save(filepath)
+
+    # Lendo o arquivo e processando os dados
+    try:
+        if filename.endswith('.xlsx'):
+            df = pd.read_excel(filepath)
+        else:
+            df = pd.read_csv(filepath, delimiter=";")  # Ajuste conforme necessário
+
+        referencias = []
+        for _, row in df.iterrows():
+            # Buscar a referência pelo código, e **não pelo ID**
+            referencia = Referencia.query.filter_by(codigo_referencia=row["Código Referência"]).first()
+
+            if referencia:
+                referencias.append({
+                    "codigo": referencia.codigo_referencia,
+                    "descricao": referencia.descricao,
+                    "quantidade": row["Quantidade"],
+                    "embalagem": row["Embalagem"],
+                    "preco_venda": row["Preço Venda"]
+                })
+
+        return jsonify({"success": True, "referencias": referencias})
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
 
 
 
