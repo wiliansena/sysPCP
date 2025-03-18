@@ -3,13 +3,32 @@
 {% block content %}
 <div class="container mt-4">
     <h2>Lista de Margens por Pedido</h2>
-    <a href="{{ url_for('routes.nova_margem_pedido') }}" class="btn btn-primary mb-3">Nova Margem por Pedido</a>
+    <hr>
+
+    <div>
+    <a href="{{ url_for('routes.nova_margem_pedido') }}" class="btn btn-primary mb-3">Adicionar</a>
+    </div>
+    <hr>
+    <!-- 🔎 Campo de busca -->
+    <div class="row mb-3">
+        <div class="col-md-4"> <!-- Define um tamanho menor para o campo -->
+            <form method="GET" action="{{ url_for('routes.listar_margens_pedido') }}" class="d-flex gap-2">
+                <input type="text" name="filtro" class="form-control form-control-sm" placeholder="Buscar pedido"
+                    value="{{ request.args.get('filtro', '') }}">
+                <button type="submit" class="btn btn-primary btn-sm ms-2">Buscar</button>
+                <a href="{{ url_for('routes.listar_margens_pedido') }}" class="btn btn-secondary btn-sm">
+                    <i class="fas fa-sync-alt"></i> <!-- Ícone de atualização -->
+                </a>
+            </form>
+        </div>
+    </div>  
 
     <table class="table table-striped">
         <thead>
             <tr>
                 <th>ID</th>
                 <th>Pedido</th>
+                <th>Remessa</th>
                 <th>Nota<br>Fiscal</th>
                 <th>Cliente</th>
                 <th>Total<br>Custo</th>
@@ -24,6 +43,7 @@
             <tr>
                 <td>{{ margem.id }}</td>
                 <td>{{ margem.pedido }}</td>
+                <td>{{ margem.remessa }}</td>
                 <td>{{ margem.nota_fiscal }}</td>
                 <td>{{ margem.cliente }}</td>
                 <td>R$ {{ margem.total_custo }}</td>

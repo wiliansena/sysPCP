@@ -6,26 +6,34 @@
     <form method="POST" action="{{ url_for('routes.nova_margem_pedido') }}">
         {{ form.hidden_tag() }}
 
-        <div class="card mb-3">
-            <div class="card-body">
-                <h5 class="card-title">Pedido</h5>
-                {{ form.pedido(class="form-control") }}
+        <div class="container mt-4">
+            <hr>
+        
+            <div class="row">
+                <div class="col-md-6">
+                    <label for="pedido">Pedido</label>
+                    <input type="text" id="pedido" name="pedido" class="form-control">
+                </div>
+        
+                <div class="col-md-6">
+                    <label for="remessa">Remessa</label>
+                    <input type="text" id="remessa" name="remessa" class="form-control">
+                </div>
+            </div>
+        
+            <div class="row mt-3">
+                <div class="col-md-6">
+                    <label for="nota_fiscal">Nota Fiscal</label>
+                    <input type="text" id="nota_fiscal" name="nota_fiscal" class="form-control">
+                </div>
+        
+                <div class="col-md-6">
+                    <label for="cliente">Cliente</label>
+                    <input type="text" id="cliente" name="cliente" class="form-control">
+                </div>
             </div>
         </div>
-
-        <div class="card mb-3">
-            <div class="card-body">
-                <h5 class="card-title">Nota Fiscal</h5>
-                {{ form.nota_fiscal(class="form-control") }}
-            </div>
-        </div>
-
-        <div class="card mb-3">
-            <div class="card-body">
-                <h5 class="card-title">Cliente</h5>
-                {{ form.cliente(class="form-control") }}
-            </div>
-        </div>
+        <hr>
         <!-- Botão para Importar Arquivo -->
         <h5><strong>Importar Pedido</strong></h5>
         <h6>(XLSX,CSV)</h6>
@@ -140,28 +148,27 @@
     </div>
 </div>
 
-<!-- Script para manipular seleção de referências -->
+<!-- Script para manipular seleção de referências MANUALMENTE -->
 <script>
     $(document).ready(function () {
         $(".select-referencia").click(function () {
-            let id = $(this).data("id");
-            let codigo = $(this).data("codigo");
+            let codigo = $(this).data("codigo"); // 🔹 Pegamos o código da referência
             let descricao = $(this).data("descricao");
 
-            let row = `<tr id='referencia_${id}'>
-                <input type='hidden' name='referencia_id[]' value='${id}'>
+            let row = `<tr id='referencia_${codigo}'>
+                <input type='hidden' name='referencia_id[]' value='${codigo}'>  <!-- 🔹 Agora usa o código -->
                 <td>${codigo}</td>
                 <td>${descricao}</td>
-                <td><input type='number' name='quantidade_${id}' class='form-control' min='1' value='1'></td>
+                <td><input type='number' name='quantidade_${codigo}' class='form-control' min='1' value='1'></td>
                 <td>
-                    <select name='embalagem_${id}' class='form-select'>
+                    <select name='embalagem_${codigo}' class='form-select'>
                         <option value='Cartucho'>Cartucho</option>
                         <option value='Colmeia'>Colmeia</option>
                         <option value='Saco'>Saco</option>
                     </select>
                 </td>
-                <td><input type='number' step='0.01' name='preco_venda_${id}' class='form-control'></td>
-                <td><button type='button' class='btn btn-danger btn-sm remove-referencia' data-id='${id}'>Remover</button></td>
+                <td><input type='number' step='0.01' name='preco_venda_${codigo}' class='form-control'></td>
+                <td><button type='button' class='btn btn-danger btn-sm remove-referencia' data-codigo='${codigo}'>Remover</button></td>
             </tr>`;
 
             $("#referencias-selecionadas").append(row);
@@ -169,13 +176,13 @@
         });
 
         $(document).on("click", ".remove-referencia", function () {
-            let id = $(this).data("id");
-            $(`#referencia_${id}`).remove();
+            let codigo = $(this).data("codigo");
+            $(`#referencia_${codigo}`).remove();
         });
     });
 </script>
 
-<!-- Script para processar o arquivo e preencher a tabela -->
+<!-- Script para processar o arquivo e preencher a tabela IMPORTAÇÃO -->
 <script>
     function importarArquivo() {
         let file = document.getElementById('fileInput').files[0];

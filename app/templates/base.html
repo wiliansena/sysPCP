@@ -38,6 +38,7 @@
         </div>
         {% if current_user.is_authenticated %}
         <a href="{{ url_for('routes.home') }}"><i class="fas fa-home"></i> Página Inicial</a>
+        <a href="{{ url_for('routes.custo_remessa') }}"><i class="bi bi-box-seam"></i> Margens por remessa</a>
         <a href="{{ url_for('routes.listar_margens_pedido') }}"><i class="fa-solid fa-receipt"></i> Margens por Pedido</a>
         <a href="{{ url_for('routes.listar_margens') }}"><i class="fas fa-percent"></i> Margens por Referência</a>
         <a href="{{ url_for('routes.listar_referencias') }}"><i class="fas fa-box"></i> Referências</a>

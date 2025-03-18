@@ -39,7 +39,7 @@ class Referencia(db.Model):
     custos_operacionais = db.relationship("ReferenciaCustoOperacional", backref="referencia", lazy=True, cascade="all, delete-orphan")
     mao_de_obra = db.relationship("ReferenciaMaoDeObra", backref="referencia", lazy=True, cascade="all, delete-orphan")
 
-    def calcular_totais(self):
+    def calcular_totais(self, commit=True):
         """Calcula os totais individuais e os custos totais por embalagem."""
         self.total_solado = sum(solado.custo_total for solado in self.solados)
         self.total_alcas = sum(alca.custo_total for alca in self.alcas)
@@ -48,9 +48,9 @@ class Referencia(db.Model):
         self.total_embalagem2 = sum(embalagem.custo_total for embalagem in self.embalagem2)
         self.total_embalagem3 = sum(embalagem.custo_total for embalagem in self.embalagem3)
 
-        # 🔹 Ajuste no cálculo dos custos operacionais
-        self.total_operacional = sum(custo.consumo * custo.preco_unitario for custo in self.custos_operacionais)
-        
+        # 🔹 Agora garantimos que os custos operacionais sejam recalculados
+        self.total_operacional = sum(custo.consumo * custo.custo.preco for custo in self.custos_operacionais)
+
         self.total_mao_de_obra = sum(mao.custo_total for mao in self.mao_de_obra)
 
         # 🔹 Cálculo do custo total para cada embalagem
@@ -62,6 +62,11 @@ class Referencia(db.Model):
 
         self.custo_total_embalagem3 = (self.total_solado + self.total_alcas + self.total_componentes +
                                     self.total_embalagem3 + self.total_operacional + self.total_mao_de_obra)
+        
+        db.session.add(self)  # 🔹 Adiciona a referência à sessão do banco
+        if commit:
+            db.session.commit()  # 🔹 Salva no banco se a flag estiver ativada
+
 
 
 
@@ -661,6 +666,8 @@ class MargemPorPedido(db.Model):
     pedido = db.Column(db.String(50), nullable=False)  # Número do pedido
     nota_fiscal = db.Column(db.String(50), nullable=True)
     cliente = db.Column(db.String(100), nullable=True)
+    remessa = db.Column(db.String(20), nullable=True)
+    data_criacao = db.Column(db.DateTime, default=lambda: datetime.now().replace(microsecond=0))
 
     referencias = db.relationship('MargemPorPedidoReferencia', backref='margem_pedido', cascade="all, delete-orphan")
 

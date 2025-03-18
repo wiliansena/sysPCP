@@ -62,11 +62,21 @@ def home_mobile():
 @login_required
 def listar_referencias():
     filtro = request.args.get('filtro', '')
+
     if filtro:
         referencias = Referencia.query.filter(Referencia.codigo_referencia.ilike(f"%{filtro}%")).all()
     else:
         referencias = Referencia.query.order_by(Referencia.id.desc()).all()
+
+    # 🔹 Garante que os cálculos sejam atualizados antes de exibir
+    for referencia in referencias:
+        referencia.calcular_totais()
+        db.session.add(referencia)  # 🔹 Adiciona a referência para ser salva
+    db.session.commit()  # 🔹 Salva as alterações no banco
+
     return render_template('referencias.html', referencias=referencias)
+
+
 
 
 
@@ -235,6 +245,7 @@ def ver_referencia(id):
     
     # 🔹 Sempre recalcula os totais antes de exibir
     referencia.calcular_totais()
+    db.session.add(referencia)  # 🔹 Garante que a referência seja atualizada no banco
     db.session.commit()  # 🔹 Salva os valores atualizados no banco
     
 
@@ -253,6 +264,7 @@ def ver_referencia(id):
     custo_total_embalagem1 = referencia.custo_total_embalagem1
     custo_total_embalagem2 = referencia.custo_total_embalagem2
     custo_total_embalagem3 = referencia.custo_total_embalagem3
+    
 
     return render_template(
         'ver_referencia.html',
@@ -870,11 +882,18 @@ def excluir_salario(id):
 
     return redirect(url_for('routes.listar_salarios'))
 
-@bp.route('/mao_de_obra')
+@bp.route('/mao_de_obra', methods=['GET'])
 @login_required
 def listar_mao_de_obra():
     mao_de_obra = MaoDeObra.query.order_by(MaoDeObra.id.desc()).all()
+
+    # 🔹 Recalcula os valores antes de exibir
+    for mao in mao_de_obra:
+        mao.calcular_valores()
+        db.session.commit()  # Salva os valores recalculados no banco
+
     return render_template('mao_de_obra.html', mao_de_obra=mao_de_obra)
+
 
 
 
@@ -1769,12 +1788,15 @@ def excluir_margem(id):
     return redirect(url_for('routes.listar_margens'))
 
 
-@bp.route('/margens_pedido')
+
+@bp.route('/margens_pedido', methods=['GET'])
 @login_required
 def listar_margens_pedido():
-    """ Lista todas as margens por pedido """
-    margens = MargemPorPedido.query.all()
-    
+    filtro = request.args.get('filtro', '')
+    if filtro:
+        margens = MargemPorPedido.query.filter(MargemPorPedido.pedido.ilike(f"%{filtro}%")).all()
+    else:
+        margens = MargemPorPedido.query.order_by(MargemPorPedido.id.desc()).all()
     return render_template('margens_pedido.html', margens=margens)
 
 
@@ -1792,6 +1814,7 @@ def nova_margem_pedido():
             pedido=form.pedido.data,
             nota_fiscal=form.nota_fiscal.data,
             cliente=form.cliente.data,
+            remessa=form.remessa.data,
             comissao_porcentagem=Decimal(form.comissao_porcentagem.data),
             comissao_valor=Decimal(form.comissao_valor.data),
             financeiro_porcentagem=Decimal(form.financeiro_porcentagem.data),
@@ -1861,6 +1884,7 @@ def editar_margem_pedido(id):
         margem_pedido.pedido = form.pedido.data
         margem_pedido.nota_fiscal = form.nota_fiscal.data
         margem_pedido.cliente = form.cliente.data
+        margem_pedido.remessa = form.remessa.data
         margem_pedido.comissao_porcentagem = Decimal(form.comissao_porcentagem.data)
         margem_pedido.comissao_valor = Decimal(form.comissao_valor.data)
         margem_pedido.financeiro_porcentagem = Decimal(form.financeiro_porcentagem.data)
@@ -1991,6 +2015,41 @@ def importar_referencias():
 
 
 
+@bp.route('/custo_remessa', methods=['GET', 'POST'])
+@login_required
+def custo_remessa():
+    margem_pedidos = []
+    totais = {
+        "total_preco_venda": Decimal(0),
+        "total_custo": Decimal(0),
+        "lucro_total": Decimal(0),
+        "margem_media": Decimal(0),
+    }
+
+    if request.method == "POST":
+        codigo_remessa = request.form.get("remessa").strip()
+
+        if codigo_remessa:
+            margem_pedidos = MargemPorPedido.query.filter_by(remessa=codigo_remessa).all()
+
+            if margem_pedidos:
+                # 🔹 Calculando os totais de todas as margens filtradas
+                total_venda = sum(m.total_preco_venda for m in margem_pedidos)
+                total_custo = sum(m.total_custo for m in margem_pedidos)
+                lucro_total = sum(m.lucro_total for m in margem_pedidos)
+
+                margem_media = (lucro_total / total_venda * 100) if total_venda > 0 else 0
+
+                totais = {
+                    "total_preco_venda": round(total_venda, 2),
+                    "total_custo": round(total_custo, 2),
+                    "lucro_total": round(lucro_total, 2),
+                    "margem_media": round(margem_media, 2),
+                }
+            else:
+                flash("Nenhuma margem por pedido encontrada para essa remessa.", "warning")
+
+    return render_template("custo_remessa.html", margem_pedidos=margem_pedidos, totais=totais)
 
 
 

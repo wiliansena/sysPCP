@@ -8,7 +8,9 @@
     <div class="card mb-3">
         <div class="card-body">
             <h5 class="card-title">Informações do Pedido</h5>
+            <p><strong>Data:</strong> {{ margem.data_criacao.strftime('%d/%m/%Y') }}</p>
             <p><strong>Pedido:</strong> {{ margem.pedido }}</p>
+            <p><strong>Remessa:</strong> {{ margem.remessa }}</p>
             <p><strong>Nota Fiscal:</strong> {{ margem.nota_fiscal }}</p>
             <p><strong>Cliente:</strong> {{ margem.cliente }}</p>
         </div>
@@ -109,12 +111,23 @@
     <div class="card mb-3">
         <div class="card-body">
             <h5 class="card-title">Totais</h5>
-            <p><strong>Total Preço Venda:</strong> R$ {{ "%.2f"|format(margem.total_preco_venda) }}</p>
-            <p><strong>Total Custo:</strong> R$ {{ "%.2f"|format(margem.total_custo) }}</p>
-            <p><strong>Lucro Total:</strong> R$ {{ "%.2f"|format(margem.lucro_total) }}</p>
-            <p><strong>Margem Média:</strong> {{ "%.2f"|format(margem.margem_media) }}%</p>
+            <div class="row">
+                <div class="col-md-3 col-sm-6">
+                    <p><strong>Total Preço Venda:</strong> R$ {{ "%.2f"|format(margem.total_preco_venda) }}</p>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <p><strong>Total Custo:</strong> R$ {{ "%.2f"|format(margem.total_custo) }}</p>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <p><strong>Lucro Total:</strong> R$ {{ "%.2f"|format(margem.lucro_total) }}</p>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <p><strong>Margem Média:</strong> {{ "%.2f"|format(margem.margem_media) }}%</p>
+                </div>
+            </div>
         </div>
     </div>
+
 
     <!-- 🔹 Ações -->
     <a href="{{ url_for('routes.listar_margens_pedido') }}" class="btn btn-secondary">Sair</a>

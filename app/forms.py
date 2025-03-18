@@ -195,6 +195,7 @@ class MargemPorPedidoForm(FlaskForm):
     pedido = StringField('Pedido', validators=[DataRequired()])
     nota_fiscal = StringField('Nota Fiscal', validators=[Optional()])
     cliente = StringField('Cliente', validators=[Optional()])
+    remessa = StringField('Remessa', validators=[Optional()])
 
     # Campos das despesas de venda
     comissao_porcentagem = DecimalField('Comissão (%)', places=2, default=Decimal(0))
@@ -218,6 +219,8 @@ class MargemPorPedidoForm(FlaskForm):
     total_preco_venda = DecimalField('Total Preço Venda', places=2, default=Decimal(0))
     lucro_total = DecimalField('Lucro Total', places=2, default=Decimal(0))
     margem_media = DecimalField('Margem Média (%)', places=2, default=Decimal(0))
+    
+    data_criacao = HiddenField()
 
     submit = SubmitField('Salvar Margem por Pedido')
 

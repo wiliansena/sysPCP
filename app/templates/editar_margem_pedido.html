@@ -6,23 +6,26 @@
     <form method="POST" action="{{ url_for('routes.editar_margem_pedido', id=margem_pedido.id) }}">
         {{ form.hidden_tag() }}
 
-        <div class="card mb-3">
-            <div class="card-body">
-                <h5 class="card-title">Pedido</h5>
+        <div class="row">
+            <div class="col-md-6">
+                <label for="pedido">Pedido</label>
                 {{ form.pedido(class="form-control") }}
             </div>
-        </div>
 
-        <div class="card mb-3">
-            <div class="card-body">
-                <h5 class="card-title">Nota Fiscal</h5>
-                {{ form.nota_fiscal(class="form-control") }}
+            <div class="col-md-6">
+                <label for="remessa">Remessa</label>
+                {{ form.remessa(class="form-control") }}
             </div>
         </div>
 
-        <div class="card mb-3">
-            <div class="card-body">
-                <h5 class="card-title">Cliente</h5>
+        <div class="row mt-3">
+            <div class="col-md-6">
+                <label for="nota_fiscal">Nota Fiscal</label>
+                {{ form.nota_fiscal(class="form-control") }}
+            </div>
+
+            <div class="col-md-6">
+                <label for="cliente">Cliente</label>
                 {{ form.cliente(class="form-control") }}
             </div>
         </div>
@@ -51,16 +54,22 @@
                             <input type="hidden" name="referencia_id[]" value="{{ ref.referencia_id }}">
                             <td>{{ ref.referencia.codigo_referencia }}</td>
                             <td>{{ ref.referencia.descricao }}</td>
-                            <td><input type="number" name="quantidade_{{ ref.referencia_id }}" class="form-control" min="1" value="{{ ref.quantidade }}"></td>
+                            <td><input type="number" name="quantidade_{{ ref.referencia_id }}" class="form-control"
+                                    min="1" value="{{ ref.quantidade }}"></td>
                             <td>
                                 <select name="embalagem_{{ ref.referencia_id }}" class="form-select">
-                                    <option value="Cartucho" {% if ref.embalagem_escolhida == 'Cartucho' %}selected{% endif %}>Cartucho</option>
-                                    <option value="Colmeia" {% if ref.embalagem_escolhida == 'Colmeia' %}selected{% endif %}>Colmeia</option>
-                                    <option value="Saco" {% if ref.embalagem_escolhida == 'Saco' %}selected{% endif %}>Saco</option>
+                                    <option value="Cartucho" {% if ref.embalagem_escolhida=='Cartucho' %}selected{%
+                                        endif %}>Cartucho</option>
+                                    <option value="Colmeia" {% if ref.embalagem_escolhida=='Colmeia' %}selected{% endif
+                                        %}>Colmeia</option>
+                                    <option value="Saco" {% if ref.embalagem_escolhida=='Saco' %}selected{% endif %}>
+                                        Saco</option>
                                 </select>
                             </td>
-                            <td><input type="number" step="0.01" name="preco_venda_{{ ref.referencia_id }}" class="form-control" value="{{ ref.preco_venda }}"></td>
-                            <td><button type="button" class="btn btn-danger btn-sm remove-referencia" data-id="{{ ref.referencia_id }}">Remover</button></td>
+                            <td><input type="number" step="0.01" name="preco_venda_{{ ref.referencia_id }}"
+                                    class="form-control" value="{{ ref.preco_venda }}"></td>
+                            <td><button type="button" class="btn btn-danger btn-sm remove-referencia"
+                                    data-id="{{ ref.referencia_id }}">Remover</button></td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -74,12 +83,12 @@
                 <h5 class="card-title">Despesas de Venda</h5>
                 <div class="row">
                     {% for field in [
-                        ('comissao_porcentagem', 'comissao_valor'),
-                        ('financeiro_porcentagem', 'financeiro_valor'),
-                        ('duvidosos_porcentagem', 'duvidosos_valor'),
-                        ('frete_porcentagem', 'frete_valor'),
-                        ('tributos_porcentagem', 'tributos_valor'),
-                        ('outros_porcentagem', 'outros_valor')
+                    ('comissao_porcentagem', 'comissao_valor'),
+                    ('financeiro_porcentagem', 'financeiro_valor'),
+                    ('duvidosos_porcentagem', 'duvidosos_valor'),
+                    ('frete_porcentagem', 'frete_valor'),
+                    ('tributos_porcentagem', 'tributos_valor'),
+                    ('outros_porcentagem', 'outros_valor')
                     ] %}
                     <div class="col-md-6">
                         <label>{{ form[field[0]].label }}</label>
@@ -132,10 +141,9 @@
                             <td>{{ referencia.codigo_referencia }}</td>
                             <td>{{ referencia.descricao }}</td>
                             <td>
-                                <button type="button" class="btn btn-success btn-sm select-referencia" 
-                                        data-id="{{ referencia.id }}" 
-                                        data-codigo="{{ referencia.codigo_referencia }}"
-                                        data-descricao="{{ referencia.descricao }}">
+                                <button type="button" class="btn btn-success btn-sm select-referencia"
+                                    data-id="{{ referencia.id }}" data-codigo="{{ referencia.codigo_referencia }}"
+                                    data-descricao="{{ referencia.descricao }}">
                                     Selecionar
                                 </button>
                             </td>
