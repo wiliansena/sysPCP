@@ -4,6 +4,11 @@
 <div class="container mt-4">
     <h2>Cadastro de Solado</h2>
 
+    <form id="uploadForm" enctype="multipart/form-data">
+        <input type="file" id="fileInput" name="file" accept=".xls,.xlsx" required>
+        <button type="button" onclick="importarSolados()" class="btn btn-primary">Importar Solados</button>
+    </form>
+
     <!-- 🔹 Adicionado action na form -->
     <form method="POST" action="{{ url_for('routes.novo_solado') }}" enctype="multipart/form-data">
         {{ form.hidden_tag() }}
@@ -82,7 +87,7 @@
                 <tr data-id="{{ item.componente_id.data }}">
                     <td>
                         <input type="hidden" name="componentes[]" value="{{ item.componente_id.data }}">
-                        {{ item.componente_id.data }} 
+                        {{ item.componente_id.data }}
                     </td>
                     <td>
                         <input type="hidden" name="descricao[]" value="{{ item.descricao.data }}">
@@ -165,7 +170,8 @@
             <div class="modal-body">
                 <!-- Campo de filtro -->
                 <div class="mb-3">
-                    <input type="text" id="filterComponentesSemFriso" class="form-control" placeholder="Filtrar Componentes Sem Friso">
+                    <input type="text" id="filterComponentesSemFriso" class="form-control"
+                        placeholder="Filtrar Componentes Sem Friso">
                 </div>
                 <table class="table" id="componentesSemFrisoTable">
                     <thead>
@@ -184,10 +190,8 @@
                             <td>R$ {{ "%.6f"|format(componente.preco) }}</td>
                             <td>
                                 <button type="button" class="btn btn-success btn-sm selecionar-componente"
-                                    data-id="{{ componente.id }}" 
-                                    data-descricao="{{ componente.descricao }}"
-                                    data-preco="{{ "%.6f"|format(componente.preco) }}" 
-                                    data-tipo="sem_friso">
+                                    data-id="{{ componente.id }}" data-descricao="{{ componente.descricao }}"
+                                    data-preco="{{ " %.6f"|format(componente.preco) }}" data-tipo="sem_friso">
                                     Selecionar
                                 </button>
                             </td>
@@ -201,7 +205,8 @@
 </div>
 
 <!-- 🔹 Modal para selecionar componentes (Com Friso) -->
-<div class="modal fade" id="modalComponentesFriso" tabindex="-1" aria-labelledby="modalComponentesFrisoLabel" aria-hidden="true">
+<div class="modal fade" id="modalComponentesFriso" tabindex="-1" aria-labelledby="modalComponentesFrisoLabel"
+    aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -213,7 +218,8 @@
             <div class="modal-body">
                 <!-- Campo de filtro -->
                 <div class="mb-3">
-                    <input type="text" id="filterComponentesFriso" class="form-control" placeholder="Filtrar Componentes Com Friso">
+                    <input type="text" id="filterComponentesFriso" class="form-control"
+                        placeholder="Filtrar Componentes Com Friso">
                 </div>
                 <table class="table" id="componentesFrisoTable">
                     <thead>
@@ -232,10 +238,8 @@
                             <td>R$ {{ "%.6f"|format(componente.preco) }}</td>
                             <td>
                                 <button type="button" class="btn btn-success btn-sm selecionar-componente"
-                                    data-id="{{ componente.id }}" 
-                                    data-descricao="{{ componente.descricao }}"
-                                    data-preco="{{ "%.6f"|format(componente.preco) }}" 
-                                    data-tipo="friso">
+                                    data-id="{{ componente.id }}" data-descricao="{{ componente.descricao }}"
+                                    data-preco="{{ " %.6f"|format(componente.preco) }}" data-tipo="friso">
                                     Selecionar
                                 </button>
                             </td>
@@ -250,23 +254,23 @@
 
 <!-- Script para filtrar as tabelas dos modais -->
 <script>
-function setupFilter(filterId, tableId) {
-    const filterInput = document.getElementById(filterId);
-    if (filterInput) {
-        filterInput.addEventListener('keyup', function() {
-            const filtro = this.value.toUpperCase();
-            const rows = document.querySelectorAll('#' + tableId + ' tbody tr');
-            rows.forEach(row => {
-                const col1 = row.querySelector('td:nth-child(1)').textContent.toUpperCase();
-                const col2 = row.querySelector('td:nth-child(2)').textContent.toUpperCase();
-                row.style.display = (col1.indexOf(filtro) > -1 || col2.indexOf(filtro) > -1) ? '' : 'none';
+    function setupFilter(filterId, tableId) {
+        const filterInput = document.getElementById(filterId);
+        if (filterInput) {
+            filterInput.addEventListener('keyup', function () {
+                const filtro = this.value.toUpperCase();
+                const rows = document.querySelectorAll('#' + tableId + ' tbody tr');
+                rows.forEach(row => {
+                    const col1 = row.querySelector('td:nth-child(1)').textContent.toUpperCase();
+                    const col2 = row.querySelector('td:nth-child(2)').textContent.toUpperCase();
+                    row.style.display = (col1.indexOf(filtro) > -1 || col2.indexOf(filtro) > -1) ? '' : 'none';
+                });
             });
-        });
+        }
     }
-}
 
-setupFilter('filterComponentesSemFriso', 'componentesSemFrisoTable');
-setupFilter('filterComponentesFriso', 'componentesFrisoTable');
+    setupFilter('filterComponentesSemFriso', 'componentesSemFrisoTable');
+    setupFilter('filterComponentesFriso', 'componentesFrisoTable');
 </script>
 
 <script>
@@ -341,6 +345,29 @@ setupFilter('filterComponentesFriso', 'componentesFrisoTable');
         });
     });
 
+</script>
+<script>
+    function importarSolados() {
+        let fileInput = document.getElementById('fileInput');
+        let file = fileInput.files[0];
+
+        if (!file) {
+            alert('Por favor, selecione um arquivo.');
+            return;
+        }
+
+        let formData = new FormData();
+        formData.append("file", file);
+
+        fetch("{{ url_for('routes.importar_solados') }}", {
+            method: "POST",
+            body: formData
+        })
+            .then(() => {
+                window.location.href = "{{ url_for('routes.listar_solados') }}";  // 🔹 Redireciona para listar solados
+            })
+            .catch(error => console.error('Erro:', error));
+    }
 </script>
 
 {% endblock %}

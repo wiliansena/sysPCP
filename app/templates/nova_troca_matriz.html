@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Nova Troca de Matriz</h2>
+<form method="POST">
+    {{ form.hidden_tag() }}
+
+    <div class="row">
+        <!-- Data -->
+        <div class="col-md-6">
+            <div class="form-group">
+                {{ form.data.label(class="form-label") }}
+                {{ form.data(class="form-control") }}
+            </div>
+        </div>
+
+        <!-- Máquina -->
+        <div class="col-md-6">
+            <div class="form-group">
+                {{ form.maquina_id.label(class="form-label") }}
+                {{ form.maquina_id(class="form-control") }}
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-3">
+        <!-- Trocador -->
+        <div class="col-md-6">
+            <div class="form-group">
+                {{ form.trocador_id.label(class="form-label") }}
+                {{ form.trocador_id(class="form-control") }}
+            </div>
+        </div>
+
+        <!-- Operador -->
+        <div class="col-md-6">
+            <div class="form-group">
+                {{ form.operador_id.label(class="form-label") }}
+                {{ form.operador_id(class="form-control") }}
+            </div>
+        </div>
+    </div>
+    <br>
+    <hr>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Horário</th>
+                <th>Pares Produzidos</th>
+                <th>1ª Troca</th>
+                <th>2ª Troca</th>
+                <th>3ª Troca</th>
+                <th>4ª Troca</th>
+                <th>5ª Troca</th>
+                <th>6ª Troca</th>
+                <th>7ª Troca</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for troca in form.trocas %}
+            <tr>
+                <td>{{ troca.horario(class="form-control", readonly=true) }}</td>
+                <td>{{ troca.pares(class="form-control") }}</td>
+                <td>
+                    {{ troca.inicio_1(class="form-control", placeholder="Início") }}
+                    {{ troca.fim_1(class="form-control", placeholder="Fim") }}
+                </td>
+                <td>
+                    {{ troca.inicio_2(class="form-control", placeholder="Início") }}
+                    {{ troca.fim_2(class="form-control", placeholder="Fim") }}
+                </td>
+                <td>
+                    {{ troca.inicio_3(class="form-control", placeholder="Início") }}
+                    {{ troca.fim_3(class="form-control", placeholder="Fim") }}
+                </td>
+                <td>
+                    {{ troca.inicio_4(class="form-control", placeholder="Início") }}
+                    {{ troca.fim_4(class="form-control", placeholder="Fim") }}
+                </td>
+                <td>
+                    {{ troca.inicio_5(class="form-control", placeholder="Início") }}
+                    {{ troca.fim_5(class="form-control", placeholder="Fim") }}
+                </td>
+                <td>
+                    {{ troca.inicio_6(class="form-control", placeholder="Início") }}
+                    {{ troca.fim_6(class="form-control", placeholder="Fim") }}
+                </td>
+                <td>
+                    {{ troca.inicio_7(class="form-control", placeholder="Início") }}
+                    {{ troca.fim_7(class="form-control", placeholder="Fim") }}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <button type="submit" class="btn btn-success">Salvar</button>
+    <a href="{{ url_for('routes.listar_trocas_matriz') }}" class="btn btn-secondary">Cancelar</a>
+</form>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        let camposHorario = document.querySelectorAll("input[name*='inicio'], input[name*='fim']");
+
+        camposHorario.forEach(campo => {
+            campo.addEventListener("input", function () {
+                let valor = this.value.replace(/\D/g, ''); // Remove caracteres não numéricos
+                if (valor.length >= 2) {
+                    valor = valor.substring(0, 2) + ":" + valor.substring(2, 4);
+                }
+                this.value = valor;
+            });
+
+            // Garante que ao perder o foco, o formato esteja correto
+            campo.addEventListener("blur", function () {
+                let valor = this.value;
+                let regexHorario = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/; // Formato válido de hora
+
+                if (!regexHorario.test(valor)) {
+                    this.value = "00:00"; // Se não estiver correto, define "00:00"
+                }
+            });
+        });
+    });
+</script>
+
+{% endblock %}

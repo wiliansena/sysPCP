@@ -4,7 +4,10 @@
 <div class="container mt-4">
     <h2>Editar Referência</h2>
     <br>
+
+    <a href="{{ url_for('routes.listar_referencias') }}" class="btn btn-secondary">Sair</a>
     <hr>
+    
 
     <form method="POST" action="{{ url_for('routes.editar_referencia', id=referencia.id) }}"
         enctype="multipart/form-data">
@@ -23,6 +26,18 @@
         <div class="form-group">
             <label>Linha</label>
             {{ form.linha(class="form-control") }}
+        </div>
+
+        <div class="form-group">
+            <label for="colecao_id">Coleção</label>
+            <select name="colecao_id" id="colecao_id" class="form-control">
+                <option value="">Selecione uma coleção</option>
+                {% for colecao in form.colecao_id.choices %}
+                    <option value="{{ colecao[0] }}" {% if referencia.colecao_id == colecao[0] %}selected{% endif %}>
+                        {{ colecao[1] }}
+                    </option>
+                {% endfor %}
+            </select>
         </div>
         <hr>
 

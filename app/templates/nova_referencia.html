@@ -21,6 +21,15 @@
             <label>Linha</label>
             {{ form.linha(class="form-control") }}
         </div>
+        <div class="form-group">
+            <label for="colecao_id">Coleção</label>
+            <select name="colecao_id" id="colecao_id" class="form-control">
+                <option value="">Selecione uma coleção</option>
+                {% for colecao in form.colecao_id.choices %}
+                    <option value="{{ colecao[0] }}">{{ colecao[1] }}</option>
+                {% endfor %}
+            </select>
+        </div>
         <hr>
 
         <div class="form-group">

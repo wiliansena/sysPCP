@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Editar Máquina</h2>
+
+<form method="POST">
+    {{ form.hidden_tag() }}
+
+    <div class="mb-3">
+        {{ form.codigo.label(class="form-label") }}
+        {{ form.codigo(class="form-control", readonly=True) }} <!-- Código não pode ser alterado -->
+    </div>
+
+    <div class="mb-3">
+        {{ form.descricao.label(class="form-label") }}
+        {{ form.descricao(class="form-control") }}
+    </div>
+
+    <div class="mb-3">
+        {{ form.tipo.label(class="form-label") }}
+        {{ form.tipo(class="form-select") }}
+    </div>
+
+    <div class="mb-3">
+        {{ form.status.label(class="form-label") }}
+        {{ form.status(class="form-select") }}
+    </div>
+
+    <div class="mb-3">
+        {{ form.preco.label(class="form-label") }}
+        {{ form.preco(class="form-control preco-formatado") }} <!-- Aplicando a formatação de número -->
+    </div>
+
+    <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Salvar Alterações</button>
+    <a href="{{ url_for('routes.listar_maquinas') }}" class="btn btn-secondary">Cancelar</a>
+</form>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        aplicarFormatacao(); // 🔹 Aplica a formatação ao carregar a página
+
+        document.querySelectorAll(".preco-formatado").forEach(campo => {
+            campo.addEventListener("input", function () {
+                this.value = formatarNumeroParaInput(this.value);
+            });
+        });
+    });
+</script>
+
+
+{% endblock %}

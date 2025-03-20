@@ -2,8 +2,8 @@ from sqlite3 import IntegrityError
 from flask import Blueprint, jsonify, render_template, redirect, url_for, flash, request
 from flask_login import current_user, login_required
 from app import db
-from app.models import FormulacaoSolado, FormulacaoSoladoFriso, LogAcao, MargemPorPedido, MargemPorPedidoReferencia, Referencia, Componente, CustoOperacional, ReferenciaAlca, ReferenciaComponentes, ReferenciaCustoOperacional, ReferenciaEmbalagem1, ReferenciaEmbalagem2, ReferenciaEmbalagem3, ReferenciaMaoDeObra, ReferenciaSolado, Salario, MaoDeObra, Margem
-from app.forms import MargemForm, MargemPorPedidoForm, MargemPorPedidoReferenciaForm, ReferenciaForm, ComponenteForm, CustoOperacionalForm, SalarioForm, MaoDeObraForm
+from app.models import FormulacaoSolado, FormulacaoSoladoFriso, Funcionario, LogAcao, Maquina, MargemPorPedido, MargemPorPedidoReferencia, Referencia, Componente, CustoOperacional, ReferenciaAlca, ReferenciaComponentes, ReferenciaCustoOperacional, ReferenciaEmbalagem1, ReferenciaEmbalagem2, ReferenciaEmbalagem3, ReferenciaMaoDeObra, ReferenciaSolado, Salario, MaoDeObra, Margem, TrocaHorario, TrocaMatriz
+from app.forms import FuncionarioForm, MaquinaForm, MargemForm, MargemPorPedidoForm, MargemPorPedidoReferenciaForm, ReferenciaForm, ComponenteForm, CustoOperacionalForm, SalarioForm, MaoDeObraForm, TrocaMatrizForm
 import os
 from flask import render_template, redirect, url_for, flash, request
 from app import db
@@ -22,7 +22,7 @@ from sqlalchemy.exc import SQLAlchemyError
 import pandas as pd
 from flask import request, jsonify
 from werkzeug.utils import secure_filename
-
+from flask import current_app
 from app.utils import allowed_file
 
 
@@ -93,6 +93,7 @@ def parse_float(value, default=0):
 @login_required
 def nova_referencia():
     form = ReferenciaForm()
+    form.colecao_id.choices = [(c.id, c.codigo) for c in Colecao.query.all()]
 
     # Recupera os dados para os modais
     solados = Solado.query.all()
@@ -100,12 +101,14 @@ def nova_referencia():
     componentes = Componente.query.all()
     custos_operacionais = CustoOperacional.query.all()
     mao_de_obra = MaoDeObra.query.all()
+    colecoes = Colecao.query.all()
 
     if form.validate_on_submit():
         referencia = Referencia(
             codigo_referencia=form.codigo_referencia.data,
             descricao=form.descricao.data,
             linha=form.linha.data,
+            colecao_id=form.colecao_id.data,
             imagem=form.imagem.data.filename if form.imagem.data else None,
         )
 
@@ -234,7 +237,8 @@ def nova_referencia():
         alcas=alcas,
         componentes=componentes,
         custos_operacionais=custos_operacionais,
-        mao_de_obra=mao_de_obra
+        mao_de_obra=mao_de_obra,
+        colecoes=colecoes
     )
 
 
@@ -258,6 +262,7 @@ def ver_referencia(id):
     embalagem3 = ReferenciaEmbalagem3.query.filter_by(referencia_id=referencia.id).all()
     custos_operacionais = ReferenciaCustoOperacional.query.filter_by(referencia_id=referencia.id).all()
     mao_de_obra = ReferenciaMaoDeObra.query.filter_by(referencia_id=referencia.id).all()
+    colecao = Colecao.query.get(referencia.colecao_id)  # 🔹 Obtém a coleção associada
 
     
     # ✅ Pega os valores diretamente da referência
@@ -279,7 +284,8 @@ def ver_referencia(id):
         mao_de_obra=mao_de_obra,
         custo_total_embalagem1=custo_total_embalagem1,
         custo_total_embalagem2=custo_total_embalagem2,
-        custo_total_embalagem3=custo_total_embalagem3
+        custo_total_embalagem3=custo_total_embalagem3,
+        colecao=colecao  # 🔹 Passa a coleção para o template
     )
 
 
@@ -290,13 +296,13 @@ from app.forms import ReferenciaForm
 import os
 from werkzeug.utils import secure_filename
 
-
 @bp.route('/referencia/editar/<int:id>', methods=['GET', 'POST'])
 @login_required
 def editar_referencia(id):
     """Edita uma referência existente permitindo adicionar, atualizar ou remover itens."""
     referencia = Referencia.query.get_or_404(id)
     form = ReferenciaForm(obj=referencia)
+    form.colecao_id.choices = [(c.id, c.codigo) for c in Colecao.query.all()]
 
     # Recupera os itens já associados à referência
     solados = ReferenciaSolado.query.filter_by(referencia_id=id).all()
@@ -307,11 +313,26 @@ def editar_referencia(id):
     embalagem3 = ReferenciaEmbalagem3.query.filter_by(referencia_id=id).all()
     custos_operacionais = ReferenciaCustoOperacional.query.filter_by(referencia_id=id).all()
     mao_de_obra = ReferenciaMaoDeObra.query.filter_by(referencia_id=id).all()
+    colecao = Colecao.query.get(referencia.colecao_id)
 
     if form.validate_on_submit():
-        referencia.codigo_referencia = form.codigo_referencia.data
+        nova_referencia = form.codigo_referencia.data.strip()
+
+        # Verifica se a referência já existe no banco e não é a mesma que está sendo editada
+        referencia_existente = Referencia.query.filter(
+            Referencia.codigo_referencia == nova_referencia,
+            Referencia.id != id  # Exclui a própria referência da verificação
+        ).first()
+
+        if referencia_existente:
+            flash("Erro: Já existe uma referência com esse código no banco!", "danger")
+            return redirect(url_for('routes.editar_referencia', id=id))
+
+        # Atualiza os dados da referência
+        referencia.codigo_referencia = nova_referencia
         referencia.descricao = form.descricao.data
         referencia.linha = form.linha.data
+        referencia.colecao_id = form.colecao_id.data
 
         # Atualiza a imagem se enviada
         if form.imagem.data:
@@ -333,8 +354,7 @@ def editar_referencia(id):
         remover_itens(ReferenciaEmbalagem2)
         remover_itens(ReferenciaEmbalagem3)
 
-        # 🔹 Confirma a remoção para evitar erro de referências
-        db.session.commit()
+        db.session.commit()  # 🔹 Confirma a remoção para evitar erro de referências
 
         # 🔹 Função para adicionar novos itens
         def adicionar_itens(modelo, nome_form, chave_id, chave_preco):
@@ -383,8 +403,6 @@ def editar_referencia(id):
             ))
 
         # 🔹 Adiciona os itens das embalagens
-
-        # 🔹 Função para adicionar os itens das embalagens corretamente
         def adicionar_embalagem(modelo, nome_form):
             ids_post = request.form.getlist(f"{nome_form}_id[]")
             consumos_post = request.form.getlist(f"{nome_form}_consumo[]")
@@ -392,7 +410,6 @@ def editar_referencia(id):
             for item_id, consumo in zip(ids_post, consumos_post):
                 consumo_decimal = Decimal(consumo) if consumo else Decimal(0)
 
-                # 🔹 Buscar o preço correto do componente no banco
                 componente = Componente.query.get(int(item_id))
                 preco_unitario = componente.preco if componente else Decimal(0)
 
@@ -400,19 +417,16 @@ def editar_referencia(id):
                     referencia_id=id,
                     componente_id=int(item_id),
                     consumo=consumo_decimal,
-                    preco_unitario=preco_unitario  # 🔹 Agora salva o preço correto
+                    preco_unitario=preco_unitario
                 )
                 db.session.add(novo_item)
 
-        # 🔹 Agora chamamos a função corrigida para adicionar os itens das embalagens
         adicionar_embalagem(ReferenciaEmbalagem1, "embalagem1")
         adicionar_embalagem(ReferenciaEmbalagem2, "embalagem2")
         adicionar_embalagem(ReferenciaEmbalagem3, "embalagem3")
 
         # 🔹 Recalcular os totais
         referencia.calcular_totais()
-
-        # 🔹 Adiciona novamente a referência para garantir que os valores calculados sejam salvos
         db.session.add(referencia)
 
         try:
@@ -431,7 +445,6 @@ def editar_referencia(id):
             print(f"❌ Erro ao salvar no banco: {e}")
             flash("Erro ao salvar as alterações. Verifique os logs.", "danger")
 
-    # 🔹 Agora renderiza a página com todas as informações corretamente
     return render_template(
         'editar_referencia.html',
         form=form,
@@ -444,13 +457,14 @@ def editar_referencia(id):
         embalagem3=embalagem3,
         custos_operacionais=custos_operacionais,
         mao_de_obra=mao_de_obra,
-        # 🔹 Passando os itens disponíveis para o modal
         solados_disponiveis=Solado.query.all(),
         alcas_disponiveis=Alca.query.all(),
         componentes_disponiveis=Componente.query.all(),
         custos_disponiveis=CustoOperacional.query.all(),
-        mao_de_obra_disponiveis=MaoDeObra.query.all()
+        mao_de_obra_disponiveis=MaoDeObra.query.all(),
+        colecao=colecao
     )
+
 
 
 
@@ -478,6 +492,7 @@ def copiar_referencia(id):
         codigo_referencia=codigo_temporario,
         descricao=referencia.descricao,
         linha=referencia.linha,
+        colecao_id=referencia.colecao_id,
         imagem=referencia.imagem
     )
     db.session.add(nova_referencia)
@@ -658,9 +673,21 @@ def editar_colecao(id):
 @login_required
 def excluir_colecao(id):
     colecao = Colecao.query.get_or_404(id)
-    db.session.delete(colecao)
-    db.session.commit()
-    flash('Coleção excluída com sucesso!', 'danger')
+    referencias_vinculadas = Referencia.query.filter_by(colecao_id=colecao.id).all()
+    
+    if referencias_vinculadas:
+        referencias_str = ", ".join([ref.codigo_referencia for ref in referencias_vinculadas])
+        flash(f"Erro: Não é possível excluir a coleção pois está vinculada às referências: {referencias_str}.", "danger")
+        return redirect(url_for('routes.listar_colecoes'))
+    
+    try:
+        db.session.delete(colecao)
+        db.session.commit()
+        flash("Coleção excluída com sucesso!", "success")
+    except IntegrityError:
+        db.session.rollback()
+        flash("Erro: Não foi possível excluir a coleção.", "danger")
+    
     return redirect(url_for('routes.listar_colecoes'))
 
 
@@ -671,14 +698,16 @@ def excluir_colecao(id):
 @login_required
 def listar_componentes():
     filtro = request.args.get('filtro', '')
-    componentes = []  # Inicialmente, a lista estará vazia
-
+    
     if filtro == "TODOS":
-        componentes = Componente.query.all()
+        componentes = Componente.query.order_by(Componente.id.desc()).all()
     elif filtro:
-        componentes = Componente.query.filter(Componente.descricao.ilike(f"%{filtro}%")).all()
-
+        componentes = Componente.query.filter(Componente.descricao.ilike(f"%{filtro}%")).order_by(Componente.id.desc()).all()
+    else:
+        componentes = Componente.query.order_by(Componente.id.desc()).all()  # Garante a ordenação mesmo sem filtro
+    
     return render_template('componentes.html', componentes=componentes)
+
 
 
 
@@ -1117,6 +1146,7 @@ def novo_solado():
     return render_template('novo_solado.html', form=form, componentes=componentes)
 
 
+
 @bp.route('/solado/editar/<int:id>', methods=['GET', 'POST'])
 @login_required
 def editar_solado(id):
@@ -1125,7 +1155,17 @@ def editar_solado(id):
     componentes = Componente.query.all()  # Para exibir os componentes no modal
 
     if form.validate_on_submit():
-        # 🔹 Atualizar os dados do solado
+        # 🔹 Verifica se a referência foi alterada e se já existe no banco
+        if form.referencia.data != solado.referencia:
+            referencia_existente = Solado.query.filter_by(referencia=form.referencia.data).first()
+            if referencia_existente:
+                flash("A referência informada já existe no banco de dados!", "danger")
+                return redirect(url_for('routes.editar_solado', id=id))
+
+            # Se passou pela verificação, atualiza a referência
+            solado.referencia = form.referencia.data
+
+        # 🔹 Atualizar a descrição
         solado.descricao = form.descricao.data
 
         # 🔹 Atualizar imagem, se foi enviada uma nova
@@ -1177,8 +1217,7 @@ def editar_solado(id):
                     carga=float(carga) if carga else 0
                 )
                 db.session.add(nova_formulacao_friso)
-                
-                
+
         # 🔹 Salva o log
         log = LogAcao(
             usuario_id=current_user.id,
@@ -1189,11 +1228,12 @@ def editar_solado(id):
 
         # 🔹 Commitando as alterações no banco
         db.session.commit()
-        
+
         flash("Solado atualizado com sucesso!", "success")
         return redirect(url_for('routes.listar_solados'))
 
     return render_template('editar_solado.html', form=form, solado=solado, componentes=componentes)
+
 
 import random, string
 from flask import redirect, url_for, flash
@@ -1379,7 +1419,6 @@ def nova_alca():
     return render_template('nova_alca.html', form=form, componentes=componentes)
 
 
-
 @bp.route('/alca/editar/<int:id>', methods=['GET', 'POST'])
 @login_required
 def editar_alca(id):
@@ -1388,22 +1427,32 @@ def editar_alca(id):
     componentes = Componente.query.all()  # Para exibir os componentes no modal
 
     if form.validate_on_submit():
-        # Atualizar dados da alça
+        # **🔹 Verifica se a referência foi alterada**
+        if form.referencia.data != alca.referencia:
+            referencia_existente = Alca.query.filter_by(referencia=form.referencia.data).first()
+            if referencia_existente:
+                flash("A referência informada já existe no banco de dados!", "danger")
+                return redirect(url_for('routes.editar_alca', id=id))
+            
+            # Se não existe no banco, pode atualizar a referência
+            alca.referencia = form.referencia.data
+
+        # **🔹 Atualizar os outros dados da alça**
         alca.descricao = form.descricao.data
 
-        # Atualizar imagem, se foi enviada uma nova
+        # **🔹 Atualizar imagem, se foi enviada uma nova**
         if form.imagem.data:
             imagem_filename = secure_filename(form.imagem.data.filename)
             caminho_imagem = os.path.join(current_app.config['UPLOAD_FOLDER'], imagem_filename)
             form.imagem.data.save(caminho_imagem)
             alca.imagem = imagem_filename
 
-        # Atualizar tamanhos (remover os antigos e adicionar os novos)
+        # **🔹 Atualizar tamanhos (remove os antigos e insere os novos)**
         alca.tamanhos.clear()
         for tamanho_data in form.tamanhos.data:
             nome = tamanho_data["nome"] if tamanho_data["nome"] else "--"
-            quantidade = (tamanho_data["quantidade"]) if tamanho_data["quantidade"] else 0
-            peso_medio = (tamanho_data["peso_medio"]) if tamanho_data["peso_medio"] else 0.0
+            quantidade = tamanho_data["quantidade"] if tamanho_data["quantidade"] else 0
+            peso_medio = tamanho_data["peso_medio"] if tamanho_data["peso_medio"] else 0.0
 
             tamanho = TamanhoAlca(
                 alca_id=alca.id,
@@ -1413,7 +1462,7 @@ def editar_alca(id):
             )
             alca.tamanhos.append(tamanho)
 
-        # Atualizar formulação (remover os antigos e adicionar os novos)
+        # **🔹 Atualizar formulação (remove os antigos e insere os novos)**
         alca.formulacao.clear()
         componentes_ids = request.form.getlist("componentes[]")
         cargas = request.form.getlist("carga[]")
@@ -1429,12 +1478,12 @@ def editar_alca(id):
                     carga=carga_valor
                 )
                 alca.formulacao.append(nova_formulacao)
-                
-        # 🔹 Salva o log
+
+        # **🔹 Salva o log**
         log = LogAcao(
             usuario_id=current_user.id,
             usuario_nome=current_user.nome,
-            acao=f"Editou a alca: {alca.referencia}"
+            acao=f"Editou a alça: {alca.referencia}"
         )
         db.session.add(log)
         db.session.commit()
@@ -1964,9 +2013,46 @@ def excluir_margem_pedido(id):
 
 
 
+@bp.route('/custo_remessa', methods=['GET', 'POST'])
+@login_required
+def custo_remessa():
+    margem_pedidos = []
+    totais = {
+        "total_preco_venda": Decimal(0),
+        "total_custo": Decimal(0),
+        "lucro_total": Decimal(0),
+        "margem_media": Decimal(0),
+    }
+
+    if request.method == "POST":
+        codigo_remessa = request.form.get("remessa").strip()
+
+        if codigo_remessa:
+            margem_pedidos = MargemPorPedido.query.filter_by(remessa=codigo_remessa).all()
+
+            if margem_pedidos:
+                # 🔹 Calculando os totais de todas as margens filtradas
+                total_venda = sum(m.total_preco_venda for m in margem_pedidos)
+                total_custo = sum(m.total_custo for m in margem_pedidos)
+                lucro_total = sum(m.lucro_total for m in margem_pedidos)
+
+                margem_media = (lucro_total / total_venda * 100) if total_venda > 0 else 0
+
+                totais = {
+                    "total_preco_venda": round(total_venda, 2),
+                    "total_custo": round(total_custo, 2),
+                    "lucro_total": round(lucro_total, 2),
+                    "margem_media": round(margem_media, 2),
+                }
+            else:
+                flash("Nenhuma margem por pedido encontrada para essa remessa.", "warning")
+
+    return render_template("custo_remessa.html", margem_pedidos=margem_pedidos, totais=totais)
 
 
-from flask import current_app
+
+ ####  IMPORTAÇÕES   #######
+
 
 @bp.route('/margem_pedido/importar', methods=['POST'])
 @login_required
@@ -2015,42 +2101,492 @@ def importar_referencias():
 
 
 
-@bp.route('/custo_remessa', methods=['GET', 'POST'])
+
+
+@bp.route('/importar_componentes', methods=['POST'])
 @login_required
-def custo_remessa():
-    margem_pedidos = []
-    totais = {
-        "total_preco_venda": Decimal(0),
-        "total_custo": Decimal(0),
-        "lucro_total": Decimal(0),
-        "margem_media": Decimal(0),
-    }
+def importar_componentes():
+    if 'file' not in request.files:
+        flash("Nenhum arquivo enviado.", "danger")
+        return redirect(url_for('routes.listar_componentes'))  # Redireciona de volta
 
-    if request.method == "POST":
-        codigo_remessa = request.form.get("remessa").strip()
+    file = request.files['file']
 
-        if codigo_remessa:
-            margem_pedidos = MargemPorPedido.query.filter_by(remessa=codigo_remessa).all()
+    if file.filename == '':
+        flash("Arquivo inválido.", "danger")
+        return redirect(url_for('routes.listar_componentes'))
 
-            if margem_pedidos:
-                # 🔹 Calculando os totais de todas as margens filtradas
-                total_venda = sum(m.total_preco_venda for m in margem_pedidos)
-                total_custo = sum(m.total_custo for m in margem_pedidos)
-                lucro_total = sum(m.lucro_total for m in margem_pedidos)
+    filename = secure_filename(file.filename)
+    filepath = os.path.join(UPLOAD_FOLDER, filename)
+    file.save(filepath)
 
-                margem_media = (lucro_total / total_venda * 100) if total_venda > 0 else 0
+    try:
+        df = pd.read_excel(filepath, dtype={'codigo': str})
+        atualizados = 0
+        criados = 0
 
-                totais = {
-                    "total_preco_venda": round(total_venda, 2),
-                    "total_custo": round(total_custo, 2),
-                    "lucro_total": round(lucro_total, 2),
-                    "margem_media": round(margem_media, 2),
-                }
+        for _, row in df.iterrows():
+            codigo = row['codigo']
+            descricao = row['descricao']
+            tipo = row['tipo']
+            unidade_medida = row['unidade_medida']
+            preco = Decimal(str(row['preco']).replace(',', '.'))
+
+            componente = Componente.query.filter_by(codigo=codigo).first()
+
+            if componente:
+                # 📌 Verifica se os valores realmente mudaram antes de atualizar
+                if (
+                    componente.descricao != descricao or
+                    componente.tipo != tipo or
+                    componente.unidade_medida != unidade_medida or
+                    componente.preco != preco
+                ):
+                    componente.descricao = descricao
+                    componente.tipo = tipo
+                    componente.unidade_medida = unidade_medida
+                    componente.preco = preco
+                    atualizados += 1
             else:
-                flash("Nenhuma margem por pedido encontrada para essa remessa.", "warning")
+                # 📌 Cria um novo componente se não existir
+                novo_componente = Componente(
+                    codigo=codigo,
+                    descricao=descricao,
+                    tipo=tipo,
+                    unidade_medida=unidade_medida,
+                    preco=preco
+                )
+                db.session.add(novo_componente)
+                criados += 1
 
-    return render_template("custo_remessa.html", margem_pedidos=margem_pedidos, totais=totais)
+        db.session.commit()
+        flash(f"Importação concluída! {criados} componentes criados, {atualizados} atualizados.", "success")
 
+    except Exception as e:
+        flash(f"Erro ao processar arquivo: {str(e)}", "danger")
+
+    finally:
+        os.remove(filepath)  # Remove o arquivo temporário
+
+    return redirect(url_for('routes.listar_componentes'))  # 🔹 Redireciona corretamente para listar componentes
+
+
+@bp.route('/importar_solados', methods=['POST'])
+@login_required
+def importar_solados():
+    if 'file' not in request.files:
+        flash("Nenhum arquivo enviado.", "danger")
+        return redirect(url_for('routes.listar_solados'))
+
+    file = request.files['file']
+
+    if file.filename == '':
+        flash("Arquivo inválido.", "danger")
+        return redirect(url_for('routes.listar_solados'))
+
+    filename = secure_filename(file.filename)
+    filepath = os.path.join(UPLOAD_FOLDER, filename)
+    file.save(filepath)
+
+    try:
+        df = pd.read_excel(filepath, dtype={'referencia': str})
+
+        atualizados = 0
+        criados = 0
+
+        for _, row in df.iterrows():
+            referencia = row['referencia']
+            descricao = row['descricao']
+            imagem = row['imagem']
+            tamanhos = row['tamanhos'].split(",")  # 🔹 Lista de tamanhos
+            grades = list(map(int, row['grade'].split(",")))  # 🔹 Lista de grades como inteiros
+            peso_medio = row['peso_medio']
+            peso_friso = row['peso_friso']
+            peso_sem_friso = row['peso_sem_friso']
+            comp_friso = row['comp_friso']
+            carga_friso = Decimal(str(row['carga_friso']).replace(',', '.'))
+            comp_sem_friso = row['comp_sem_friso']
+            carga_sem_friso = Decimal(str(row['carga_sem_friso']).replace(',', '.'))
+
+            # Verifica se o solado já existe
+            solado = Solado.query.filter_by(referencia=referencia).first()
+
+            if solado:
+                # Atualiza os dados existentes
+                solado.descricao = descricao
+                solado.imagem = imagem
+                solado.tamanhos.clear()  # 🔹 Remove tamanhos antigos
+
+                for tamanho, grade in zip(tamanhos, grades):
+                    novo_tamanho = Tamanho(
+                        solado_id=solado.id, nome=tamanho, quantidade=grade,
+                        peso_medio=peso_medio, peso_friso=peso_friso, peso_sem_friso=peso_sem_friso
+                    )
+                    db.session.add(novo_tamanho)
+
+                atualizados += 1
+            else:
+                # Criando um novo solado
+                novo_solado = Solado(
+                    referencia=referencia,
+                    descricao=descricao,
+                    imagem=imagem
+                )
+                db.session.add(novo_solado)
+                db.session.flush()  # Obtém o ID antes de salvar
+
+                for tamanho, grade in zip(tamanhos, grades):
+                    novo_tamanho = Tamanho(
+                        solado_id=novo_solado.id, nome=tamanho, quantidade=grade,
+                        peso_medio=peso_medio, peso_friso=peso_friso, peso_sem_friso=peso_sem_friso
+                    )
+                    db.session.add(novo_tamanho)
+
+                criados += 1
+
+            # **Tratamento da formulação**
+            if comp_friso:
+                componente_friso = Componente.query.filter_by(codigo=comp_friso).first()
+                if componente_friso:
+                    formulacao_friso = FormulacaoSoladoFriso(
+                        solado_id=solado.id if solado else novo_solado.id,
+                        componente_id=componente_friso.id,
+                        carga=carga_friso
+                    )
+                    db.session.add(formulacao_friso)
+
+            if comp_sem_friso:
+                componente_sem_friso = Componente.query.filter_by(codigo=comp_sem_friso).first()
+                if componente_sem_friso:
+                    formulacao_sem_friso = FormulacaoSolado(
+                        solado_id=solado.id if solado else novo_solado.id,
+                        componente_id=componente_sem_friso.id,
+                        carga=carga_sem_friso
+                    )
+                    db.session.add(formulacao_sem_friso)
+
+        db.session.commit()
+        flash(f"Importação concluída! {criados} solados criados, {atualizados} atualizados.", "success")
+
+    except Exception as e:
+        flash(f"Erro ao processar arquivo: {str(e)}", "danger")
+
+    finally:
+        os.remove(filepath)
+
+    return redirect(url_for('routes.listar_solados'))
+
+
+
+
+
+#########  CONTROLE DE PRODUÇÃO ##########
+
+@bp.route('/maquinas', methods=['GET'])
+@login_required
+def listar_maquinas():
+    """ Lista todas as máquinas cadastradas """
+    filtro = request.args.get('filtro', '')
+    maquinas = Maquina.query.filter(Maquina.descricao.ilike(f"%{filtro}%")).order_by(Maquina.id.desc()).all()
+    return render_template('maquinas.html', maquinas=maquinas)
+
+
+
+
+@bp.route('/maquina/nova', methods=['GET', 'POST'])
+@login_required
+def nova_maquina():
+    form = MaquinaForm()
+    if form.validate_on_submit():
+        maquina = Maquina(
+            codigo=form.codigo.data,
+            descricao=form.descricao.data,
+            tipo=form.tipo.data,
+            status=form.status.data,
+            preco=form.preco.data
+            
+        )
+        db.session.add(maquina)
+        db.session.commit()
+        flash('Maquina adicionada com sucesso!', 'success')
+        return redirect(url_for('routes.listar_maquinas'))
+    return render_template('nova_maquina.html', form=form)
+
+
+@bp.route('/maquina/editar/<int:id>', methods=['GET', 'POST'])
+@login_required
+def editar_maquina(id):
+    """ Edita uma máquina existente """
+    maquina = Maquina.query.get_or_404(id)
+    form = MaquinaForm(obj=maquina)
+
+    if form.validate_on_submit():
+        maquina.codigo = form.codigo.data
+        maquina.descricao = form.descricao.data
+        maquina.tipo = form.tipo.data
+        maquina.status = form.status.data
+        maquina.preco = form.preco.data
+
+        db.session.commit()
+        flash('Máquina atualizada com sucesso!', 'success')
+        return redirect(url_for('routes.listar_maquinas'))
+
+    return render_template('editar_maquina.html', form=form, maquina=maquina)
+
+@bp.route('/maquina/excluir/<int:id>', methods=['POST'])
+@login_required
+def excluir_maquina(id):
+    """ Exclui uma máquina do sistema """
+    maquina = Maquina.query.get_or_404(id)
+
+    db.session.delete(maquina)
+    db.session.commit()
+
+    flash('Máquina excluída com sucesso!', 'success')
+    return redirect(url_for('routes.listar_maquinas'))
+
+
+@bp.route('/trocas_matriz', methods=['GET'])
+@login_required
+def listar_trocas_matriz():
+    trocas = TrocaMatriz.query.order_by(TrocaMatriz.id.desc()).all()
+    return render_template('trocas_matriz.html', trocas=trocas)
+
+
+from datetime import datetime, time  # 🔹 Importando time corretamente
+
+def parse_time(value):
+    """ Converte string para time ou retorna 00:00 se vazia. """
+    if value:
+        return datetime.strptime(value, "%H:%M").time()  # Converte string para TIME
+    return time(0, 0)  # 🔹 Correção: agora retorna 00:00 corretamente
+
+
+@bp.route('/troca_matriz/ver/<int:id>', methods=['GET'])
+@login_required
+def ver_troca_matriz(id):
+    troca = TrocaMatriz.query.get_or_404(id)
+    return render_template('ver_troca_matriz.html', troca=troca)
+
+from datetime import datetime, time
+
+def parse_time(value):
+    """ Converte strings para objetos time ou retorna 00:00 se vazio. """
+    return datetime.strptime(value, "%H:%M").time() if value else time(0, 0)
+
+
+@bp.route('/troca_matriz/nova', methods=['GET', 'POST'])
+@login_required
+def nova_troca_matriz():
+    form = TrocaMatrizForm()
+
+    # 🔹 Carregar as máquinas cadastradas
+        # Carregar opções de funcionários e máquinas
+    form.trocador_id.choices = [(f.id, f.nome) for f in Funcionario.query.filter_by(funcao="Trocador").order_by(Funcionario.nome).all()]
+    form.operador_id.choices = [(f.id, f.nome) for f in Funcionario.query.filter_by(funcao="Operador").order_by(Funcionario.nome).all()]
+    form.maquina_id.choices = [(m.id, f"{m.codigo} - {m.descricao}") for m in Maquina.query.order_by(Maquina.codigo).all()]
+
+    # 🔹 Definir os horários fixos na ordem correta
+    horarios = ["7h às 8h", "8h às 9h", "9h às 10h", "10h às 11h", "11h às 12h",
+                "12h às 13h", "13h às 14h", "14h às 15h", "15h às 16h", "16h às 17h"]
+
+    for i in range(len(horarios)):
+        form.trocas[i].horario.data = horarios[i]
+
+    if form.validate_on_submit():
+        troca_matriz = TrocaMatriz(
+            data=form.data.data,
+            trocador_id=form.trocador_id.data,
+            operador_id=form.operador_id.data,
+            maquina_id=form.maquina_id.data
+        )
+        db.session.add(troca_matriz)
+        db.session.flush()  # 🔹 Garante que o ID da troca matriz está disponível
+
+        for i, troca in enumerate(form.trocas.entries):
+            nova_troca = TrocaHorario(
+                troca_matriz_id=troca_matriz.id,
+                horario=horarios[i],  # 🔹 Usa os horários fixos
+                pares=troca.form.pares.data or 0,  # 🔹 Se não for preenchido, fica 0
+
+                # 🔹 Captura horários e converte corretamente
+                inicio_1=parse_time(troca.form.inicio_1.data),
+                fim_1=parse_time(troca.form.fim_1.data),
+                inicio_2=parse_time(troca.form.inicio_2.data),
+                fim_2=parse_time(troca.form.fim_2.data),
+                inicio_3=parse_time(troca.form.inicio_3.data),
+                fim_3=parse_time(troca.form.fim_3.data),
+                inicio_4=parse_time(troca.form.inicio_4.data),
+                fim_4=parse_time(troca.form.fim_4.data),
+                inicio_5=parse_time(troca.form.inicio_5.data),
+                fim_5=parse_time(troca.form.fim_5.data),
+                inicio_6=parse_time(troca.form.inicio_6.data),
+                fim_6=parse_time(troca.form.fim_6.data),
+                inicio_7=parse_time(troca.form.inicio_7.data),
+                fim_7=parse_time(troca.form.fim_7.data)
+            )
+
+            # 🔹 Calcula automaticamente o tempo total da troca
+            nova_troca.atualizar_tempo_total()
+            db.session.add(nova_troca)
+
+        # 🔹 Atualiza os cálculos gerais da troca matriz
+        troca_matriz.atualizar_tempo_total_geral()
+        troca_matriz.calcular_total_pares()
+
+        db.session.commit()
+        flash('Troca de matriz registrada com sucesso!', 'success')
+        return redirect(url_for('routes.listar_trocas_matriz'))
+
+    return render_template('nova_troca_matriz.html', form=form)
+
+
+@bp.route('/troca_matriz/editar/<int:id>', methods=['GET', 'POST'])
+@login_required
+def editar_troca_matriz(id):
+    troca_matriz = TrocaMatriz.query.get_or_404(id)
+    form = TrocaMatrizForm(obj=troca_matriz)
+    
+        # 🔹 Carregar os funcionários cadastrados por funções, só aparece na tela se for da função
+    form.trocador_id.choices = [(f.id, f.nome) for f in Funcionario.query.
+                                filter_by(funcao="Trocador").order_by(Funcionario.nome).all()]
+    form.operador_id.choices = [(f.id, f.nome) for f in Funcionario.query.
+                                filter_by(funcao="Operador").order_by(Funcionario.nome).all()]
+
+
+    # 🔹 Carregar as máquinas cadastradas
+    form.maquina_id.choices = [(m.id, f"{m.codigo} - {m.descricao}") for m in Maquina.query.order_by(Maquina.codigo).all()]
+
+    
+    # 🔹 Horários fixos
+    horarios = ["7h às 8h", "8h às 9h", "9h às 10h", "10h às 11h", "11h às 12h",
+                "12h às 13h", "13h às 14h", "14h às 15h", "15h às 16h", "16h às 17h"]
+
+    # 🔹 Ordenar os horários para garantir a exibição correta
+    troca_matriz.horarios.sort(key=lambda x: horarios.index(x.horario))
+
+    if request.method == 'GET':
+        for i, troca in enumerate(troca_matriz.horarios):
+            if i < len(form.trocas.entries):  # Evita erro de índice
+                form.trocas[i].horario.data = troca.horario
+                form.trocas[i].pares.data = troca.pares
+                form.trocas[i].inicio_1.data = troca.inicio_1.strftime("%H:%M") if troca.inicio_1 else ""
+                form.trocas[i].fim_1.data = troca.fim_1.strftime("%H:%M") if troca.fim_1 else ""
+                form.trocas[i].inicio_2.data = troca.inicio_2.strftime("%H:%M") if troca.inicio_2 else ""
+                form.trocas[i].fim_2.data = troca.fim_2.strftime("%H:%M") if troca.fim_2 else ""
+                form.trocas[i].inicio_3.data = troca.inicio_3.strftime("%H:%M") if troca.inicio_3 else ""
+                form.trocas[i].fim_3.data = troca.fim_3.strftime("%H:%M") if troca.fim_3 else ""
+                form.trocas[i].inicio_4.data = troca.inicio_4.strftime("%H:%M") if troca.inicio_4 else ""
+                form.trocas[i].fim_4.data = troca.fim_4.strftime("%H:%M") if troca.fim_4 else ""
+                form.trocas[i].inicio_5.data = troca.inicio_5.strftime("%H:%M") if troca.inicio_5 else ""
+                form.trocas[i].fim_5.data = troca.fim_5.strftime("%H:%M") if troca.fim_5 else ""
+                form.trocas[i].inicio_6.data = troca.inicio_6.strftime("%H:%M") if troca.inicio_6 else ""
+                form.trocas[i].fim_6.data = troca.fim_6.strftime("%H:%M") if troca.fim_6 else ""
+                form.trocas[i].inicio_7.data = troca.inicio_7.strftime("%H:%M") if troca.inicio_7 else ""
+                form.trocas[i].fim_7.data = troca.fim_7.strftime("%H:%M") if troca.fim_7 else ""
+
+    if form.validate_on_submit():
+        troca_matriz.data = form.data.data
+        troca_matriz.trocador_id = form.trocador_id.data
+        troca_matriz.maquina_id = form.maquina_id.data
+        troca_matriz.operador_id = form.operador_id.data
+        
+
+
+        for i, troca in enumerate(troca_matriz.horarios):
+            if i < len(form.trocas.entries):  # Evita erro de índice
+                troca.pares = form.trocas[i].pares.data or 0
+                troca.inicio_1 = parse_time(form.trocas[i].inicio_1.data)
+                troca.fim_1 = parse_time(form.trocas[i].fim_1.data)
+                troca.inicio_2 = parse_time(form.trocas[i].inicio_2.data)
+                troca.fim_2 = parse_time(form.trocas[i].fim_2.data)
+                troca.inicio_3 = parse_time(form.trocas[i].inicio_3.data)
+                troca.fim_3 = parse_time(form.trocas[i].fim_3.data)
+                troca.inicio_4 = parse_time(form.trocas[i].inicio_4.data)
+                troca.fim_4 = parse_time(form.trocas[i].fim_4.data)
+                troca.inicio_5 = parse_time(form.trocas[i].inicio_5.data)
+                troca.fim_5 = parse_time(form.trocas[i].fim_5.data)
+                troca.inicio_6 = parse_time(form.trocas[i].inicio_6.data)
+                troca.fim_6 = parse_time(form.trocas[i].fim_6.data)
+                troca.inicio_7 = parse_time(form.trocas[i].inicio_7.data)
+                troca.fim_7 = parse_time(form.trocas[i].fim_7.data)
+
+                # 🔹 Recalcula o tempo total da troca
+                troca.atualizar_tempo_total()
+
+        # 🔹 Atualiza os cálculos gerais da troca matriz
+        troca_matriz.atualizar_tempo_total_geral()
+        troca_matriz.calcular_total_pares()
+
+        db.session.commit()
+        flash('Troca de matriz editada com sucesso!', 'success')
+        return redirect(url_for('routes.listar_trocas_matriz'))
+
+    return render_template('editar_troca_matriz.html', form=form, troca_matriz=troca_matriz)
+
+
+
+
+@bp.route('/troca_matriz/excluir/<int:id>', methods=['POST'])
+@login_required
+def excluir_troca_matriz(id):
+    troca_matriz = TrocaMatriz.query.get_or_404(id)
+
+    try:
+        db.session.delete(troca_matriz)
+        db.session.commit()
+        flash("Troca de matriz excluída com sucesso!", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Erro ao excluir troca de matriz: {str(e)}", "danger")
+
+    return redirect(url_for('routes.listar_trocas_matriz'))
+
+
+@bp.route('/funcionarios', methods=['GET'])
+@login_required
+def listar_funcionarios():
+    funcionarios = Funcionario.query.order_by(Funcionario.nome).all()
+    return render_template('funcionarios.html', funcionarios=funcionarios)
+
+@bp.route('/funcionario/novo', methods=['GET', 'POST'])
+@login_required
+def novo_funcionario():
+    form = FuncionarioForm()
+    if form.validate_on_submit():
+        novo_funcionario = Funcionario(
+            nome=form.nome.data,
+            funcao=form.funcao.data
+        )
+        db.session.add(novo_funcionario)
+        db.session.commit()
+        flash("Funcionário cadastrado com sucesso!", "success")
+        return redirect(url_for('routes.listar_funcionarios'))
+    return render_template('novo_funcionario.html', form=form)
+
+@bp.route('/funcionario/editar/<int:id>', methods=['GET', 'POST'])
+@login_required
+def editar_funcionario(id):
+    funcionario = Funcionario.query.get_or_404(id)
+    form = FuncionarioForm(obj=funcionario)
+
+    if form.validate_on_submit():
+        funcionario.nome = form.nome.data
+        funcionario.funcao = form.funcao.data
+        db.session.commit()
+        flash("Funcionário atualizado!", "success")
+        return redirect(url_for('routes.listar_funcionarios'))
+    
+    return render_template('editar_funcionario.html', form=form, funcionario=funcionario)
+
+@bp.route('/funcionario/excluir/<int:id>', methods=['POST'])
+@login_required
+def excluir_funcionario(id):
+    funcionario = Funcionario.query.get_or_404(id)
+    db.session.delete(funcionario)
+    db.session.commit()
+    flash("Funcionário removido!", "success")
+    return redirect(url_for('routes.listar_funcionarios'))
 
 
 

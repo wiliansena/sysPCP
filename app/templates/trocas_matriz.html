@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Trocas de Matrizes</h2>
+<a href="{{ url_for('routes.nova_troca_matriz') }}" class="btn btn-success mb-3">Adicionar</a>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Data</th>
+            <th>Trocador</th>
+            <th>Máquina</th>
+            <th>Operador</th>
+            <th>Ações</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for troca in trocas %}
+        <tr>
+            <td>{{ troca.data.strftime('%d/%m/%Y') }}</td>
+            <td>{{ troca.trocador.nome }}</td>
+            <td>{{ troca.maquina.codigo }} - {{ troca.maquina.descricao }}</td>
+            <td>{{ troca.operador.nome }}</td>
+            <td>
+                <a href="{{ url_for('routes.ver_troca_matriz', id=troca.id) }}" class="btn btn-info btn-sm">Ver</a>
+                <a href="{{ url_for('routes.editar_troca_matriz', id=troca.id) }}" class="btn btn-warning btn-sm">Editar</a>
+                <form action="{{ url_for('routes.excluir_troca_matriz', id=troca.id) }}" method="post" style="display:inline;">
+                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Tem certeza?')">Excluir</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

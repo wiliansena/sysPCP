@@ -3,22 +3,22 @@
 
 <head>
     <title>sysPCP - Sistema de Planejamento</title>
-    
+
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    
+
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    
+
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
-    
+
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
+
     <!-- Ícone da aba -->
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/favicon.png') }}">
-    
+
     <!-- CSS personalizado -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/paginas3.css') }}">
 </head>
@@ -31,27 +31,102 @@
         <span class="user-info">Olá, {{ current_user.nome }}!</span>
     </div>
 
-    <!-- Menu lateral -->
+    <!-- Menu lateral (visível apenas para usuários autenticados) -->
+    {% if current_user.is_authenticated %}
     <nav class="sidebar">
         <div class="text-center">
             <h4>sysPCP</h4>
         </div>
-        {% if current_user.is_authenticated %}
+
         <a href="{{ url_for('routes.home') }}"><i class="fas fa-home"></i> Página Inicial</a>
-        <a href="{{ url_for('routes.custo_remessa') }}"><i class="bi bi-box-seam"></i> Margens por remessa</a>
-        <a href="{{ url_for('routes.listar_margens_pedido') }}"><i class="fa-solid fa-receipt"></i> Margens por Pedido</a>
-        <a href="{{ url_for('routes.listar_margens') }}"><i class="fas fa-percent"></i> Margens por Referência</a>
-        <a href="{{ url_for('routes.listar_referencias') }}"><i class="fas fa-box"></i> Referências</a>
-        <a href="{{ url_for('routes.listar_solados') }}"><i class="fas fa-shoe-prints"></i> Solados</a>
-        <a href="{{ url_for('routes.listar_alcas') }}"><i class="fas fa-grip-lines"></i> Alças</a>
-        <a href="{{ url_for('routes.listar_componentes') }}"><i class="fas fa-cogs"></i> Componentes</a>
-        <a href="{{ url_for('routes.listar_custos') }}"><i class="fas fa-dollar-sign"></i> Custos Operacionais</a>
-        <a href="{{ url_for('routes.listar_mao_de_obra') }}"><i class="fas fa-user"></i> Mão de Obra</a>
-        <a href="{{ url_for('routes.listar_salarios') }}"><i class="fas fa-money-bill"></i> Salários</a>
-        <a href="{{ url_for('routes.listar_colecoes') }}"><i class="fas fa-layer-group"></i> Coleções</a>
-        <a href="{{ url_for('auth.logout') }}" class="text-danger"><i class="fas fa-sign-out-alt"></i> <strong>Sair</strong></a>
-        {% endif %}
+        <hr>
+        <!-- Categoria: Planejamento de Custos -->
+        <div class="sidebar-category" onclick="toggleMenu('margens')">
+            <i class="fas fa-chart-line"></i> Margens e Análises
+            <i class="fas fa-chevron-down"></i>
+        </div>
+        <div class="sidebar-submenu" id="margens">
+            <a href="{{ url_for('routes.custo_remessa') }}"><i class="bi bi-box-seam"></i> Margens por Remessa</a>
+            <a href="{{ url_for('routes.listar_margens_pedido') }}"><i class="fa-solid fa-receipt"></i> Margens por
+                Pedido</a>
+            <a href="{{ url_for('routes.listar_margens') }}"><i class="fas fa-percent"></i> Margens por Referência</a>
+        </div>
+
+        <!-- Categoria: Produção -->
+        <div class="sidebar-category" onclick="toggleMenu('custoproducao')">
+            <i class="fas fa-industry"></i> Custos de Produção
+            <i class="fas fa-chevron-down"></i>
+        </div>
+        <div class="sidebar-submenu" id="custoproducao">
+            <a href="{{ url_for('routes.listar_referencias') }}"><i class="fas fa-box"></i> Referências</a>
+            <a href="{{ url_for('routes.listar_solados') }}"><i class="fas fa-shoe-prints"></i> Solados</a>
+            <a href="{{ url_for('routes.listar_alcas') }}"><i class="fas fa-grip-lines"></i> Alças</a>
+            <a href="{{ url_for('routes.listar_custos') }}"><i class="fas fa-dollar-sign"></i> Custos Operacionais</a>
+            <a href="{{ url_for('routes.listar_mao_de_obra') }}"><i class="fas fa-user"></i> Mão de Obra</a>
+            <a href="{{ url_for('routes.listar_salarios') }}"><i class="fas fa-money-bill"></i> Salários</a>
+        </div>
+
+        <!-- Categoria: Componentes e Materiais -->
+        <div class="sidebar-category" onclick="toggleMenu('componentes')">
+            <i class="fa-solid fa-cubes"></i> Componentes e Materiais
+            <i class="fas fa-chevron-down"></i>
+        </div>
+        <div class="sidebar-submenu" id="componentes">
+            <a href="{{ url_for('routes.listar_componentes') }}"><i class="fa-solid fa-cubes"></i> Componentes</a>
+        </div>
+
+        <!-- Categoria: Controle de produção -->
+        <div class="sidebar-category" onclick="toggleMenu('controleproducao')">
+            <i class="bi bi-clipboard-check"></i> Controle de Produção
+            <i class="fas fa-chevron-down"></i>
+        </div>
+        <div class="sidebar-submenu" id="controleproducao">
+            <a href="{{ url_for('routes.listar_trocas_matriz') }}"><i class="fas fa-exchange-alt"></i> Troca de
+                Matriz</a>
+        </div>
+
+        <!-- Categoria: Máquinas e Equipamentos -->
+        <div class="sidebar-category" onclick="toggleMenu('maquinas')">
+            <i class="fas fa-wrench"></i> Máquinas e Equipamentos
+            <i class="fas fa-chevron-down"></i>
+        </div>
+        <div class="sidebar-submenu" id="maquinas">
+            <a href="{{ url_for('routes.listar_maquinas') }}"><i class="fas fa-wrench"></i> Máquinas</a>
+        </div>
+
+        <!-- Categoria: Funcionarios -->
+        <div class="sidebar-category" onclick="toggleMenu('funcionario')">
+            <i class="bi bi-people"></i> Funcionários
+            <i class="fas fa-chevron-down"></i>
+        </div>
+        <div class="sidebar-submenu" id="funcionario">
+            <a href="{{ url_for('routes.listar_funcionarios') }}"><i class="bi bi-people"></i>Pessoas e Funções</a>
+        </div>
+
+        <!-- Categoria: Coleções -->
+        <div class="sidebar-category" onclick="toggleMenu('colecao')">
+            <i class="bi bi-tags"></i> Coleções
+            <i class="fas fa-chevron-down"></i>
+        </div>
+        <div class="sidebar-submenu" id="colecao">
+            <a href="{{ url_for('routes.listar_colecoes') }}"><i class="bi bi-tags"></i> Coleções</a>
+        </div>
+
+
+        <!-- Categoria: Relatórios Adicionais -->
+        <div class="sidebar-category" onclick="toggleMenu('relatorio')">
+            <i class="bi bi-file-earmark-text"></i> Relatórios Adicionais
+            <i class="fas fa-chevron-down"></i>
+        </div>
+        <div class="sidebar-submenu" id="relatorio">
+            <a href=""><i class="bi bi-file-earmark-text"></i>Relatórios</a>
+        </div>
+
+        <!-- Botão de logout -->
+        <a href="{{ url_for('auth.logout') }}" class="text-danger"><i class="bi bi-box-arrow-right"></i> Sair</a>
     </nav>
+    {% endif %}
+
 
     <!-- Conteúdo principal -->
     <div class="content">
@@ -71,6 +146,7 @@
 
     <!-- JS Personalizado -->
     <script src="{{ url_for('static', filename='js/formatacao_numeros.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/zoom.js') }}"></script>
 
     <script>
         window.addEventListener("resize", function () {
@@ -95,6 +171,42 @@
                 });
             });
         });
+    </script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // Remove qualquer estado salvo no localStorage para garantir que as categorias sempre iniciem fechadas ao recarregar a página
+            localStorage.removeItem("categoriasAbertas");
+
+            // Função para alternar os menus
+            function toggleMenu(id) {
+                let submenu = document.getElementById(id);
+                let category = submenu.previousElementSibling;
+
+                if (submenu.style.display === "block") {
+                    submenu.style.display = "none";
+                    category.classList.remove("active");
+                } else {
+                    submenu.style.display = "block";
+                    category.classList.add("active");
+                }
+            }
+
+            // Adiciona os eventos de clique nos botões de categoria
+            document.querySelectorAll(".sidebar-category").forEach(category => {
+                category.addEventListener("click", function () {
+                    let id = this.nextElementSibling.id;
+                    toggleMenu(id);
+                });
+            });
+
+            // Mantém os menus abertos quando clicar em um link interno
+            document.querySelectorAll(".sidebar-submenu a").forEach(link => {
+                link.addEventListener("click", function (event) {
+                    event.stopPropagation(); // Impede que o clique no link feche o menu
+                });
+            });
+        });
+
     </script>
 
 </body>

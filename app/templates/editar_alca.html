@@ -3,13 +3,16 @@
 {% block content %}
 <div class="container mt-4">
     <h2>Editar Alça</h2>
+    <br>
+    <a href="{{ url_for('routes.listar_alcas') }}" class="btn btn-secondary">Sair</a>
+    <hr>
 
     <form method="POST" enctype="multipart/form-data">
         {{ form.hidden_tag() }}
 
         <div class="form-group">
             <label>Referência</label>
-            <input type="text" class="form-control" value="{{ alca.referencia }}" readonly>
+            {{ form.referencia(class="form-control") }}
         </div>
 
         <div class="form-group">

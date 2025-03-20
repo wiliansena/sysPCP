@@ -30,6 +30,7 @@
                     <th>Código</th>
                     <th>Descrição</th>
                     <th>Linha</th>
+                    <th>Coleção</th>
                     <th>Imagem</th>
                     <th>CARTUCHO</th>
                     <th>COLMEIA</th>
@@ -43,6 +44,7 @@
                         <td>{{ referencia.codigo_referencia }}</td>
                         <td>{{ referencia.descricao }}</td>
                         <td>{{ referencia.linha }}</td>
+                        <td>{{ referencia.colecao.codigo if referencia.colecao else 'Sem coleção' }}</td>
                         <td>
                             {% if referencia.imagem %}
                                 <img src="{{ url_for('static', filename='uploads/' + referencia.imagem) }}" width="80">

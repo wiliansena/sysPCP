@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Máquinas</h2>
+<a href="{{ url_for('routes.nova_maquina') }}" class="btn btn-success mb-3">
+    <i class="fas fa-plus"></i> Adicionar
+</a>
+
+<!-- 🔎 Campo de busca -->
+<div class="row mb-3">
+    <div class="col-md-4">
+        <form method="GET" action="{{ url_for('routes.listar_maquinas') }}" class="d-flex gap-2">
+            <input type="text" name="filtro" class="form-control form-control-sm" placeholder="Buscar Máquina"
+                value="{{ request.args.get('filtro', '') }}">
+            <button type="submit" class="btn btn-primary btn-sm">Buscar</button>
+            <a href="{{ url_for('routes.listar_maquinas') }}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-sync-alt"></i>
+            </a>
+        </form>
+    </div>
+</div>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Código</th>
+            <th>Descrição</th>
+            <th>Tipo</th>
+            <th>Status</th>
+            <th>Preço</th>
+            <th>Ações</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for maquina in maquinas %}
+        <tr>
+            <td>{{ maquina.codigo }}</td>
+            <td>{{ maquina.descricao }}</td>
+            <td>{{ maquina.tipo }}</td>
+            <td>{{ maquina.status }}</td>
+            <td class="preco-formatado">R$ {{ "%.2f"|format(maquina.preco) }}</td>
+            <td>
+                <a href="{{ url_for('routes.editar_maquina', id=maquina.id) }}" class="btn btn-warning btn-sm">Editar</a>
+                <form action="{{ url_for('routes.excluir_maquina', id=maquina.id) }}" method="post" style="display:inline;">
+                    <button type="submit" class="btn btn-danger btn-sm"
+                        onclick="return confirm('Tem certeza que deseja excluir?')">Excluir</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

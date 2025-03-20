@@ -3,7 +3,8 @@ from flask_login import UserMixin
 from sqlalchemy.orm import relationship
 from app import db
 from decimal import Decimal, ROUND_HALF_UP, ROUND_CEILING
-from datetime import date, datetime
+from datetime import date, datetime, time
+
 
 
 
@@ -12,7 +13,11 @@ class Referencia(db.Model):
     codigo_referencia = db.Column(db.String(20), unique=True, nullable=False)
     descricao = db.Column(db.String(100), nullable=False)
     imagem = db.Column(db.String(200))
-    linha = db.Column(db.String(50), nullable=True)
+    linha = db.Column(db.String(50), nullable=False)
+    colecao_id = db.Column(db.Integer, db.ForeignKey('colecao.id'), nullable=False)
+    
+    #relacionamento com a tabela coleção
+    colecao = relationship("Colecao", back_populates="referencias")
 
     # Totais calculados individuais
     total_solado = db.Column(db.Numeric(10,4), default=Decimal(0))
@@ -211,10 +216,10 @@ class ReferenciaMaoDeObra(db.Model):
 
 
 
-
 class Colecao(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    codigo = db.Column(db.Numeric(10,1), unique=True, nullable=False)
+    codigo = db.Column(db.String(20), unique=True, nullable=False)
+    referencias = relationship("Referencia", back_populates="colecao")
     
 
 class CustoOperacional(db.Model):
@@ -774,6 +779,109 @@ class MargemPorPedidoReferencia(db.Model):
         print(f"✔️ Cálculo feito: Ref {self.referencia_id} | Total Custo: {self.total_custo} | Total Preço Venda: {self.total_preco_venda}")
 
 
+
+#### CONTROLE DE PRODUÇÃO   ########
+
+class Maquina(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    codigo = db.Column(db.String(50), nullable=False)
+    descricao = db.Column(db.String(200), nullable=False)
+    tipo = db.Column(db.String(50), nullable=False)
+    status = db.Column(db.String(20), nullable=False, default="Ativa")  # Ativa/Inativa
+    preco = db.Column(db.Numeric(10,4), nullable=False, default=Decimal(0))
+
+
+class TrocaHorario(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    troca_matriz_id = db.Column(db.Integer, db.ForeignKey('troca_matriz.id'), nullable=False)
+    horario = db.Column(db.String(20), nullable=False)
+    pares = db.Column(db.Integer, default=0)
+
+    # Horários das trocas
+    inicio_1 = db.Column(db.Time, nullable=True)
+    fim_1 = db.Column(db.Time, nullable=True)
+    inicio_2 = db.Column(db.Time, nullable=True)
+    fim_2 = db.Column(db.Time, nullable=True)
+    inicio_3 = db.Column(db.Time, nullable=True)
+    fim_3 = db.Column(db.Time, nullable=True)
+    inicio_4 = db.Column(db.Time, nullable=True)
+    fim_4 = db.Column(db.Time, nullable=True)
+    inicio_5 = db.Column(db.Time, nullable=True)
+    fim_5 = db.Column(db.Time, nullable=True)
+    inicio_6 = db.Column(db.Time, nullable=True)
+    fim_6 = db.Column(db.Time, nullable=True)
+    inicio_7 = db.Column(db.Time, nullable=True)
+    fim_7 = db.Column(db.Time, nullable=True)
+
+    # Campos de duração para cada troca
+    duracao_1 = db.Column(db.Integer, default=0)  # Minutos
+    duracao_2 = db.Column(db.Integer, default=0)
+    duracao_3 = db.Column(db.Integer, default=0)
+    duracao_4 = db.Column(db.Integer, default=0)
+    duracao_5 = db.Column(db.Integer, default=0)
+    duracao_6 = db.Column(db.Integer, default=0)
+    duracao_7 = db.Column(db.Integer, default=0)
+
+    # Tempo total das trocas nesse intervalo
+    tempo_total_troca = db.Column(db.Integer, default=0)
+
+    def calcular_duracao(self, inicio, fim):
+        """Calcula a duração em minutos entre os horários"""
+        if inicio and fim:
+            delta = datetime.combine(datetime.today(), fim) - datetime.combine(datetime.today(), inicio)
+            return delta.total_seconds() // 60  # Converte para minutos
+        return 0
+
+    def atualizar_tempo_total(self):
+        """Atualiza os tempos de todas as trocas"""
+        self.duracao_1 = self.calcular_duracao(self.inicio_1, self.fim_1)
+        self.duracao_2 = self.calcular_duracao(self.inicio_2, self.fim_2)
+        self.duracao_3 = self.calcular_duracao(self.inicio_3, self.fim_3)
+        self.duracao_4 = self.calcular_duracao(self.inicio_4, self.fim_4)
+        self.duracao_5 = self.calcular_duracao(self.inicio_5, self.fim_5)
+        self.duracao_6 = self.calcular_duracao(self.inicio_6, self.fim_6)
+        self.duracao_7 = self.calcular_duracao(self.inicio_7, self.fim_7)
+
+        self.tempo_total_troca = (
+            self.duracao_1 + self.duracao_2 + self.duracao_3 +
+            self.duracao_4 + self.duracao_5 + self.duracao_6 + self.duracao_7
+        )
+
+
+class TrocaMatriz(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    data = db.Column(db.Date, nullable=False)
+    trocador_id = db.Column(db.Integer, db.ForeignKey('funcionario.id'), nullable=False)
+    operador_id = db.Column(db.Integer, db.ForeignKey('funcionario.id'), nullable=False)
+    maquina_id = db.Column(db.Integer, db.ForeignKey('maquina.id'), nullable=False)
+
+    #RELACIONAMENTOS
+    trocador = db.relationship("Funcionario", foreign_keys=[trocador_id])
+    operador = db.relationship("Funcionario", foreign_keys=[operador_id])
+    maquina = db.relationship("Maquina", backref=db.backref("trocas", lazy=True))
+    horarios = db.relationship("TrocaHorario", backref="troca", lazy=True, cascade="all, delete-orphan")
+
+    # 🔹 Novo campo para armazenar tempo total gasto em todas as trocas
+    tempo_total_geral = db.Column(db.Integer, nullable=False, default=0)
+    total_pares_produzidos = db.Column(db.Integer, nullable=False, default=0)  # 🔹 Novo campo para armazenar o total
+
+    def atualizar_tempo_total_geral(self):
+        """ Soma o tempo total de todas as trocas dessa matriz e salva no banco. """
+        for horario in self.horarios:
+            horario.atualizar_tempo_total()  # Garante que todas as trocas estão atualizadas
+        self.tempo_total_geral = sum(horario.tempo_total_troca for horario in self.horarios)
+
+    def calcular_total_pares(self):
+        """Calcula a quantidade total de pares produzidos e atualiza o campo."""
+        self.total_pares_produzidos = sum(h.pares for h in self.horarios)
+
+
+
+
+class Funcionario(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(100), nullable=False)
+    funcao = db.Column(db.String(50), nullable=False)  # Exemplo: Operador, Trocador, Técnico
 
 
 

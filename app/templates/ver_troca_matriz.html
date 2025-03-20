@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Troca de Matriz</h2>
+
+<div class="container">
+    <div class="row">
+        <!-- Primeira linha: Data e Máquina -->
+        <div class="col-md-6">
+            <p><strong>Data:</strong> {{ troca.data.strftime('%d/%m/%Y') }}</p>
+        </div>
+        <div class="col-md-6">
+            <p><strong>Máquina:</strong> {{ troca.maquina.codigo }} - {{ troca.maquina.descricao }}</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Segunda linha: Trocador e Operador -->
+        <div class="col-md-6">
+            <p><strong>Trocador:</strong> {{ troca.trocador.nome }}</p>
+        </div>
+        <div class="col-md-6">
+            <p><strong>Operador:</strong> {{ troca.operador.nome }}</p>
+        </div>
+    </div>
+
+    <h4>Horários da Troca</h4>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Horário</th>
+                <th>Pares</th>
+                <th>1ª Troca</th>
+                <th>Total 1ª</th>
+                <th>2ª Troca</th>
+                <th>Total 2ª</th>
+                <th>3ª Troca</th>
+                <th>Total 3ª</th>
+                <th>4ª Troca</th>
+                <th>Total 4ª</th>
+                <th>5ª Troca</th>
+                <th>Total 5ª</th>
+                <th>6ª Troca</th>
+                <th>Total 6ª</th>
+                <th>7ª Troca</th>
+                <th>Total 7ª</th>
+                <th>Total H/M</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% set horarios_padrao = ["7h às 8h", "8h às 9h", "9h às 10h", "10h às 11h", "11h às 12h",
+            "12h às 13h", "13h às 14h", "14h às 15h", "15h às 16h", "16h às 17h"] %}
+
+            {% for horario_fixo in horarios_padrao %}
+            {% set horario = troca.horarios|selectattr("horario", "equalto", horario_fixo)|list|first %}
+
+            <tr>
+                <td>{{ horario_fixo }}</td>
+                <td>{{ horario.pares if horario else 0 }}</td>
+
+                <!-- 1ª Troca -->
+                <td>{{ horario.inicio_1.strftime('%H:%M') if horario and horario.inicio_1 else '00:00' }} - {{
+                    horario.fim_1.strftime('%H:%M') if horario and horario.fim_1 else '00:00' }}</td>
+                <td><strong>{{ "%02d:%02d" | format(horario.duracao_1 // 60, horario.duracao_1 % 60) if horario else
+                        '00:00' }}</strong></td>
+
+                <!-- 2ª Troca -->
+                <td>{{ horario.inicio_2.strftime('%H:%M') if horario and horario.inicio_2 else '00:00' }} - {{
+                    horario.fim_2.strftime('%H:%M') if horario and horario.fim_2 else '00:00' }}</td>
+                <td><strong>{{ "%02d:%02d" | format(horario.duracao_2 // 60, horario.duracao_2 % 60) if horario else
+                        '00:00' }}</strong></td>
+
+                <!-- 3ª Troca -->
+                <td>{{ horario.inicio_3.strftime('%H:%M') if horario and horario.inicio_3 else '00:00' }} - {{
+                    horario.fim_3.strftime('%H:%M') if horario and horario.fim_3 else '00:00' }}</td>
+                <td><strong>{{ "%02d:%02d" | format(horario.duracao_3 // 60, horario.duracao_3 % 60) if horario else
+                        '00:00' }}</strong></td>
+
+                <!-- 4ª Troca -->
+                <td>{{ horario.inicio_4.strftime('%H:%M') if horario and horario.inicio_4 else '00:00' }} - {{
+                    horario.fim_4.strftime('%H:%M') if horario and horario.fim_4 else '00:00' }}</td>
+                <td><strong>{{ "%02d:%02d" | format(horario.duracao_4 // 60, horario.duracao_4 % 60) if horario else
+                        '00:00' }}</strong></td>
+
+                <!-- 5ª Troca -->
+                <td>{{ horario.inicio_5.strftime('%H:%M') if horario and horario.inicio_5 else '00:00' }} - {{
+                    horario.fim_5.strftime('%H:%M') if horario and horario.fim_5 else '00:00' }}</td>
+                <td><strong>{{ "%02d:%02d" | format(horario.duracao_5 // 60, horario.duracao_5 % 60) if horario else
+                        '00:00' }}</strong></td>
+
+                <!-- 6ª Troca -->
+                <td>{{ horario.inicio_6.strftime('%H:%M') if horario and horario.inicio_6 else '00:00' }} - {{
+                    horario.fim_6.strftime('%H:%M') if horario and horario.fim_6 else '00:00' }}</td>
+                <td><strong>{{ "%02d:%02d" | format(horario.duracao_6 // 60, horario.duracao_6 % 60) if horario else
+                        '00:00' }}</strong></td>
+
+                <!-- 7ª Troca -->
+                <td>{{ horario.inicio_7.strftime('%H:%M') if horario and horario.inicio_7 else '00:00' }} - {{
+                    horario.fim_7.strftime('%H:%M') if horario and horario.fim_7 else '00:00' }}</td>
+                <td><strong>{{ "%02d:%02d" | format(horario.duracao_7 // 60, horario.duracao_7 % 60) if horario else
+                        '00:00' }}</strong></td>
+
+                <!-- Total de todas as trocas -->
+                <td><strong>{{ "%02d:%02d" | format(horario.tempo_total_troca // 60, horario.tempo_total_troca % 60) if
+                        horario else '00:00' }}</strong></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h4>Total Geral</h4>
+    <p><strong>Total Horas Gasto: </strong> {{ "%02d:%02d" | format(troca.tempo_total_geral // 60,
+        troca.tempo_total_geral % 60) }}</p>
+    <p><strong>Total Pares Produzidos:</strong> {{ troca.total_pares_produzidos }}</p>
+
+    <a href="{{ url_for('routes.listar_trocas_matriz') }}" class="btn btn-secondary">Voltar</a>
+    <button class="btn btn-primary" onclick="window.print()">
+        <i class="fa fa-print"></i> Imprimir
+    </button>
+</div>
+{% endblock %}

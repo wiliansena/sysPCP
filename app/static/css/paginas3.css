@@ -150,11 +150,85 @@ h2, h4 {
     right: 20px; /* Mantém no lado direito */
     font-weight: bold;
     font-size: 15px;
-    color: #f8d210; /* Cor amarela para destaque */
+    color: #0fd4ee; /* Cor amarela para destaque */
 }
 
 
-/* 🔹 Sidebar lateral */
+
+/* 🔹 Estilização do Menu Lateral com Categorias */
+.sidebar-category {
+    background: #495057;  /* Fundo escuro */
+    color: white;  /* Texto branco */
+    padding: 12px 15px;  /* Ajuste no espaçamento */
+    font-size: 16px;
+    font-weight: bold;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 5px;
+    cursor: pointer;
+    transition: background 0.3s ease-in-out;
+}
+
+.sidebar-category i {
+    font-size: 18px;
+    min-width: 25px; /* 🔹 Mantém alinhamento fixo dos ícones */
+    text-align: center;
+    margin-right: 10px;
+}
+
+.sidebar-category:hover {
+    background: #2382ca;
+}
+
+/* 🔹 Quando o mouse passar sobre os links internos */
+.sidebar-submenu a:hover {
+    background: #2382ca !important; /* 🔹 Mesma cor usada na categoria */
+    color: white !important; /* 🔹 Mantém o texto branco para contraste */
+    border-radius: 5px; /* 🔹 Suaviza os cantos dos links internos */
+    transition: all 0.3s ease-in-out; /* 🔹 Efeito suave */
+}
+
+/* 🔹 Ícones de seta para indicar expansão */
+.sidebar-category .toggle-icon {
+    transition: transform 0.3s ease-in-out;
+}
+
+/* 🔹 Gira a seta ao expandir */
+.sidebar-category.open .toggle-icon {
+    transform: rotate(180deg);
+}
+
+/* 🔹 Submenus */
+.sidebar-submenu {
+    display: none;
+    padding-left: 15px;
+}
+
+.sidebar-submenu a {
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+    color: white;
+    font-size: 14px;
+    text-decoration: none;
+    transition: all 0.3s ease-in-out;
+}
+
+.sidebar-submenu a i {
+    margin-right: 8px;
+    min-width: 20px;
+    text-align: center;
+}
+
+.sidebar-submenu a:hover {
+    background-color: #007bff;
+    border-radius: 5px;
+}
+
+
+
 .sidebar {
     position: fixed;
     top: 50px;
@@ -205,6 +279,65 @@ h2, h4 {
 .sidebar a:hover {
     background-color: #495057;
 }
+
+/* 🔹 Estiliza o overlay de zoom */
+#zoomOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1100;
+    opacity: 0; /* 🔹 Começa invisível */
+    visibility: hidden;
+    transition: opacity 0.4s ease-in-out, visibility 0.3s ease-in-out; /* 🔹 Suaviza a transição */
+}
+
+/* 🔹 Estiliza a imagem dentro do overlay */
+#zoomOverlay img {
+    max-width: 90%;
+    max-height: 90%;
+    border-radius: 10px;
+    transform: scale(0.8); /* 🔹 Inicia menor para efeito de crescimento */
+    transition: transform 0.3s ease-in-out;
+}
+
+/* 🔹 Estiliza o botão de fechar (X) */
+#closeZoom {
+    position: absolute;
+    top: 20px;
+    right: 30px;
+    font-size: 32px;
+    color: white;
+    background: none;
+    border: none;
+    cursor: pointer;
+    z-index: 1101;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+}
+
+/* 🔹 Quando o overlay estiver visível, faz a imagem e o botão aparecerem */
+#zoomOverlay.mostrar {
+    opacity: 1;
+    visibility: visible;
+}
+
+#zoomOverlay.mostrar img {
+    transform: scale(1); /* 🔹 Efeito de crescimento suave */
+}
+
+#zoomOverlay.mostrar #closeZoom {
+    opacity: 1;
+}
+
+
+
+
 
 /* 🔹 Ajuste do conteúdo */
 .content {
@@ -281,3 +414,33 @@ h2, h4 {
         background: white !important;
     }
 }
+
+@media print {
+    body {
+        zoom: 80%; /* Reduz um pouco o tamanho do conteúdo */
+    }
+
+    .container {
+        max-width: 100%; /* Ajusta para ocupar toda a largura */
+    }
+
+    table {
+        font-size: 10px; /* Reduz o tamanho da fonte da tabela */
+        width: 100%; /* Garante que use toda a largura disponível */
+        border-collapse: collapse;
+    }
+
+    th, td {
+        padding: 2px; /* Diminui os espaços internos */
+        text-align: center;
+    }
+
+    h2, h4 {
+        font-size: 14px; /* Ajusta os títulos para não ocuparem muito espaço */
+    }
+
+    .btn, .no-print {
+        display: none !important; /* Remove botões e elementos desnecessários na impressão */
+    }
+}
+

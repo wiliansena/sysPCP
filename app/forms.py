@@ -8,10 +8,12 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, FloatField, IntegerField, FileField, FieldList, FormField, SubmitField
 from wtforms.validators import DataRequired, NumberRange, Optional
 from datetime import date
+from wtforms.validators import DataRequired, Length
+
 
 
 class ColecaoForm(FlaskForm):
-    codigo = StringField('Código', validators=[DataRequired()])
+    codigo = StringField('Código', validators=[DataRequired(), Length(max=20)])
     submit = SubmitField('Salvar')
 
 class ComponenteForm(FlaskForm):
@@ -101,6 +103,7 @@ class ReferenciaForm(FlaskForm):
     linha = SelectField('Linha', choices=[('MASCULINO', 'MASCULINO'),
                                           ('FEMININO', 'FEMININO'),
                                           ('BABY', 'BABY')], validators=[DataRequired()])
+    colecao_id = SelectField('Coleção', coerce=int)
     imagem = FileField('Imagem', validators=[Optional()])
     
     total_solado = HiddenField("total_solado")
@@ -239,7 +242,58 @@ class MargemPorPedidoReferenciaForm(FlaskForm):
     submit = SubmitField('Adicionar Referência')
 
 
+##### CONTROLE DE PRODUÇÃO    #########
 
+class MaquinaForm(FlaskForm):
+    codigo = StringField('Código', validators=[DataRequired()])
+    descricao = StringField('Descrição', validators=[DataRequired()])
+    tipo = SelectField('Tipo', choices=[('INJETORA/ROTATIVA', 'INJETORA/ROTATIVA'),
+                                        ('INJETORA/CONVENCIONAL', 'INJETORA/CONVENCIONAL'),
+                                        ('PINTURA', 'EMBALAGENS'),
+                                        ('CONFORMAÇÃO', 'CONFORMAÇÃO'),
+                                        ('EMBALADOR', 'EMBALADOR')], validators=[DataRequired()])
+    status = SelectField('Tipo', choices=[('ATIVA', 'ATIVA'),
+                                          ('INATIVA', 'INATIVA')
+                                          ], validators=[DataRequired()])
+    preco = FloatField('Preço')
+    
+    submit = SubmitField('Salvar')
+
+class TrocaForm(FlaskForm):
+    horario = StringField("Horário", render_kw={"readonly": True})
+    pares = IntegerField("Pares Produzidos", validators=[Optional()])
+    inicio_1 = StringField("1ª Troca - Início", validators=[Optional()])
+    fim_1 = StringField("1ª Troca - Fim", validators=[Optional()])
+    inicio_2 = StringField("2ª Troca - Início", validators=[Optional()])
+    fim_2 = StringField("2ª Troca - Fim", validators=[Optional()])
+    inicio_3 = StringField("3ª Troca - Início", validators=[Optional()])
+    fim_3 = StringField("3ª Troca - Fim", validators=[Optional()])
+    inicio_4 = StringField("4ª Troca - Início", validators=[Optional()])
+    fim_4 = StringField("4ª Troca - Fim", validators=[Optional()])
+    inicio_5 = StringField("5ª Troca - Início", validators=[Optional()])
+    fim_5 = StringField("5ª Troca - Fim", validators=[Optional()])
+    inicio_6 = StringField("6ª Troca - Início", validators=[Optional()])
+    fim_6 = StringField("6ª Troca - Fim", validators=[Optional()])
+    inicio_7 = StringField("7ª Troca - Início", validators=[Optional()])
+    fim_7 = StringField("7ª Troca - Fim", validators=[Optional()])
+
+
+class TrocaMatrizForm(FlaskForm):
+    data = DateField("Data", format='%Y-%m-%d', validators=[DataRequired()])
+    trocador_id = SelectField("Trocador", coerce=int, validators=[DataRequired()])
+    operador_id = SelectField("Operador", coerce=int, validators=[DataRequired()])
+    maquina_id = SelectField("Máquina", coerce=int, validators=[DataRequired()])
+    
+    # 🔹 Define corretamente a lista de trocas com 10 linhas padrão
+    trocas = FieldList(FormField(TrocaForm), min_entries=10)
+    
+    submit = SubmitField("Salvar")
+
+
+class FuncionarioForm(FlaskForm):
+    nome = StringField("Nome", validators=[DataRequired()])
+    funcao = SelectField("Função", choices=[("Operador", "Operador"), ("Trocador", "Trocador"), ("Técnico", "Técnico")])
+    submit = SubmitField("Salvar")
 
 
 

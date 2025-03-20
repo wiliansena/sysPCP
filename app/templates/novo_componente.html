@@ -1,36 +1,72 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <h2>Novo Componente</h2>
-    <form method="POST">
-        {{ form.hidden_tag() }}
-        
-        <div class="mb-3">
-            {{ form.codigo.label(class="form-label") }}
-            {{ form.codigo(class="form-control") }}
-        </div>
+<h2>Novo Componente</h2>
+<hr>
 
-        <div class="mb-3">
-            {{ form.descricao.label(class="form-label") }}
-            {{ form.descricao(class="form-control") }}
-        </div>
+<br>
+<br>
+<form method="POST" action="{{ url_for('routes.importar_componentes') }}" enctype="multipart/form-data">
+    <input type="file" name="file" accept=".xls,.xlsx" required>
+    <button type="submit" class="btn btn-primary">Importar Excel</button>
+</form>
+<hr>
+<form method="POST">
+    {{ form.hidden_tag() }}
 
-        <div class="mb-3">
-            {{ form.tipo.label(class="form-label") }}
-            {{ form.tipo(class="form-select") }}
-        </div>
+    <div class="mb-3">
+        {{ form.codigo.label(class="form-label") }}
+        {{ form.codigo(class="form-control") }}
+    </div>
 
-        <div class="mb-3">
-            {{ form.unidade_medida.label(class="form-label") }}
-            {{ form.unidade_medida(class="form-select") }}
-        </div>
+    <div class="mb-3">
+        {{ form.descricao.label(class="form-label") }}
+        {{ form.descricao(class="form-control") }}
+    </div>
 
-        <div class="mb-3">
-            {{ form.preco.label(class="form-label") }}
-            {{ form.preco(class="form-control") }}
-        </div>
+    <div class="mb-3">
+        {{ form.tipo.label(class="form-label") }}
+        {{ form.tipo(class="form-select") }}
+    </div>
 
-        <button type="submit" class="btn btn-success">{{ form.submit.label.text }}</button>
-        <a href="{{ url_for('routes.listar_componentes') }}" class="btn btn-secondary">Cancelar</a>
-    </form>
+    <div class="mb-3">
+        {{ form.unidade_medida.label(class="form-label") }}
+        {{ form.unidade_medida(class="form-select") }}
+    </div>
+
+    <div class="mb-3">
+        {{ form.preco.label(class="form-label") }}
+        {{ form.preco(class="form-control") }}
+    </div>
+
+    <button type="submit" class="btn btn-success">{{ form.submit.label.text }}</button>
+    <a href="{{ url_for('routes.listar_componentes') }}" class="btn btn-secondary">Cancelar</a>
+</form>
+
+<script>
+    function importarComponentes() {
+        let fileInput = document.getElementById('fileInput');
+        let file = fileInput.files[0];
+
+        if (!file) {
+            alert('Por favor, selecione um arquivo.');
+            return;
+        }
+
+        let formData = new FormData();
+        formData.append("file", file);
+
+        fetch("{{ url_for('routes.importar_componentes') }}", {
+            method: "POST",
+            body: formData
+        })
+            .then(() => {
+                window.location.href = "{{ url_for('routes.listar_componentes') }}";  // 🔹 Redireciona para listar componentes
+            })
+            .catch(error => console.error('Erro:', error));
+    }
+</script>
+
+
+
 {% endblock %}
