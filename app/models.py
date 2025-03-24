@@ -533,21 +533,53 @@ class FormulacaoAlca(db.Model):
         return preco_total.quantize(Decimal('0.01'), rounding=ROUND_CEILING)
 
 
+
+ ####   USUÁRIO    ######
+from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 
 class Usuario(db.Model, UserMixin):
     __tablename__ = "usuario"
-    
+
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100), unique=True, nullable=False)
     senha_hash = db.Column(db.String(200), nullable=False)
-    permissao = db.Column(db.String(50), nullable=False, default='usuario')
+
+    permissoes = db.relationship("Permissao", backref="usuario", lazy="dynamic", cascade="all, delete-orphan")
 
     def set_password(self, senha):
-        self.senha_hash = generate_password_hash(senha)  # 🔹 Gera o hash corretamente
+        self.senha_hash = generate_password_hash(senha)
 
     def check_password(self, senha):
-        return check_password_hash(self.senha_hash, senha)  # 🔹 Verifica a senha
+        return check_password_hash(self.senha_hash, senha)
+
+    @property
+    def todas_permissoes(self):
+        """Carrega todas as permissões do usuário como um conjunto de tuplas."""
+        return {(p.categoria, p.acao) for p in self.permissoes.all()}
+
+    def tem_permissao(self, categoria, acao):
+        """Verifica se o usuário tem permissão para acessar determinada ação."""
+        return (categoria, acao) in self.todas_permissoes
+    
+    def pode_trocar_senha(self):
+        """Verifica se o usuário tem permissão para trocar senha."""
+        return self.tem_permissao('trocar_senha', 'editar')  # 🔹 Nova verificação de permissão
+
+
+class Permissao(db.Model):
+    __tablename__ = "permissao"
+    
+    id = db.Column(db.Integer, primary_key=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
+    categoria = db.Column(db.String(50), nullable=False)  # Ex: 'margens', 'custoproducao'
+    acao = db.Column(db.String(20), nullable=False)  # Ex: 'ver', 'editar', 'excluir'
+
+    __table_args__ = (db.UniqueConstraint('usuario_id', 'categoria', 'acao', name='unique_permissao_usuario'),)
+
+
+
+
 
 
 class LogAcao(db.Model):

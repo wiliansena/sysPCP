@@ -19,7 +19,7 @@ def create_app():
     # 🔹 Configuração do tempo de sessão
     app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
 
-    # 🔹 Configuração do banco de dados
+    # 🔹 Inicialização do banco de dados
     db.init_app(app)
     migrate.init_app(app, db)
 
@@ -36,19 +36,28 @@ def create_app():
 
     @login_manager.user_loader
     def load_user(user_id):
-        from app.models import Usuario  
-        return Usuario.query.get(int(user_id))
+        """Carrega o usuário ao fazer login e garante que as permissões são carregadas corretamente."""
+        from app.models import Usuario  # Importação dentro da função para evitar problemas de importação circular
+        usuario = Usuario.query.get(int(user_id))
+        
+        if usuario:
+            _ = usuario.todas_permissoes  # 🔹 Garante que as permissões são carregadas corretamente
+        
+        return usuario
 
-    # 🔹 Antes de cada requisição, tornar a sessão permanente e resetar o tempo
+    # 🔹 Antes de cada requisição, manter a sessão ativa e garantir permissões
     @app.before_request
     def verificar_sessao():
         if current_user.is_authenticated:
             session.permanent = True
             session.modified = True
+            
+            # 🔹 Garante que as permissões estão carregadas corretamente no usuário
+            _ = current_user.todas_permissoes
         else:
             logout_user()
 
-    # 🔹 Importação de Blueprints (rotas)
+    # 🔹 Importação de Blueprints (módulos de rotas)
     from app.routes import bp as routes_bp
     app.register_blueprint(routes_bp)
 

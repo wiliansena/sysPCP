@@ -40,7 +40,9 @@
 
         <a href="{{ url_for('routes.home') }}"><i class="fas fa-home"></i> Página Inicial</a>
         <hr>
-        <!-- Categoria: Planejamento de Custos -->
+
+        <!-- Planejamento de Custos -->
+        {% if ('margens', 'ver') in g.permissoes %}
         <div class="sidebar-category" onclick="toggleMenu('margens')">
             <i class="fas fa-chart-line"></i> Margens e Análises
             <i class="fas fa-chevron-down"></i>
@@ -51,8 +53,10 @@
                 Pedido</a>
             <a href="{{ url_for('routes.listar_margens') }}"><i class="fas fa-percent"></i> Margens por Referência</a>
         </div>
+        {% endif %}
 
-        <!-- Categoria: Produção -->
+        <!-- Produção -->
+        {% if ('custoproducao', 'ver') in g.permissoes %}
         <div class="sidebar-category" onclick="toggleMenu('custoproducao')">
             <i class="fas fa-industry"></i> Custos de Produção
             <i class="fas fa-chevron-down"></i>
@@ -64,9 +68,12 @@
             <a href="{{ url_for('routes.listar_custos') }}"><i class="fas fa-dollar-sign"></i> Custos Operacionais</a>
             <a href="{{ url_for('routes.listar_mao_de_obra') }}"><i class="fas fa-user"></i> Mão de Obra</a>
             <a href="{{ url_for('routes.listar_salarios') }}"><i class="fas fa-money-bill"></i> Salários</a>
+            <a href="{{ url_for('routes.listar_colecoes') }}"><i class="bi bi-tags"></i> Coleções</a>
         </div>
+        {% endif %}
 
-        <!-- Categoria: Componentes e Materiais -->
+        <!-- Componentes e Materiais -->
+        {% if ('componentes', 'ver') in g.permissoes %}
         <div class="sidebar-category" onclick="toggleMenu('componentes')">
             <i class="fa-solid fa-cubes"></i> Componentes e Materiais
             <i class="fas fa-chevron-down"></i>
@@ -74,8 +81,10 @@
         <div class="sidebar-submenu" id="componentes">
             <a href="{{ url_for('routes.listar_componentes') }}"><i class="fa-solid fa-cubes"></i> Componentes</a>
         </div>
+        {% endif %}
 
-        <!-- Categoria: Controle de produção -->
+        <!-- Controle de Produção -->
+        {% if ('controleproducao', 'ver') in g.permissoes %}
         <div class="sidebar-category" onclick="toggleMenu('controleproducao')">
             <i class="bi bi-clipboard-check"></i> Controle de Produção
             <i class="fas fa-chevron-down"></i>
@@ -84,8 +93,10 @@
             <a href="{{ url_for('routes.listar_trocas_matriz') }}"><i class="fas fa-exchange-alt"></i> Troca de
                 Matriz</a>
         </div>
+        {% endif %}
 
-        <!-- Categoria: Máquinas e Equipamentos -->
+        <!-- Máquinas e Equipamentos -->
+        {% if ('maquinas', 'ver') in g.permissoes %}
         <div class="sidebar-category" onclick="toggleMenu('maquinas')">
             <i class="fas fa-wrench"></i> Máquinas e Equipamentos
             <i class="fas fa-chevron-down"></i>
@@ -93,40 +104,51 @@
         <div class="sidebar-submenu" id="maquinas">
             <a href="{{ url_for('routes.listar_maquinas') }}"><i class="fas fa-wrench"></i> Máquinas</a>
         </div>
+        {% endif %}
 
-        <!-- Categoria: Funcionarios -->
+        <!-- Funcionários -->
+        {% if ('funcionario', 'ver') in g.permissoes %}
         <div class="sidebar-category" onclick="toggleMenu('funcionario')">
             <i class="bi bi-people"></i> Funcionários
             <i class="fas fa-chevron-down"></i>
         </div>
         <div class="sidebar-submenu" id="funcionario">
-            <a href="{{ url_for('routes.listar_funcionarios') }}"><i class="bi bi-people"></i>Pessoas e Funções</a>
+            <a href="{{ url_for('routes.listar_funcionarios') }}"><i class="bi bi-people"></i> Pessoas e Funções</a>
         </div>
+        {% endif %}
 
-        <!-- Categoria: Coleções -->
-        <div class="sidebar-category" onclick="toggleMenu('colecao')">
-            <i class="bi bi-tags"></i> Coleções
-            <i class="fas fa-chevron-down"></i>
-        </div>
-        <div class="sidebar-submenu" id="colecao">
-            <a href="{{ url_for('routes.listar_colecoes') }}"><i class="bi bi-tags"></i> Coleções</a>
-        </div>
-
-
-        <!-- Categoria: Relatórios Adicionais -->
+        <!-- Relatórios -->
+        {% if ('relatorio', 'ver') in g.permissoes %}
         <div class="sidebar-category" onclick="toggleMenu('relatorio')">
-            <i class="bi bi-file-earmark-text"></i> Relatórios Adicionais
+            <i class="bi bi-file-earmark-text"></i> Relatórios
             <i class="fas fa-chevron-down"></i>
         </div>
         <div class="sidebar-submenu" id="relatorio">
-            <a href=""><i class="bi bi-file-earmark-text"></i>Relatórios</a>
+            <a href="#"><i class="bi bi-file-earmark-text"></i> Relatórios Gerais</a>
         </div>
+        {% endif %}
+
+        <!-- 🔹 Administração (sempre visível) -->
+        <div class="sidebar-category" onclick="toggleMenu('administracao')">
+            <i class="fas fa-user-cog"></i> Administração
+            <i class="fas fa-chevron-down"></i>
+        </div>
+        <div class="sidebar-submenu" id="administracao">
+            {% if ('usuarios', 'ver') in g.permissoes %}
+            <a href="{{ url_for('routes.listar_usuarios') }}"><i class="fas fa-users"></i> Usuários</a>
+            <a href="{{ url_for('routes.listar_logs') }}"><i class="bi bi-clock-history"></i> Logs</a>
+            {% endif %}
+            {% if ('trocar_senha', 'editar') in g.permissoes %}
+            <a href="{{ url_for('auth.trocar_senha') }}"><i class="fas fa-key"></i> Trocar Senha</a>
+            {% endif %}
+        </div>
+
+
 
         <!-- Botão de logout -->
         <a href="{{ url_for('auth.logout') }}" class="text-danger"><i class="bi bi-box-arrow-right"></i> Sair</a>
     </nav>
     {% endif %}
-
 
     <!-- Conteúdo principal -->
     <div class="content">

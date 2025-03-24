@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Gerenciar Permissões - {{ usuario.nome }}</h2>
+
+    <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+
+        <table class="table table-bordered">
+            <thead class="table-dark">
+                <tr>
+                    <th>Categoria</th>
+                    <th class="text-center">Criar</th>
+                    <th class="text-center">Ver</th>
+                    <th class="text-center">Editar</th>
+                    <th class="text-center">Excluir</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for categoria in categorias %}
+                <tr>
+                    <td><strong>{{ categoria.replace('_', ' ').capitalize() }}</strong></td>
+                    {% for acao in acoes %}
+                    <td class="text-center">
+                        {% if categoria == "trocar_senha" and acao != "editar" %}
+                        <!-- 🔹 Se for "trocar_senha", só mostra checkbox na coluna EDITAR -->
+                        -
+                        {% else %}
+                        <input type="checkbox" name="{{ categoria }}_{{ acao }}" {% if categoria ~ "_" ~ acao in
+                            permissoes_existentes %}checked{% endif %}>
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+
+        </table>
+
+        <div class="text-end mt-3">
+            <a href="{{ url_for('routes.listar_usuarios') }}" class="btn btn-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-primary">Salvar Permissões</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

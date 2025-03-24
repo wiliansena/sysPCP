@@ -1,12 +1,11 @@
 from sqlite3 import IntegrityError
 from flask import Blueprint, jsonify, render_template, redirect, url_for, flash, request
 from flask_login import current_user, login_required
-from app import db
-from app.models import FormulacaoSolado, FormulacaoSoladoFriso, Funcionario, LogAcao, Maquina, MargemPorPedido, MargemPorPedidoReferencia, Referencia, Componente, CustoOperacional, ReferenciaAlca, ReferenciaComponentes, ReferenciaCustoOperacional, ReferenciaEmbalagem1, ReferenciaEmbalagem2, ReferenciaEmbalagem3, ReferenciaMaoDeObra, ReferenciaSolado, Salario, MaoDeObra, Margem, TrocaHorario, TrocaMatriz
-from app.forms import FuncionarioForm, MaquinaForm, MargemForm, MargemPorPedidoForm, MargemPorPedidoReferenciaForm, ReferenciaForm, ComponenteForm, CustoOperacionalForm, SalarioForm, MaoDeObraForm, TrocaMatrizForm
+from app import db, csrf
+from app.models import FormulacaoSolado, FormulacaoSoladoFriso, Funcionario, LogAcao, Maquina, MargemPorPedido, MargemPorPedidoReferencia, Permissao, Referencia, Componente, CustoOperacional, ReferenciaAlca, ReferenciaComponentes, ReferenciaCustoOperacional, ReferenciaEmbalagem1, ReferenciaEmbalagem2, ReferenciaEmbalagem3, ReferenciaMaoDeObra, ReferenciaSolado, Salario, MaoDeObra, Margem, TrocaHorario, TrocaMatriz, Usuario
+from app.forms import FuncionarioForm, MaquinaForm, MargemForm, MargemPorPedidoForm, MargemPorPedidoReferenciaForm, ReferenciaForm, ComponenteForm, CustoOperacionalForm, SalarioForm, MaoDeObraForm, TrocaMatrizForm, UsuarioForm
 import os
 from flask import render_template, redirect, url_for, flash, request
-from app import db
 from app.models import Solado, Tamanho, Componente, FormulacaoSolado, Alca, TamanhoAlca, FormulacaoAlca, Colecao
 from app.forms import SoladoForm, AlcaForm, ColecaoForm
 from flask import Blueprint
@@ -15,7 +14,6 @@ from werkzeug.utils import secure_filename  # 🔹 Para salvar o nome do arquivo
 from flask import current_app  # 🔹 Para acessar a configuração da aplicação
 from flask_wtf import FlaskForm
 from wtforms import HiddenField
-from app import db, csrf  # 🔹 Importando o `csrf` que foi definido no __init__.py
 from flask.views import MethodView
 from decimal import Decimal, ROUND_HALF_UP  # Importa Decimal para cálculos precisos
 from sqlalchemy.exc import SQLAlchemyError
@@ -23,9 +21,9 @@ import pandas as pd
 from flask import request, jsonify
 from werkzeug.utils import secure_filename
 from flask import current_app
-from app.utils import allowed_file
-
-
+from app.utils import allowed_file, requer_permissao
+from flask import g
+import random, string
 
 
 bp = Blueprint('routes', __name__)
@@ -37,8 +35,110 @@ if not os.path.exists(UPLOAD_FOLDER):
 class DeleteForm(FlaskForm):
     csrf_token = HiddenField()
 
+
+
+
+@bp.before_request
+def carregar_permissoes():
+    """Garante que as permissões do usuário estejam disponíveis em todas as páginas."""
+    if current_user.is_authenticated:
+        g.permissoes = current_user.todas_permissoes
+    else:
+        g.permissoes = set()  # Usuário sem permissões
+
+    
+    
+@bp.route('/usuarios')
+@login_required
+@requer_permissao('usuarios', 'ver')
+def listar_usuarios():
+
+    usuarios = Usuario.query.all()
+    return render_template('usuarios.html', usuarios=usuarios)
+
+
+@bp.route('/usuario/novo', methods=['GET', 'POST'])
+@login_required
+@requer_permissao('usuarios', 'ver')
+def novo_usuario():
+
+    form = UsuarioForm()
+    if form.validate_on_submit():
+        novo_usuario = Usuario(
+            nome=form.nome.data
+        )
+        novo_usuario.set_password(form.senha.data)
+        db.session.add(novo_usuario)
+        db.session.commit()
+        flash("Usuário criado com sucesso!", "success")
+        return redirect(url_for('routes.listar_usuarios'))
+
+    return render_template('novo_usuario.html', form=form)
+
+
+@bp.route('/usuarios/editar/<int:id>', methods=['GET', 'POST'])
+@login_required
+@requer_permissao('usuarios', 'editar')
+def editar_usuario(id):
+    usuario = Usuario.query.get_or_404(id)
+
+    # 🔹 Permite que o Admin edite apenas a si mesmo, mas impede outros de editá-lo
+    if usuario.nome.lower() == "admin" and current_user.nome.lower() != "admin":
+        flash("Você não pode editar o usuário Admin!", "danger")
+        return redirect(url_for('routes.listar_usuarios'))
+
+    form = UsuarioForm(obj=usuario)
+
+    if form.validate_on_submit():
+        usuario.nome = form.nome.data
+        if form.senha.data:
+            usuario.set_password(form.senha.data)
+        db.session.commit()
+        flash("Usuário atualizado com sucesso!", "success")
+        return redirect(url_for('routes.listar_usuarios'))
+
+    return render_template('usuarios/editar_usuario.html', form=form, usuario=usuario)
+
+
+@bp.route('/usuarios/permissoes/<int:id>', methods=['GET', 'POST'])
+@login_required
+@requer_permissao('usuarios', 'ver')
+def gerenciar_permissoes(id):
+    usuario = Usuario.query.get_or_404(id)
+
+    # 🔹 Bloqueia edição do Admin apenas se não for o próprio Admin acessando
+    if usuario.nome.lower() == "admin" and current_user.nome.lower() != "admin":
+        flash("As permissões do Admin não podem ser modificadas por outro usuário!", "danger")
+        return redirect(url_for('routes.listar_usuarios'))
+
+    categorias = ["margens", "custoproducao", "componentes", "controleproducao", "maquinas", "funcionario", "relatorio", "usuarios", "trocar_senha"]
+    acoes = ["criar", "ver", "editar", "excluir"]
+
+    if request.method == "POST":
+        # 🔹 O próprio Admin pode modificar suas permissões
+        if current_user.nome.lower() == "admin" or usuario.nome.lower() != "admin":
+            Permissao.query.filter_by(usuario_id=id).delete()
+            
+            for categoria in categorias:
+                for acao in acoes:
+                    if request.form.get(f"{categoria}_{acao}"):
+                        db.session.add(Permissao(usuario_id=id, categoria=categoria, acao=acao))
+
+            db.session.commit()
+            flash("Permissões atualizadas com sucesso!", "success")
+        else:
+            flash("Você não pode modificar as permissões do Admin!", "danger")
+
+        return redirect(url_for('routes.listar_usuarios'))
+
+    permissoes_existentes = {f"{p.categoria}_{p.acao}" for p in usuario.permissoes}
+
+    return render_template('gerenciar_permissoes.html', usuario=usuario, categorias=categorias, acoes=acoes, permissoes_existentes=permissoes_existentes)
+
+
 @bp.route('/logs')
 @login_required
+@requer_permissao('usuarios', 'ver')
 def listar_logs():
     logs = LogAcao.query.order_by(LogAcao.data_hora.desc()).all()
     return render_template('logs.html', logs=logs)
@@ -60,6 +160,7 @@ def home_mobile():
 
 @bp.route('/referencias', methods=['GET'])
 @login_required
+@requer_permissao('custoproducao', 'ver')
 def listar_referencias():
     filtro = request.args.get('filtro', '')
 
@@ -91,6 +192,7 @@ def parse_float(value, default=0):
 
 @bp.route('/referencia/novo', methods=['GET', 'POST'])
 @login_required
+@requer_permissao('custoproducao', 'criar')
 def nova_referencia():
     form = ReferenciaForm()
     form.colecao_id.choices = [(c.id, c.codigo) for c in Colecao.query.all()]
@@ -244,6 +346,7 @@ def nova_referencia():
 
 @bp.route('/referencia/ver/<int:id>', methods=['GET'])
 @login_required
+@requer_permissao('custoproducao', 'ver')
 def ver_referencia(id):
     referencia = Referencia.query.get_or_404(id)
     
@@ -298,6 +401,7 @@ from werkzeug.utils import secure_filename
 
 @bp.route('/referencia/editar/<int:id>', methods=['GET', 'POST'])
 @login_required
+@requer_permissao('custoproducao', 'editar')
 def editar_referencia(id):
     """Edita uma referência existente permitindo adicionar, atualizar ou remover itens."""
     referencia = Referencia.query.get_or_404(id)
@@ -467,13 +571,9 @@ def editar_referencia(id):
 
 
 
-
-import random, string
-
-import random, string
-
 @bp.route('/referencia/copiar/<int:id>', methods=['GET'])
 @login_required
+@requer_permissao('custoproducao', 'editar')
 def copiar_referencia(id):
     # Recupera a referência original ou retorna 404 se não existir
     referencia = Referencia.query.get_or_404(id)
@@ -591,6 +691,7 @@ from sqlalchemy.exc import IntegrityError
 
 @bp.route('/referencia/excluir/<int:id>', methods=['POST'])
 @login_required
+@requer_permissao('custoproducao', 'excluir')
 def excluir_referencia(id):
     """Exclui uma referência, mas exige que o usuário digite 'excluir' para confirmar."""
 
@@ -637,12 +738,14 @@ def excluir_referencia(id):
 
 @bp.route('/colecoes')
 @login_required
+@requer_permissao('custoproducao', 'ver')
 def listar_colecoes():
     colecoes = Colecao.query.order_by(Colecao.id.desc()).all()
     return render_template('colecoes.html', colecoes=colecoes)
 
 @bp.route('/colecao/novo', methods=['GET', 'POST'])
 @login_required
+@requer_permissao('custoproducao', 'criar')
 def nova_colecao():
     form = ColecaoForm()
     if form.validate_on_submit():
@@ -657,6 +760,7 @@ def nova_colecao():
 
 @bp.route('/colecao/editar/<int:id>', methods=['GET', 'POST'])
 @login_required
+@requer_permissao('custoproducao', 'editar')
 def editar_colecao(id):
     colecao = Colecao.query.get_or_404(id)
     form = ColecaoForm(obj=colecao)
@@ -671,6 +775,7 @@ def editar_colecao(id):
 
 @bp.route('/colecao/excluir/<int:id>', methods=['POST'])
 @login_required
+@requer_permissao('custoproducao', 'excluir')
 def excluir_colecao(id):
     colecao = Colecao.query.get_or_404(id)
     referencias_vinculadas = Referencia.query.filter_by(colecao_id=colecao.id).all()
@@ -696,23 +801,26 @@ def excluir_colecao(id):
 
 @bp.route('/componentes', methods=['GET'])
 @login_required
+@requer_permissao('componentes', 'ver')
 def listar_componentes():
     filtro = request.args.get('filtro', '')
-    
+
     if filtro == "TODOS":
         componentes = Componente.query.order_by(Componente.id.desc()).all()
     elif filtro:
         componentes = Componente.query.filter(Componente.descricao.ilike(f"%{filtro}%")).order_by(Componente.id.desc()).all()
     else:
-        componentes = Componente.query.order_by(Componente.id.desc()).all()  # Garante a ordenação mesmo sem filtro
-    
+        componentes = []  # 🔹 Deixa a lista vazia se não houver filtro
+
     return render_template('componentes.html', componentes=componentes)
+
 
 
 
 
 @bp.route('/componente/novo', methods=['GET', 'POST'])
 @login_required
+@requer_permissao('componentes', 'criar')
 def novo_componente():
     form = ComponenteForm()
     if form.validate_on_submit():
@@ -731,6 +839,7 @@ def novo_componente():
 
 @bp.route('/componente/editar/<int:id>', methods=['GET', 'POST'])
 @login_required
+@requer_permissao('componentes', 'editar')
 def editar_componente(id):
     componente = Componente.query.get_or_404(id)
     form = ComponenteForm(obj=componente)
@@ -751,6 +860,7 @@ def editar_componente(id):
 
 @bp.route('/componente/excluir/<int:id>', methods=['POST'])
 @login_required
+@requer_permissao('componentes', 'excluir')
 @csrf.exempt  # 🔹 Desativa CSRF apenas para essa rota
 def excluir_componente(id):
     componente = Componente.query.get_or_404(id)
@@ -774,6 +884,7 @@ def excluir_componente(id):
 
 #CUSTOS OPERACIONAIS ROTAS!
 @bp.route('/custos')
+@requer_permissao('custoproducao', 'ver')
 @login_required
 def listar_custos():
     custos = CustoOperacional.query.order_by(CustoOperacional.id.desc()).all()
@@ -782,6 +893,7 @@ def listar_custos():
         #CUSTOS OPERACIONAIS OK
 @bp.route('/custo/novo', methods=['GET', 'POST'])
 @login_required
+@requer_permissao('custoproducao', 'criar')
 def novo_custo():
     form = CustoOperacionalForm()
     if form.validate_on_submit():
@@ -800,6 +912,7 @@ def novo_custo():
 
 @bp.route('/custo/editar/<int:id>', methods=['GET', 'POST'])
 @login_required
+@requer_permissao('custoproducao', 'editar')
 def editar_custo(id):
     custo = CustoOperacional.query.get_or_404(id)
     form = CustoOperacionalForm(obj=custo)
@@ -819,6 +932,7 @@ def editar_custo(id):
 
 @bp.route('/custo/excluir/<int:id>', methods=['POST'])
 @login_required
+@requer_permissao('custoproducao', 'excluir')
 def excluir_custo(id):
     custo = CustoOperacional.query.get_or_404(id)
 
@@ -842,12 +956,14 @@ def excluir_custo(id):
         #SALARIO!
 @bp.route('/salarios')
 @login_required
+@requer_permissao('custoproducao', 'ver')
 def listar_salarios():
     salarios = Salario.query.order_by(Salario.id.desc()).all()
     return render_template('salarios.html', salarios=salarios)
 
 @bp.route('/salario/novo', methods=['GET', 'POST'])
 @login_required
+@requer_permissao('custoproducao', 'criar')
 def novo_salario():
     form = SalarioForm()
     if form.validate_on_submit():
@@ -863,6 +979,7 @@ def novo_salario():
 
 @bp.route('/salario/editar/<int:id>', methods=['GET', 'POST'])
 @login_required
+@requer_permissao('custoproducao', 'editar')
 def editar_salario(id):
     salario = Salario.query.get_or_404(id)
     form = SalarioForm(obj=salario)
@@ -891,6 +1008,7 @@ def editar_salario(id):
 
 @bp.route('/salario/excluir/<int:id>', methods=['POST'])
 @login_required
+@requer_permissao('custoproducao', 'excluir')
 def excluir_salario(id):
     salario = Salario.query.get_or_404(id)
 
@@ -913,6 +1031,7 @@ def excluir_salario(id):
 
 @bp.route('/mao_de_obra', methods=['GET'])
 @login_required
+@requer_permissao('custoproducao', 'ver')
 def listar_mao_de_obra():
     mao_de_obra = MaoDeObra.query.order_by(MaoDeObra.id.desc()).all()
 
@@ -930,6 +1049,7 @@ from decimal import Decimal, ROUND_HALF_UP  # Importa Decimal para cálculos pre
 
 @bp.route('/mao_de_obra/nova', methods=['GET', 'POST'])
 @login_required
+@requer_permissao('custoproducao', 'criar')
 def nova_mao_de_obra():
     form = MaoDeObraForm()
     form.salario_id.choices = [(s.id, f"R$ {s.preco}") for s in Salario.query.all()]
@@ -958,6 +1078,7 @@ def nova_mao_de_obra():
 
 @bp.route('/mao_de_obra/editar/<int:id>', methods=['GET', 'POST'])
 @login_required
+@requer_permissao('custoproducao', 'editar')
 def editar_mao_de_obra(id):
     mao = MaoDeObra.query.get_or_404(id)
     form = MaoDeObraForm(obj=mao)
@@ -985,6 +1106,7 @@ def editar_mao_de_obra(id):
 
 @bp.route('/mao_de_obra/excluir/<int:id>', methods=['POST'])
 @login_required
+@requer_permissao('custoproducao', 'excluir')
 def excluir_mao_de_obra(id):
     mao = MaoDeObra.query.get_or_404(id)
 
@@ -1013,6 +1135,7 @@ UPLOAD_FOLDER = 'app/static/uploads'
 
 @bp.route('/solados', methods=['GET'])
 @login_required
+@requer_permissao('custoproducao', 'ver')
 def listar_solados():
     filtro = request.args.get('filtro', '')
 
@@ -1027,6 +1150,7 @@ def listar_solados():
 
 @bp.route('/solado/ver/<int:id>')
 @login_required
+@requer_permissao('custoproducao', 'ver')
 def ver_solado(id):
     solado = Solado.query.get_or_404(id)
 
@@ -1071,6 +1195,7 @@ def ver_solado(id):
 
 @bp.route('/solado/novo', methods=['GET', 'POST'])
 @login_required
+@requer_permissao('custoproducao', 'criar')
 def novo_solado():
     form = SoladoForm()
     componentes = Componente.query.all()
@@ -1149,6 +1274,7 @@ def novo_solado():
 
 @bp.route('/solado/editar/<int:id>', methods=['GET', 'POST'])
 @login_required
+@requer_permissao('custoproducao', 'editar')
 def editar_solado(id):
     solado = Solado.query.get_or_404(id)  # Busca o solado no banco
     form = SoladoForm(obj=solado)  # Preenche o formulário com os dados existentes
@@ -1235,12 +1361,11 @@ def editar_solado(id):
     return render_template('editar_solado.html', form=form, solado=solado, componentes=componentes)
 
 
-import random, string
-from flask import redirect, url_for, flash
-from werkzeug.utils import secure_filename
+
 
 @bp.route('/solado/copiar/<int:id>', methods=['GET'])
 @login_required
+@requer_permissao('custoproducao', 'editar')
 def copiar_solado(id):
     # Recupera o solado original ou retorna 404 se não existir
     solado = Solado.query.get_or_404(id)
@@ -1301,6 +1426,7 @@ def copiar_solado(id):
 
 @bp.route('/solado/excluir/<int:id>', methods=['POST'])
 @login_required
+@requer_permissao('custoproducao', 'excluir')
 def excluir_solado(id):
     solado = Solado.query.get_or_404(id)
 
@@ -1349,6 +1475,7 @@ def excluir_solado(id):
 
 @bp.route('/alcas', methods=['GET'])
 @login_required
+@requer_permissao('custoproducao', 'ver')
 def listar_alcas():
     filtro = request.args.get('filtro', '')
 
@@ -1362,6 +1489,7 @@ def listar_alcas():
 
 @bp.route('/alca/nova', methods=['GET', 'POST'])
 @login_required
+@requer_permissao('custoproducao', 'criar')
 def nova_alca():
     form = AlcaForm()
     componentes = Componente.query.all()
@@ -1421,6 +1549,7 @@ def nova_alca():
 
 @bp.route('/alca/editar/<int:id>', methods=['GET', 'POST'])
 @login_required
+@requer_permissao('custoproducao', 'criar')
 def editar_alca(id):
     alca = Alca.query.get_or_404(id)
     form = AlcaForm(obj=alca)
@@ -1493,12 +1622,10 @@ def editar_alca(id):
     return render_template('editar_alca.html', form=form, alca=alca, componentes=componentes)
 
 
-import random, string
-from flask import redirect, url_for, flash
-from werkzeug.utils import secure_filename
 
 @bp.route('/alca/copiar/<int:id>', methods=['GET'])
 @login_required
+@requer_permissao('custoproducao', 'editar')
 def copiar_alca(id):
     # Recupera a alça original ou retorna 404 se não existir
     alca = Alca.query.get_or_404(id)
@@ -1545,6 +1672,7 @@ def copiar_alca(id):
 
 @bp.route('/alca/ver/<int:id>', methods=['GET'])
 @login_required
+@requer_permissao('custoproducao', 'ver')
 def ver_alca(id):
     alca = Alca.query.get_or_404(id)
 
@@ -1577,6 +1705,7 @@ from sqlalchemy.exc import IntegrityError
 
 @bp.route('/alca/excluir/<int:id>', methods=['POST'])
 @login_required
+@requer_permissao('custoproducao', 'excluir')
 def excluir_alca(id):
     alca = Alca.query.get_or_404(id)
 
@@ -1624,6 +1753,7 @@ def excluir_alca(id):
 
 @bp.route('/margens', methods=['GET'])
 @login_required
+@requer_permissao('margens', 'ver')
 def listar_margens():
     filtro = request.args.get('filtro', '')
 
@@ -1641,6 +1771,7 @@ def listar_margens():
 # Rota para criar uma nova margem
 @bp.route('/margem/nova', methods=['GET', 'POST'])
 @login_required
+@requer_permissao('margens', 'criar')
 def nova_margem():
     form = MargemForm()
     referencias = Referencia.query.all()
@@ -1696,6 +1827,7 @@ def nova_margem():
 
 @bp.route('/margem/editar/<int:id>', methods=['GET', 'POST'])
 @login_required
+@requer_permissao('margens', 'editar')
 def editar_margem(id):
     """
     Rota para editar uma margem existente.
@@ -1755,6 +1887,7 @@ def editar_margem(id):
 
 @bp.route('/margem/copiar/<int:id>', methods=['GET'])
 @login_required
+@requer_permissao('margens', 'editar')
 def copiar_margem(id):
     margem_original = Margem.query.get_or_404(id)
     referencia = Referencia.query.get(margem_original.referencia_id)
@@ -1807,6 +1940,7 @@ def copiar_margem(id):
 
 @bp.route('/margem/<int:id>', methods=['GET'])
 @login_required
+@requer_permissao('margens', 'ver')
 def ver_margem(id):
     """
     Rota para exibir os detalhes de uma margem específica.
@@ -1820,6 +1954,7 @@ def ver_margem(id):
 # Rota para excluir uma margem
 @bp.route('/margem/excluir/<int:id>', methods=['POST'])
 @login_required
+@requer_permissao('margens', 'excluir')
 def excluir_margem(id):
     margem = Margem.query.get_or_404(id)
     
@@ -1840,6 +1975,7 @@ def excluir_margem(id):
 
 @bp.route('/margens_pedido', methods=['GET'])
 @login_required
+@requer_permissao('margens', 'ver')
 def listar_margens_pedido():
     filtro = request.args.get('filtro', '')
     if filtro:
@@ -1852,6 +1988,7 @@ def listar_margens_pedido():
 
 @bp.route('/margem_pedido/novo', methods=['GET', 'POST'])
 @login_required
+@requer_permissao('margens', 'criar')
 def nova_margem_pedido():
     form = MargemPorPedidoForm()
     referencia_form = MargemPorPedidoReferenciaForm()
@@ -1921,6 +2058,7 @@ def nova_margem_pedido():
 
 @bp.route('/margem_pedido/editar/<int:id>', methods=['GET', 'POST'])
 @login_required
+@requer_permissao('margens', 'editar')
 def editar_margem_pedido(id):
     """ Edita uma margem por pedido existente """
     margem_pedido = MargemPorPedido.query.get_or_404(id)
@@ -1989,6 +2127,7 @@ def editar_margem_pedido(id):
 
 @bp.route('/margem_pedido/ver/<int:id>')
 @login_required
+@requer_permissao('margens', 'ver')
 def ver_margem_pedido(id):
     """ Exibe os detalhes de uma margem por pedido """
     margem = MargemPorPedido.query.get_or_404(id)
@@ -1997,6 +2136,7 @@ def ver_margem_pedido(id):
 
 @bp.route('/margem_pedido/excluir/<int:id>', methods=['GET', 'POST'])
 @login_required
+@requer_permissao('margens', 'excluir')
 def excluir_margem_pedido(id):
     """ Exclui apenas a margem por pedido """
     margem = MargemPorPedido.query.get_or_404(id)
@@ -2015,6 +2155,7 @@ def excluir_margem_pedido(id):
 
 @bp.route('/custo_remessa', methods=['GET', 'POST'])
 @login_required
+@requer_permissao('margens', 'ver')
 def custo_remessa():
     margem_pedidos = []
     totais = {
@@ -2056,6 +2197,7 @@ def custo_remessa():
 
 @bp.route('/margem_pedido/importar', methods=['POST'])
 @login_required
+@requer_permissao('margens', 'editar')
 def importar_referencias():
     if 'file' not in request.files:
         return jsonify({"success": False, "error": "Nenhum arquivo enviado"})
@@ -2105,6 +2247,7 @@ def importar_referencias():
 
 @bp.route('/importar_componentes', methods=['POST'])
 @login_required
+@requer_permissao('componentes', 'editar')
 def importar_componentes():
     if 'file' not in request.files:
         flash("Nenhum arquivo enviado.", "danger")
@@ -2173,6 +2316,7 @@ def importar_componentes():
 
 @bp.route('/importar_solados', methods=['POST'])
 @login_required
+@requer_permissao('custoproducao', 'editar')
 def importar_solados():
     if 'file' not in request.files:
         flash("Nenhum arquivo enviado.", "danger")
@@ -2284,6 +2428,7 @@ def importar_solados():
 
 @bp.route('/maquinas', methods=['GET'])
 @login_required
+@requer_permissao('maquinas', 'ver')
 def listar_maquinas():
     """ Lista todas as máquinas cadastradas """
     filtro = request.args.get('filtro', '')
@@ -2295,6 +2440,7 @@ def listar_maquinas():
 
 @bp.route('/maquina/nova', methods=['GET', 'POST'])
 @login_required
+@requer_permissao('maquinas', 'criar')
 def nova_maquina():
     form = MaquinaForm()
     if form.validate_on_submit():
@@ -2315,6 +2461,7 @@ def nova_maquina():
 
 @bp.route('/maquina/editar/<int:id>', methods=['GET', 'POST'])
 @login_required
+@requer_permissao('maquinas', 'editar')
 def editar_maquina(id):
     """ Edita uma máquina existente """
     maquina = Maquina.query.get_or_404(id)
@@ -2333,8 +2480,11 @@ def editar_maquina(id):
 
     return render_template('editar_maquina.html', form=form, maquina=maquina)
 
+
+
 @bp.route('/maquina/excluir/<int:id>', methods=['POST'])
 @login_required
+@requer_permissao('maquinas', 'excluir')
 def excluir_maquina(id):
     """ Exclui uma máquina do sistema """
     maquina = Maquina.query.get_or_404(id)
@@ -2348,6 +2498,7 @@ def excluir_maquina(id):
 
 @bp.route('/trocas_matriz', methods=['GET'])
 @login_required
+@requer_permissao('controleproducao', 'ver')
 def listar_trocas_matriz():
     trocas = TrocaMatriz.query.order_by(TrocaMatriz.id.desc()).all()
     return render_template('trocas_matriz.html', trocas=trocas)
@@ -2364,6 +2515,7 @@ def parse_time(value):
 
 @bp.route('/troca_matriz/ver/<int:id>', methods=['GET'])
 @login_required
+@requer_permissao('controleproducao', 'ver')
 def ver_troca_matriz(id):
     troca = TrocaMatriz.query.get_or_404(id)
     return render_template('ver_troca_matriz.html', troca=troca)
@@ -2377,6 +2529,7 @@ def parse_time(value):
 
 @bp.route('/troca_matriz/nova', methods=['GET', 'POST'])
 @login_required
+@requer_permissao('controleproducao', 'criar')
 def nova_troca_matriz():
     form = TrocaMatrizForm()
 
@@ -2443,6 +2596,7 @@ def nova_troca_matriz():
 
 @bp.route('/troca_matriz/editar/<int:id>', methods=['GET', 'POST'])
 @login_required
+@requer_permissao('controleproducao', 'editar')
 def editar_troca_matriz(id):
     troca_matriz = TrocaMatriz.query.get_or_404(id)
     form = TrocaMatrizForm(obj=troca_matriz)
@@ -2529,6 +2683,7 @@ def editar_troca_matriz(id):
 
 @bp.route('/troca_matriz/excluir/<int:id>', methods=['POST'])
 @login_required
+@requer_permissao('controleproducao', 'excluir')
 def excluir_troca_matriz(id):
     troca_matriz = TrocaMatriz.query.get_or_404(id)
 
@@ -2545,12 +2700,14 @@ def excluir_troca_matriz(id):
 
 @bp.route('/funcionarios', methods=['GET'])
 @login_required
+@requer_permissao('funcionario', 'ver')
 def listar_funcionarios():
     funcionarios = Funcionario.query.order_by(Funcionario.nome).all()
     return render_template('funcionarios.html', funcionarios=funcionarios)
 
 @bp.route('/funcionario/novo', methods=['GET', 'POST'])
 @login_required
+@requer_permissao('funcionario', 'criar')
 def novo_funcionario():
     form = FuncionarioForm()
     if form.validate_on_submit():
@@ -2566,6 +2723,7 @@ def novo_funcionario():
 
 @bp.route('/funcionario/editar/<int:id>', methods=['GET', 'POST'])
 @login_required
+@requer_permissao('funcionario', 'editar')
 def editar_funcionario(id):
     funcionario = Funcionario.query.get_or_404(id)
     form = FuncionarioForm(obj=funcionario)
@@ -2581,6 +2739,7 @@ def editar_funcionario(id):
 
 @bp.route('/funcionario/excluir/<int:id>', methods=['POST'])
 @login_required
+@requer_permissao('funcionario', 'excluir')
 def excluir_funcionario(id):
     funcionario = Funcionario.query.get_or_404(id)
     db.session.delete(funcionario)
