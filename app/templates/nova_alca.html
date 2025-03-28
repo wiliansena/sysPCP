@@ -16,11 +16,15 @@
             <label>Descrição</label>
             {{ form.descricao(class="form-control") }}
         </div>
+        <hr>
 
-        <div class="form-group">
-            <label>Imagem da Alça</label>
-            {{ form.imagem(class="form-control-file") }}
+        <div class="col-md-3">
+            <div class="form-group">
+                <label>Imagem da Alça</label>
+                {{ form.imagem(class="form-control-file") }}
+            </div>
         </div>
+        <hr>
 
         <h4>Ficha Técnica</h4>
         <table class="table table-bordered">
@@ -63,11 +67,11 @@
                     <th>Ação</th>
                 </tr>
             </thead>
-            <tbody id="tabela-formulacao">
+            <tbody id="tabela-componente">
             </tbody>
         </table>
 
-        <button type="submit" class="btn btn-success">Salvar</button>
+        <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Salvar</button>
         <a href="{{ url_for('routes.listar_alcas') }}" class="btn btn-secondary">Cancelar</a>
     </form>
 </div>
@@ -85,7 +89,8 @@
             <div class="modal-body">
                 <!-- Campo de filtro -->
                 <div class="mb-3">
-                    <input type="text" id="filterComponentesModal" class="form-control" placeholder="Filtrar Componentes">
+                    <input type="text" id="filterComponentesModal" class="form-control"
+                        placeholder="Filtrar Componentes">
                 </div>
                 <table class="table" id="componentesModalTable">
                     <thead>
@@ -101,11 +106,12 @@
                         <tr>
                             <td>{{ componente.codigo }}</td>
                             <td>{{ componente.descricao }}</td>
-                            <td>R$ {{ "%.2f"|format(componente.preco) }}</td>
+                            <td>R$ {{ "%.4f"|format(componente.preco) }}</td>
                             <td>
                                 <button type="button" class="btn btn-success btn-sm selecionar-componente"
                                     data-id="{{ componente.id }}" data-descricao="{{ componente.descricao }}"
-                                    data-preco="{{ "%.2f"|format(componente.preco) }}">
+                                    data-preco="{{ " %.4f"|format(componente.preco) }}"
+                                    data-tipo="componente">
                                     Selecionar
                                 </button>
                             </td>
@@ -120,21 +126,21 @@
 
 <!-- Script para filtrar a tabela do modal de componentes -->
 <script>
-function setupFilter(filterId, tableId) {
-    const filterInput = document.getElementById(filterId);
-    if (filterInput) {
-        filterInput.addEventListener('keyup', function() {
-            const filtro = this.value.toUpperCase();
-            const rows = document.querySelectorAll('#' + tableId + ' tbody tr');
-            rows.forEach(row => {
-                const col1 = row.querySelector('td:nth-child(1)').textContent.toUpperCase();
-                const col2 = row.querySelector('td:nth-child(2)').textContent.toUpperCase();
-                row.style.display = (col1.indexOf(filtro) > -1 || col2.indexOf(filtro) > -1) ? '' : 'none';
+    function setupFilter(filterId, tableId) {
+        const filterInput = document.getElementById(filterId);
+        if (filterInput) {
+            filterInput.addEventListener('keyup', function () {
+                const filtro = this.value.toUpperCase();
+                const rows = document.querySelectorAll('#' + tableId + ' tbody tr');
+                rows.forEach(row => {
+                    const col1 = row.querySelector('td:nth-child(1)').textContent.toUpperCase();
+                    const col2 = row.querySelector('td:nth-child(2)').textContent.toUpperCase();
+                    row.style.display = (col1.indexOf(filtro) > -1 || col2.indexOf(filtro) > -1) ? '' : 'none';
+                });
             });
-        });
+        }
     }
-}
-setupFilter('filterComponentesModal', 'componentesModalTable');
+    setupFilter('filterComponentesModal', 'componentesModalTable');
 </script>
 
 <script>
@@ -145,10 +151,10 @@ setupFilter('filterComponentesModal', 'componentesModalTable');
             let descricao = $(this).data("descricao");
             let preco = $(this).data("preco");
 
-            let tabela = $("#tabela-formulacao");
+            let tabela = $("#tabela-componente");
 
             let novaLinha = `
-                <tr>
+                <tr class="linha-adicionada" data-id="${id}">
                     <td><input type="hidden" name="componentes[]" value="${id}">${id}</td>
                     <td>${descricao}</td>
                     <td>R$ ${preco}</td>
@@ -157,8 +163,9 @@ setupFilter('filterComponentesModal', 'componentesModalTable');
                 </tr>
             `;
 
+
             tabela.append(novaLinha);
-            $("#modalComponentes").modal("hide");
+            //  $("#modalComponentes").modal("hide");
         });
 
         $(document).on("click", ".remover-componente", function () {
@@ -194,6 +201,23 @@ setupFilter('filterComponentesModal', 'componentesModalTable');
         });
     });
 </script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        for (let i = 0; i < 8; i++) {
+            let campo = document.getElementById(`tamanhos-${i}-nome`);
+            if (campo) {
+                campo.addEventListener("input", function () {
+                    let valor = campo.value.replace(/\D/g, ''); // Remove tudo que não é número
 
+                    if (valor.length > 2) {
+                        valor = valor.slice(0, 2) + '/' + valor.slice(2);
+                    }
+
+                    campo.value = valor;
+                });
+            }
+        }
+    });
+</script>
 
 {% endblock %}

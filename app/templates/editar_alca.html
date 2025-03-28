@@ -69,7 +69,7 @@
                     <th>Ação</th>
                 </tr>
             </thead>
-            <tbody id="tabela-formulacao">
+            <tbody id="tabela-componente">
                 {% for item in alca.formulacao %}
                 <tr data-id="{{ item.componente.id }}">
                     <td>
@@ -127,7 +127,8 @@
                             <td>
                                 <button type="button" class="btn btn-success btn-sm selecionar-componente"
                                     data-id="{{ componente.id }}" data-descricao="{{ componente.descricao }}"
-                                    data-preco="{{ "%.2f"|format(componente.preco) }}">
+                                    data-preco="{{ "%.2f"|format(componente.preco) }}"
+                                    data-tipo="componente">
                                     Selecionar
                                 </button>
                             </td>
@@ -169,7 +170,7 @@ setupFilter('filterComponentesModal', 'componentesModalTable');
             console.log("Selecionando componente - ID:", id);
 
             let novaLinha = `
-                <tr>
+                <tr class="linha-adicionada" data-id="${id}">
                     <td><input type="hidden" name="componentes[]" value="${id}">${id}</td>
                     <td>${descricao}</td>
                     <td>R$ ${preco}</td>
@@ -178,8 +179,8 @@ setupFilter('filterComponentesModal', 'componentesModalTable');
                 </tr>
             `;
 
-            $("#tabela-formulacao").append(novaLinha);
-            $("#modalComponentes").modal("hide");
+            $("#tabela-componente").append(novaLinha);
+         //   $("#modalComponentes").modal("hide");
         });
 
         $(document).on("click", ".remover-componente", function () {
@@ -208,6 +209,24 @@ setupFilter('filterComponentesModal', 'componentesModalTable');
         });
     });
 
+</script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        for (let i = 0; i < 8; i++) {
+            let campo = document.getElementById(`tamanhos-${i}-nome`);
+            if (campo) {
+                campo.addEventListener("input", function () {
+                    let valor = campo.value.replace(/\D/g, ''); // Remove tudo que não é número
+
+                    if (valor.length > 2) {
+                        valor = valor.slice(0, 2) + '/' + valor.slice(2);
+                    }
+
+                    campo.value = valor;
+                });
+            }
+        }
+    });
 </script>
 
 {% endblock %}

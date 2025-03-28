@@ -29,6 +29,8 @@
             <!-- Formulário de Login -->
             <form method="POST" action="{{ url_for('auth.login') }}">
                 {{ form.hidden_tag() }}
+                <input type="hidden" name="next" value="{{ request.args.get('next') }}">
+
 
                 <div class="mb-3">
                     {{ form.nome.label(class="form-label fw-bold") }}

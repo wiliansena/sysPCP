@@ -22,10 +22,13 @@
             <td>{{ troca.maquina.codigo }} - {{ troca.maquina.descricao }}</td>
             <td>{{ troca.operador.nome }}</td>
             <td>
-                <a href="{{ url_for('routes.ver_troca_matriz', id=troca.id) }}" class="btn btn-info btn-sm">Ver</a>
-                <a href="{{ url_for('routes.editar_troca_matriz', id=troca.id) }}" class="btn btn-warning btn-sm">Editar</a>
+                <a href="{{ url_for('routes.ver_troca_matriz', id=troca.id) }}" class="btn btn-info btn-sm">
+                    <i class="bi bi-eye"></i> Ver</a>
+                <a href="{{ url_for('routes.editar_troca_matriz', id=troca.id) }}" class="btn btn-warning btn-sm">
+                    <i class="fas fa-edit"></i> Editar</a>
                 <form action="{{ url_for('routes.excluir_troca_matriz', id=troca.id) }}" method="post" style="display:inline;">
-                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Tem certeza?')">Excluir</button>
+                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Tem certeza?')">
+                        <i class="fas fa-trash-alt"></i> Excluir</button>
                 </form>
             </td>
         </tr>

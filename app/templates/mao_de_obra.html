@@ -26,9 +26,11 @@
                     <td>R$ {{ "%.2f"|format(mao.preco_bruto) }}</td>
                     <td>R$ {{ "%.2f"|format(mao.diaria) }}</td>
                     <td>
-                        <a href="{{ url_for('routes.editar_mao_de_obra', id=mao.id) }}" class="btn btn-warning btn-sm">Editar</a>
+                        <a href="{{ url_for('routes.editar_mao_de_obra', id=mao.id) }}" class="btn btn-warning btn-sm">
+                            <i class="fas fa-edit"></i> Editar</a>
                         <form action="{{ url_for('routes.excluir_mao_de_obra', id=mao.id) }}" method="post" style="display:inline;">
-                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Tem certeza que deseja excluir?')">Excluir</button>
+                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Tem certeza que deseja excluir?')">
+                                <i class="fas fa-trash-alt"></i> Excluir</button>
                         </form>
                     </td>
                 </tr>

@@ -8,7 +8,7 @@
 
         <div class="row">
             <div class="col-md-6">
-                <label for="pedido">Pedido</label>
+                <label for="pedido">Pedido <span style="color: red;">*</span></label>
                 {{ form.pedido(class="form-control") }}
             </div>
 
@@ -109,10 +109,11 @@
             </div>
         </div>
 
-        <div class="d-grid gap-2 mt-4">
-            <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Salvar Alterações</button>
+        <div class="mt-4">
+            <button type="submit" class="btn btn-success me-2"><i class="fas fa-save"></i> Salvar Alterações</button>
             <a href="{{ url_for('routes.listar_margens_pedido') }}" class="btn btn-secondary">Cancelar</a>
         </div>
+        
     </form>
 </div>
 
@@ -141,7 +142,7 @@
                             <td>{{ referencia.codigo_referencia }}</td>
                             <td>{{ referencia.descricao }}</td>
                             <td>
-                                <button type="button" class="btn btn-success btn-sm select-referencia"
+                                <button type="button" class="btn btn-success btn-sm selecionar-referencia"
                                     data-id="{{ referencia.id }}" data-codigo="{{ referencia.codigo_referencia }}"
                                     data-descricao="{{ referencia.descricao }}">
                                     Selecionar
@@ -163,10 +164,16 @@
 <!-- Script para manipular seleção de referências -->
 <script>
     $(document).ready(function () {
-        $(".select-referencia").click(function () {
+        $(".selecionar-referencia").click(function () {
             let id = $(this).data("id");
             let codigo = $(this).data("codigo");
             let descricao = $(this).data("descricao");
+
+            // Verifica se já existe uma linha com esse ID ou CÓDIGO
+            if (document.querySelector(`#referencia_${id}`) || document.querySelector(`#referencia_${codigo}`)) {
+                alert("Essa referência já foi adicionada.");
+                return; // Impede duplicação
+            }
 
             let row = `<tr id='referencia_${id}'>
                 <input type='hidden' name='referencia_id[]' value='${id}'>

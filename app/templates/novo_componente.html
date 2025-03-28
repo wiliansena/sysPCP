@@ -1,15 +1,29 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h2>Novo Componente</h2>
-<hr>
 
-<br>
-<br>
-<form method="POST" action="{{ url_for('routes.importar_componentes') }}" enctype="multipart/form-data">
-    <input type="file" name="file" accept=".xls,.xlsx" required>
-    <button type="submit" class="btn btn-primary">Importar Excel</button>
-</form>
+<div class="card mt-4 shadow-sm">
+    <div class="card-body py-3">
+      <h6 class="card-title mb-3">📥 Importar Componentes (.xlsx)</h6>
+      <p class="text-muted mb-3">Apenas arquivos <strong>.xlsx</strong> (Excel) são permitidos.</p>
+      <form method="POST" action="{{ url_for('routes.importar_componentes') }}" enctype="multipart/form-data">
+        <div class="row g-2 align-items-center">
+          <div class="col-auto">
+            <input type="file" name="file" accept=".xls,.xlsx" class="form-control form-control-sm" required>
+          </div>
+          <div class="col-auto">
+            <button type="submit" class="btn btn-sm btn-primary">
+              <i class="fas fa-upload me-1"></i> Importar
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  
+<hr>
+<h2>Novo Componente</h2>
 <hr>
 <form method="POST">
     {{ form.hidden_tag() }}
@@ -39,7 +53,7 @@
         {{ form.preco(class="form-control") }}
     </div>
 
-    <button type="submit" class="btn btn-success">{{ form.submit.label.text }}</button>
+    <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> {{ form.submit.label.text }}</button>
     <a href="{{ url_for('routes.listar_componentes') }}" class="btn btn-secondary">Cancelar</a>
 </form>
 

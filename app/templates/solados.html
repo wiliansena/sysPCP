@@ -52,11 +52,15 @@
                 <td>R$ {{ "%.2f"|format(solado.preco_total_friso) }}</td>
                 <td><strong>R$ {{ "%.2f"|format(solado.custo_total) }}</strong></td>
                 <td>
-                    <a href="{{ url_for('routes.ver_solado', id=solado.id) }}" class="btn btn-info btn-sm">Ver</a>
-                    <a href="{{ url_for('routes.editar_solado', id=solado.id) }}" class="btn btn-warning btn-sm">Editar</a>
-                    <a href="{{ url_for('routes.copiar_solado', id=solado.id) }}" class="btn btn-primary btn-sm">Copiar</a>
+                    <a href="{{ url_for('routes.ver_solado', id=solado.id) }}" class="btn btn-info btn-sm">
+                        <i class="bi bi-eye"></i> Ver</a>
+                    <a href="{{ url_for('routes.editar_solado', id=solado.id) }}" class="btn btn-warning btn-sm">
+                        <i class="fas fa-edit"></i> Editar</a>
+                    <a href="{{ url_for('routes.copiar_solado', id=solado.id) }}" class="btn btn-primary btn-sm">
+                        <i class="fa-solid fa-copy"></i> Copiar</a>
                     <form action="{{ url_for('routes.excluir_solado', id=solado.id) }}" method="POST" style="display:inline;">
-                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Tem certeza que deseja excluir este solado?')">Excluir</button>
+                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Tem certeza que deseja excluir este solado?')">
+                            <i class="fas fa-trash-alt"></i> Excluir</button>
                     </form>
                 </td>
             </tr>

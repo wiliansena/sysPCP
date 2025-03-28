@@ -4,8 +4,15 @@ from app import db
 from app.models import Permissao, Usuario
 from app.auth.forms import LoginForm  # Importa o formulário
 from app.auth import bp  # Importa o Blueprint
+from urllib.parse import urlparse, urljoin
 
 from flask import request
+
+# ✅ Função auxiliar para validar o destino do redirecionamento
+def is_safe_url(target):
+    ref_url = urlparse(request.host_url)
+    test_url = urlparse(urljoin(request.host_url, target))
+    return test_url.scheme in ('http', 'https') and ref_url.netloc == test_url.netloc
 
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
@@ -19,16 +26,19 @@ def login():
 
         if user and user.check_password(form.senha.data):
             login_user(user)
-            
-            # FORÇAR O CARREGAMENTO DAS PERMISSÕES CORRETAMENTE NA SESSÃO
-            session["permissoes"] = list(user.todas_permissoes)  # 🔹 Salvar permissões na sessão
-            
-            session.permanent = True
-            session.modified = True  
 
-            
+            session["permissoes"] = list(user.todas_permissoes)
+            session.permanent = True
+            session.modified = True
+
             flash('Login realizado com sucesso!', 'success')
-            print("Permissões do usuário:", user.todas_permissoes)
+
+            # Recupera o destino original da URL
+            next_page = request.form.get('next') or request.args.get('next')
+            print(f"🔎 Valor de next_page recebido: {next_page}")
+            if next_page and next_page.lower() != "none" and is_safe_url(next_page):
+                return redirect(next_page)
+
             return redirect(url_for('routes.home'))
 
         else:

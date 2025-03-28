@@ -26,6 +26,7 @@ from flask import g
 import random, string
 
 
+
 bp = Blueprint('routes', __name__)
 
 UPLOAD_FOLDER = 'app/static/uploads'
@@ -98,6 +99,30 @@ def editar_usuario(id):
         return redirect(url_for('routes.listar_usuarios'))
 
     return render_template('usuarios/editar_usuario.html', form=form, usuario=usuario)
+
+from app.auth.forms import AdminAlterarSenhaForm
+
+@bp.route('/usuarios/alterar_senha/<int:id>', methods=['GET', 'POST'])
+@login_required
+@requer_permissao('usuarios', 'editar')
+def alterar_senha_usuario(id):
+    usuario = Usuario.query.get_or_404(id)
+
+    # 🔐 Só o Admin pode alterar senhas de outros usuários
+    if current_user.nome.lower() != "admin":
+        flash("Apenas o usuário Admin pode alterar senhas de outros usuários.", "danger")
+        return redirect(url_for('routes.listar_usuarios'))
+
+    form = AdminAlterarSenhaForm()
+
+    if form.validate_on_submit():
+        usuario.set_password(form.nova_senha.data)
+        db.session.commit()
+        flash(f"Senha do usuário '{usuario.nome}' alterada com sucesso!", "success")
+        return redirect(url_for('routes.listar_usuarios'))
+
+    return render_template("usuarios/alterar_senha.html", form=form, usuario=usuario)
+
 
 
 @bp.route('/usuarios/permissoes/<int:id>', methods=['GET', 'POST'])

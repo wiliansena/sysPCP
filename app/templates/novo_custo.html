@@ -30,7 +30,7 @@
             {{ form.preco(class="form-control") }}
         </div>
 
-        <button type="submit" class="btn btn-success">{{ form.submit.label.text }}</button>
+        <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> {{ form.submit.label.text }}</button>
         <a href="{{ url_for('routes.listar_custos') }}" class="btn btn-secondary">Cancelar</a>
     </form>
 {% endblock %}

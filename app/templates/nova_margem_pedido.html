@@ -8,25 +8,25 @@
 
         <div class="container mt-4">
             <hr>
-        
+
             <div class="row">
                 <div class="col-md-6">
-                    <label for="pedido">Pedido</label>
+                    <label for="pedido">Pedido <span style="color: red;">*</span></label>
                     <input type="text" id="pedido" name="pedido" class="form-control">
                 </div>
-        
+
                 <div class="col-md-6">
                     <label for="remessa">Remessa</label>
                     <input type="text" id="remessa" name="remessa" class="form-control">
                 </div>
             </div>
-        
+
             <div class="row mt-3">
                 <div class="col-md-6">
                     <label for="nota_fiscal">Nota Fiscal</label>
                     <input type="text" id="nota_fiscal" name="nota_fiscal" class="form-control">
                 </div>
-        
+
                 <div class="col-md-6">
                     <label for="cliente">Cliente</label>
                     <input type="text" id="cliente" name="cliente" class="form-control">
@@ -35,20 +35,29 @@
         </div>
         <hr>
         <!-- Botão para Importar Arquivo -->
-        <h5><strong>Importar Pedido</strong></h5>
-        <h6>(XLSX,CSV)</h6>
+        <h5><strong>📦 Importar Pedido</strong></h5>
+        <p class="text-muted mb-3">Apenas arquivos <strong>.xlsx</strong> (Excel) são permitidos.</p>
         <div class="d-flex align-items-center">
             <input type="file" id="fileInput" class="form-control w-auto">
-            <button type="button" class="btn btn-success ms-2" onclick="importarArquivo()">Importar Arquivo</button>
+            <button type="button" class="btn btn-success ms-2" onclick="importarArquivo()">
+                <i class="fas fa-upload me-1"></i>Importar</button>
         </div>
+        <br>
 
 
         <!-- Seção de Referências -->
         <div class="card mb-3">
             <div class="card-body">
                 <h5 class="card-title">Referências Selecionadas</h5>
-                <button type="button" class="btn btn-primary" data-bs-toggle="modal"
-                    data-bs-target="#modalReferencias">Selecionar Referências</button>
+                <div class="d-flex align-items-center gap-3">
+                    <button type="button" id="botaoSelecionarReferencias" class="btn btn-primary"
+                        data-bs-toggle="modal" data-bs-target="#modalReferencias">
+                        Selecionar Referências
+                    </button>
+                    <span id="mensagem-importacao" class="text-danger fw-bold" style="display: none;">
+                        Referências importadas. Edição manual desativada.
+                    </span>
+                </div>                
                 <table class="table table-sm mt-3">
                     <thead>
                         <tr>
@@ -97,10 +106,11 @@
             </div>
         </div>
 
-        <div class="d-grid gap-2 mt-4">
-            <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Salvar</button>
+        <div class="mt-4">
+            <button type="submit" class="btn btn-success me-2"><i class="fas fa-save"></i> Salvar</button>
             <a href="{{ url_for('routes.listar_margens_pedido') }}" class="btn btn-secondary">Cancelar</a>
         </div>
+        
     </form>
 </div>
 
@@ -129,9 +139,10 @@
                             <td>{{ referencia.codigo_referencia }}</td>
                             <td>{{ referencia.descricao }}</td>
                             <td>
-                                <button type="button" class="btn btn-success btn-sm select-referencia"
+                                <button type="button" class="btn btn-success btn-sm selecionar-referencia"
                                     data-id="{{ referencia.id }}" data-codigo="{{ referencia.codigo_referencia }}"
-                                    data-descricao="{{ referencia.descricao }}">
+                                    data-descricao="{{ referencia.descricao }}"
+                                    data-tipo="referencia">
                                     Selecionar
                                 </button>
                             </td>
@@ -151,7 +162,7 @@
 <!-- Script para manipular seleção de referências MANUALMENTE -->
 <script>
     $(document).ready(function () {
-        $(".select-referencia").click(function () {
+        $(".selecionar-referencia").click(function () {
             let codigo = $(this).data("codigo"); // 🔹 Pegamos o código da referência
             let descricao = $(this).data("descricao");
 
@@ -172,17 +183,13 @@
             </tr>`;
 
             $("#referencias-selecionadas").append(row);
-            $("#modalReferencias").modal("hide");
+          //  $("#modalReferencias").modal("hide");
         });
 
-        $(document).on("click", ".remove-referencia", function () {
-            let codigo = $(this).data("codigo");
-            $(`#referencia_${codigo}`).remove();
-        });
     });
 </script>
 
-<!-- Script para processar o arquivo e preencher a tabela IMPORTAÇÃO -->
+<!-- Script IMPORTAÇÃO -->
 <script>
     function importarArquivo() {
         let file = document.getElementById('fileInput').files[0];
@@ -198,43 +205,73 @@
             method: "POST",
             body: formData
         })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    data.referencias.forEach(ref => {
-                        let row = `<tr id='referencia_${ref.codigo}'>
-                        <input type='hidden' name='referencia_id[]' value='${ref.codigo}'>  <!-- Enviando CÓDIGO, não ID -->
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                data.referencias.forEach(ref => {
+                    let row = `
+                    <tr id='referencia_${ref.codigo}' class="table-warning" data-importado="true">
+                        <input type='hidden' name='referencia_id[]' value='${ref.codigo}'>
+
                         <td>${ref.codigo}</td>
                         <td>${ref.descricao}</td>
-                        <td><input type='number' name='quantidade_${ref.codigo}' class='form-control' min='1' value='${ref.quantidade}'></td>
-                        <td>
-                            <select name='embalagem_${ref.codigo}' class='form-select'>
-                                <option value='Cartucho' ${ref.embalagem === 'Cartucho' ? 'selected' : ''}>Cartucho</option>
-                                <option value='Colmeia' ${ref.embalagem === 'Colmeia' ? 'selected' : ''}>Colmeia</option>
-                                <option value='Saco' ${ref.embalagem === 'Saco' ? 'selected' : ''}>Saco</option>
-                            </select>
-                        </td>
-                        <td><input type='number' step='0.01' name='preco_venda_${ref.codigo}' class='form-control' value='${ref.preco_venda}'></td>
-                        <td><button type='button' class='btn btn-danger btn-sm remove-referencia' data-id='${ref.codigo}'>Remover</button></td>
-                    </tr>`;
 
-                        document.getElementById("referencias-selecionadas").innerHTML += row;
-                    });
-                } else {
-                    alert("Erro ao processar o arquivo.");
-                }
-            })
-            .catch(error => console.error('Erro:', error));
+                        <td>
+                            <input type='number' name='quantidade_${ref.codigo}' class='form-control' min='1' value='${ref.quantidade}' readonly>
+                        </td>
+
+                        <td>
+                            <select class='form-select' disabled>
+                                <option selected>${ref.embalagem}</option>
+                            </select>
+                            <input type='hidden' name='embalagem_${ref.codigo}' value='${ref.embalagem}'>
+                        </td>
+
+                        <td>
+                            <input type='number' step='0.01' name='preco_venda_${ref.codigo}' class='form-control' value='${ref.preco_venda}' readonly>
+                        </td>
+
+                        <td>
+                            <button type='button' class='btn btn-danger btn-sm remove-referencia' data-codigo='${ref.codigo}' data-importado="true">Remover</button>
+                        </td>
+                    </tr>
+                    `;
+
+
+                    document.getElementById("referencias-selecionadas").innerHTML += row;
+                });
+
+                // 🔒 Após importar, desabilita o botão de abrir o modal
+                document.querySelector("[data-bs-target='#modalReferencias']").disabled = true;
+                document.getElementById("botaoSelecionarReferencias").disabled = true;
+                document.getElementById("mensagem-importacao").style.display = "inline";
+
+            } else {
+                alert("Erro ao processar o arquivo.");
+            }
+        })
+        .catch(error => console.error('Erro:', error));
     }
 
 
-    // Evento para remover referência da lista
+    // Evento para remover referência da lista MANUAL OU IMPORTADA
     document.addEventListener("click", function (event) {
         if (event.target.classList.contains("remove-referencia")) {
-            let codigo = event.target.getAttribute("data-codigo");
+            let button = event.target;
+            let codigo = button.getAttribute("data-codigo");
+            let importado = button.getAttribute("data-importado") === "true";
+
+            if (importado) {
+                let confirmar = confirm("Essa referência veio de um arquivo importado.\nTem certeza que deseja removê-la?");
+                if (!confirmar) return;
+            }
+
+            // Remove a linha
             document.getElementById(`referencia_${codigo}`).remove();
+
         }
     });
+
 </script>
 
 

@@ -56,15 +56,19 @@
                         <td>{{ "%.2f"|format(referencia.custo_total_embalagem2) }}</td>
                         <td>{{ "%.2f"|format(referencia.custo_total_embalagem3) }}</td>
                         <td>
-                            <a href="{{ url_for('routes.ver_referencia', id=referencia.id) }}" class="btn btn-info btn-sm">Ver</a>
+                            <a href="{{ url_for('routes.ver_referencia', id=referencia.id) }}" class="btn btn-info btn-sm">
+                                <i class="bi bi-eye"></i> Ver</a>
                             <a href="{{ url_for('routes.editar_referencia', id=referencia.id) }}"
-                               class="btn btn-warning btn-sm">Editar</a>
+                               class="btn btn-warning btn-sm">
+                               <i class="fas fa-edit"></i> Editar</a>
                             <a href="{{ url_for('routes.copiar_referencia', id=referencia.id) }}" 
-                               class="btn btn-primary btn-sm">Copiar</a>
+                               class="btn btn-primary btn-sm">
+                               <i class="fa-solid fa-copy"></i> Copiar</a>
                             <form action="{{ url_for('routes.excluir_referencia', id=referencia.id) }}"
                                method="POST" class="form-excluir" style="display:inline;">
                                 <input type="hidden" name="confirmacao">
-                                <button type="submit" class="btn btn-danger btn-sm btn-excluir">Excluir</button>
+                                <button type="submit" class="btn btn-danger btn-sm btn-excluir">
+                                    <i class="fas fa-trash-alt"></i> Excluir</button>
                             </form>
                         </td>
                     </tr>

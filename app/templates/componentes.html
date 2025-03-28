@@ -52,11 +52,13 @@
             <td>R$ {{ "%.2f"|format(componente.preco) }}</td>
             <td>
                 <a href="{{ url_for('routes.editar_componente', id=componente.id) }}"
-                    class="btn btn-warning btn-sm">Editar</a>
+                    class="btn btn-warning btn-sm">
+                    <i class="fas fa-edit"></i> Editar</a>
                 <form action="{{ url_for('routes.excluir_componente', id=componente.id) }}" method="post"
                     style="display:inline;">
                     <button type="submit" class="btn btn-danger btn-sm"
-                        onclick="return confirm('Tem certeza que deseja excluir?')">Excluir</button>
+                        onclick="return confirm('Tem certeza que deseja excluir?')">
+                        <i class="fas fa-trash-alt"></i> Excluir</button>
                 </form>
             </td>
         </tr>

@@ -24,9 +24,11 @@
                     <td>{{ custo.unidade_medida }}</td>
                     <td>R$ {{ "%.2f"|format(custo.preco) }}</td>
                     <td>
-                        <a href="{{ url_for('routes.editar_custo', id=custo.id) }}" class="btn btn-warning btn-sm">Editar</a>
+                        <a href="{{ url_for('routes.editar_custo', id=custo.id) }}" class="btn btn-warning btn-sm">
+                            <i class="fas fa-edit"></i> Editar</a>
                         <form action="{{ url_for('routes.excluir_custo', id=custo.id) }}" method="post" style="display:inline;">
-                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Tem certeza?')">Excluir</button>
+                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Tem certeza?')">
+                                <i class="fas fa-trash-alt"></i> Excluir</button>
                         </form>
                     </td>
                 </tr>

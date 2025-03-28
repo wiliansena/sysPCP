@@ -94,7 +94,7 @@
         </tbody>
     </table>
 
-    <button type="submit" class="btn btn-success">Salvar</button>
+    <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Salvar</button>
     <a href="{{ url_for('routes.listar_trocas_matriz') }}" class="btn btn-secondary">Cancelar</a>
 </form>
 <script>
@@ -102,13 +102,17 @@
         let camposHorario = document.querySelectorAll("input[name*='inicio'], input[name*='fim']");
 
         camposHorario.forEach(campo => {
-            campo.addEventListener("input", function () {
-                let valor = this.value.replace(/\D/g, ''); // Remove caracteres não numéricos
-                if (valor.length >= 2) {
+            let previousValue = "";
+
+            campo.addEventListener("input", function (e) {
+                let valor = this.value.replace(/\D/g, ''); // Só números
+                if (valor.length > 2) {
                     valor = valor.substring(0, 2) + ":" + valor.substring(2, 4);
                 }
                 this.value = valor;
+                previousValue = valor;
             });
+
 
             // Garante que ao perder o foco, o formato esteja correto
             campo.addEventListener("blur", function () {

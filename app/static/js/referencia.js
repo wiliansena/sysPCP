@@ -25,7 +25,7 @@ $(document).ready(function () {
         let consumoInput = tipo.includes("embalagem") ? `consumo_${tipo}[]` : `${tipo}_consumo[]`;
 
         let novaLinha = `
-            <tr data-id="${id}">
+            <tr class="linha-adicionada" data-id="${id}">
                 <td><input type="hidden" name="${nomeInput}" value="${id}">${id}</td>
                 <td>${descricao}</td>
                 <td>R$ ${parseFloat(preco).toFixed(2)}</td>
@@ -47,7 +47,7 @@ $(document).ready(function () {
     // 🔹 Mantendo a estrutura original dos botões para custo operacional e mão de obra
     $(document).on("click", ".selecionar-custo", function () {
         adicionarItemNaTabela("custo", $(this).data("id"), $(this).data("descricao"), $(this).data("preco"));
-        $("#modalCustos").modal("hide");
+      //  $("#modalCustos").modal("hide");
     });
 
     $(document).on("click", ".selecionar-mao", function () {
@@ -69,7 +69,7 @@ $(document).ready(function () {
         }
     
         let novaLinha = `
-            <tr data-id="${id}">
+            <tr class="linha-adicionada" data-id="${id}">
                 <td><input type="hidden" name="mao_obra_id[]" value="${id}">${id}</td>
                 <td>${descricao}</td>
                 <td>R$ ${parseFloat(diaria).toFixed(2)}</td>
@@ -82,7 +82,7 @@ $(document).ready(function () {
         tabela.append(novaLinha);
         console.log(`✅ Item adicionado: ${descricao} (ID: ${id}) na tabela 'mao_obra'.`);
     
-        $("#modalMaoObra").modal("hide");
+      //  $("#modalMaoObra").modal("hide");
     });
     
 

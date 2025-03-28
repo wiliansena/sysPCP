@@ -22,9 +22,13 @@
                 <td>{{ usuario.id }}</td>
                 <td>{{ usuario.nome }}</td>
                 <td class="text-center">
-                    <a href="{{ url_for('routes.gerenciar_permissoes', id=usuario.id) }}" class="btn btn-primary btn-sm">
+                    <a href="{{ url_for('routes.gerenciar_permissoes', id=usuario.id) }}"
+                        class="btn btn-primary btn-sm">
                         <i class="fas fa-user-shield"></i> Permissões
                     </a>
+                    <a href="{{ url_for('routes.alterar_senha_usuario', id=usuario.id) }}" class="btn btn-warning btn-sm">
+                        <i class="fas fa-key"></i> Alterar Senha
+
                 </td>
             </tr>
             {% endfor %}

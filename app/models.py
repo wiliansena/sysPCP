@@ -296,8 +296,9 @@ class Solado(db.Model):
         peso_friso_total = sum(Decimal(str(t.peso_friso)) * Decimal(str(t.quantidade)) for t in self.tamanhos) / total_grade if total_grade else Decimal(0)
         peso_sem_friso_total = sum(Decimal(str(t.peso_sem_friso)) * Decimal(str(t.quantidade)) for t in self.tamanhos) / total_grade if total_grade else Decimal(0)
         
-            # 🔹 Arredonda peso_sem_friso_total para **três casas decimais**
+            # 🔹 Arredonda para **três casas decimais**
         peso_sem_friso_total = peso_sem_friso_total.quantize(Decimal('0.001'), rounding=ROUND_HALF_UP)
+        peso_medio_total = peso_medio_total.quantize(Decimal('0.001'), rounding=ROUND_HALF_UP)
 
         return total_grade, round(peso_medio_total, 6), round(peso_friso_total, 6), round(peso_sem_friso_total, 6)
 

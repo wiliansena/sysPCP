@@ -23,7 +23,7 @@ $(document).ready(function () {
             : "";
 
         let novaLinha = `
-            <tr data-id="${id}">
+            <tr class="linha-adicionada" data-id="${id}">
                 <td><input type="hidden" name="${nomeInput}" value="${id}">${id}</td>
                 <td>${descricao}</td>
                 <td>R$ ${parseFloat(preco).toFixed(6)}</td>

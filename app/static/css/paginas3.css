@@ -60,6 +60,7 @@ h2, h4 {
     border-color: #007bff;
 }
 
+
 /* 🔹 Botões 3D */
 
 .btn {
@@ -69,6 +70,7 @@ h2, h4 {
     transition: all 0.3s ease-in-out;
     box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.2), -2px -2px 4px rgba(255, 255, 255, 0.6);
 }
+
 
 .btn:hover {
     transform: translateY(-3px);
@@ -99,6 +101,24 @@ h2, h4 {
     border: none;
     color: white;
 }
+
+
+
+
+.modal-dialog {
+    width: auto;
+    max-width: 800px; /* ajuste conforme o limite que deseja */
+    margin: 1.75rem auto;
+  }
+  
+  .modal-content {
+    width: 100%;
+  }
+  
+  
+
+
+
 
 /* 🔹 Ajustando o botão ao clicar */
 .btn:active {
@@ -345,6 +365,16 @@ h2, h4 {
     margin-top: 70px;
     padding: 20px;
 }
+
+/* 🔹 Linhas adicionadas manualmente via modal */
+/* Destaque em linhas adicionadas */
+.table tbody tr.linha-adicionada td {
+    background-color: #fff3cd !important; /* amarelo claro */
+    transition: background-color 0.5s ease-in-out;
+}
+
+
+
 
 
 @media print {

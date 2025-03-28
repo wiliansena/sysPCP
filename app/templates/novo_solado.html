@@ -18,11 +18,14 @@
             <label>Descrição</label>
             {{ form.descricao(class="form-control") }}
         </div>
-
-        <div class="form-group">
-            <label>Imagem do Solado</label>
-            {{ form.imagem(class="form-control-file") }}
+        <hr>
+        <div class="col-md-3">
+            <div class="form-group">
+                <label>Imagem do solado</label>
+                {{ form.imagem(class="form-control-file") }}
+            </div>
         </div>
+        <hr>
 
         <h4>Ficha Técnica</h4>
         <table class="table table-bordered">
@@ -78,7 +81,7 @@
                     <th>Ação</th>
                 </tr>
             </thead>
-            <tbody id="tabela-formulacao">
+            <tbody id="tabela-sem_friso">
                 {% for item in form.formulacao %}
                 <tr data-id="{{ item.componente_id.data }}">
                     <td>
@@ -120,7 +123,7 @@
                     <th>Ação</th>
                 </tr>
             </thead>
-            <tbody id="tabela-formulacao-friso">
+            <tbody id="tabela-friso">
                 {% for item in form.formulacao %}
                 <tr data-id="{{ item.componente_id.data }}">
                     <td>
@@ -148,7 +151,7 @@
         </table>
 
 
-        <button type="submit" class="btn btn-success">Salvar</button>
+        <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Salvar</button>
         <a href="{{ url_for('routes.listar_solados') }}" class="btn btn-secondary">Cancelar</a>
     </form>
 </div>
@@ -183,11 +186,11 @@
                         <tr>
                             <td>{{ componente.codigo }}</td>
                             <td>{{ componente.descricao }}</td>
-                            <td>R$ {{ "%.6f"|format(componente.preco) }}</td>
+                            <td>R$ {{ "%.4f"|format(componente.preco) }}</td>
                             <td>
                                 <button type="button" class="btn btn-success btn-sm selecionar-componente"
                                     data-id="{{ componente.id }}" data-descricao="{{ componente.descricao }}"
-                                    data-preco="{{ " %.6f"|format(componente.preco) }}" data-tipo="sem_friso">
+                                    data-preco="{{ " %.4f"|format(componente.preco) }}" data-tipo="sem_friso">
                                     Selecionar
                                 </button>
                             </td>
@@ -231,11 +234,11 @@
                         <tr>
                             <td>{{ componente.codigo }}</td>
                             <td>{{ componente.descricao }}</td>
-                            <td>R$ {{ "%.6f"|format(componente.preco) }}</td>
+                            <td>R$ {{ "%.4f"|format(componente.preco) }}</td>
                             <td>
                                 <button type="button" class="btn btn-success btn-sm selecionar-componente"
                                     data-id="{{ componente.id }}" data-descricao="{{ componente.descricao }}"
-                                    data-preco="{{ " %.6f"|format(componente.preco) }}" data-tipo="friso">
+                                    data-preco="{{ " %.4f"|format(componente.preco) }}" data-tipo="friso">
                                     Selecionar
                                 </button>
                             </td>
@@ -282,9 +285,9 @@
             // Define a tabela correta com base no tipo do componente
             let tabela;
             if (tipo === "friso") {
-                tabela = $("#tabela-formulacao-friso");
+                tabela = $("#tabela-friso");
             } else {
-                tabela = $("#tabela-formulacao");
+                tabela = $("#tabela-sem_friso");
             }
 
             // Garante que a tabela foi identificada corretamente
@@ -294,7 +297,7 @@
             }
 
             let novaLinha = `
-            <tr>
+            <tr class="linha-adicionada" data-id="${id}">
                 <td><input type="hidden" name="componentes_${tipo}[]" value="${id}">${id}</td>
                 <td>${descricao}</td>
                 <td>R$ ${preco}</td>
@@ -304,7 +307,7 @@
         `;
 
             tabela.append(novaLinha);
-            $("#modalComponentes, #modalComponentesFriso").modal("hide");  // Fecha os modais corretamente
+         //   $("#modalComponentes, #modalComponentesFriso").modal("hide");  // Fecha os modais corretamente
         });
 
         $(document).on("click", ".remover-componente", function () {
@@ -342,4 +345,24 @@
     });
 
 </script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        for (let i = 0; i < 8; i++) {
+            let campo = document.getElementById(`tamanhos-${i}-nome`);
+            if (campo) {
+                campo.addEventListener("input", function () {
+                    let valor = campo.value.replace(/\D/g, ''); // Remove tudo que não é número
+
+                    if (valor.length > 2) {
+                        valor = valor.slice(0, 2) + '/' + valor.slice(2);
+                    }
+
+                    campo.value = valor;
+                });
+            }
+        }
+    });
+</script>
+
 {% endblock %}

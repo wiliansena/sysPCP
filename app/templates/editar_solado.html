@@ -81,7 +81,7 @@
                     <th>Ação</th>
                 </tr>
             </thead>
-            <tbody id="tabela-formulacao">
+            <tbody id="tabela-sem_friso">
                 {% for item in solado.formulacao %}
                 <tr data-id="{{ item.componente.id }}">
                     <td><input type="hidden" name="componentes_sem_friso[]" value="{{ item.componente.id }}">{{ item.componente.id }}</td>
@@ -109,7 +109,7 @@
                     <th>Ação</th>
                 </tr>
             </thead>
-            <tbody id="tabela-formulacao-friso">
+            <tbody id="tabela-friso">
                 {% for item in solado.formulacao_friso %}
                 <tr data-id="{{ item.componente.id }}">
                     <td><input type="hidden" name="componentes_friso[]" value="{{ item.componente.id }}">{{ item.componente.id }}</td>
@@ -259,9 +259,9 @@ setupFilter('filterComponentesFriso', 'componentesFrisoTable');
             // Define a tabela correta com base no tipo do componente
             let tabela;
             if (tipo === "friso") {
-                tabela = $("#tabela-formulacao-friso");
+                tabela = $("#tabela-friso");
             } else {
-                tabela = $("#tabela-formulacao");
+                tabela = $("#tabela-sem_friso");
             }
 
             // Garante que a tabela foi identificada corretamente
@@ -271,7 +271,7 @@ setupFilter('filterComponentesFriso', 'componentesFrisoTable');
             }
 
             let novaLinha = `
-            <tr>
+            <tr class="linha-adicionada" data-id="${id}">
                 <td><input type="hidden" name="componentes_${tipo}[]" value="${id}">${id}</td>
                 <td>${descricao}</td>
                 <td>R$ ${preco}</td>
@@ -281,7 +281,7 @@ setupFilter('filterComponentesFriso', 'componentesFrisoTable');
         `;
 
             tabela.append(novaLinha);
-            $("#modalComponentes, #modalComponentesFriso").modal("hide");  // Fecha os modais corretamente
+           // $("#modalComponentes, #modalComponentesFriso").modal("hide");  // Fecha os modais corretamente
         });
 
         $(document).on("click", ".remover-componente", function () {
@@ -319,5 +319,22 @@ setupFilter('filterComponentesFriso', 'componentesFrisoTable');
     });
 
 </script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        for (let i = 0; i < 8; i++) {
+            let campo = document.getElementById(`tamanhos-${i}-nome`);
+            if (campo) {
+                campo.addEventListener("input", function () {
+                    let valor = campo.value.replace(/\D/g, ''); // Remove tudo que não é número
 
+                    if (valor.length > 2) {
+                        valor = valor.slice(0, 2) + '/' + valor.slice(2);
+                    }
+
+                    campo.value = valor;
+                });
+            }
+        }
+    });
+</script>
 {% endblock %}
