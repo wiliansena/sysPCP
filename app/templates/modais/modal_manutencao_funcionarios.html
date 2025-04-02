@@ -1,0 +1,49 @@
+<!-- Modal Solicitante -->
+<div class="modal fade" id="modalSolicitante" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Selecionar Solicitante</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table table-bordered">
+                    <thead><tr><th>Nome</th><th>Ação</th></tr></thead>
+                    <tbody>
+                        {% for f in funcionarios %}
+                        <tr>
+                            <td>{{ f.nome }}</td>
+                            <td><button type="button" class="btn btn-primary btn-sm selecionar-funcionario" data-id="{{ f.id }}" data-nome="{{ f.nome }}" data-tipo="solicitante">Selecionar</button></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Responsável -->
+<div class="modal fade" id="modalResponsavel" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Selecionar Responsável</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table table-bordered">
+                    <thead><tr><th>Nome</th><th>Ação</th></tr></thead>
+                    <tbody>
+                        {% for f in funcionarios %}
+                        <tr>
+                            <td>{{ f.nome }}</td>
+                            <td><button type="button" class="btn btn-primary btn-sm selecionar-funcionario" data-id="{{ f.id }}" data-nome="{{ f.nome }}" data-tipo="responsavel">Selecionar</button></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,3 +1,7 @@
+
+// BOTÕES DE SELEÇÃO DOS MODAIS, MARCA COMO SELECIONADO.
+
+
 document.addEventListener("DOMContentLoaded", function () {
     function atualizarBotoesSelecionados() {
         const botoes = document.querySelectorAll("button[data-tipo]");

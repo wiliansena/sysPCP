@@ -1,0 +1,148 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h2>Relatório de Manutenções</h2>
+<hr>
+
+<!-- Formulário de Filtros -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" style="height: 50px;">
+    <div class="text-end">
+        <small>Data da Emissão: {{ data_emissao.strftime('%d/%m/%Y %H:%M') }}</small>
+        <small>Usuário: {{ current_user.nome }}</small>
+    </div>
+</div>
+<form method="get" class="row mb-4">
+
+    <div class="col-md-2">
+        <label>ID da Manutenção</label>
+        <input type="number" name="id" value="{{ filtros.id }}" class="form-control" placeholder="ID">
+    </div>
+    
+
+    <div class="col-md-2">
+        <label>Status</label>
+        <select name="status" class="form-select">
+            <option value="">Todos</option>
+            <option {% if filtros.status=='Aberto' %}selected{% endif %}>Aberto</option>
+            <option {% if filtros.status=='Verificando' %}selected{% endif %}>Verificando</option>
+            <option {% if filtros.status=='Finalizado' %}selected{% endif %}>Finalizado</option>
+        </select>
+    </div>
+
+    <div class="col-md-2">
+        <label>Prioridade</label>
+        <select name="prioridade" class="form-select">
+            <option value="">Todas</option>
+            <option {% if filtros.prioridade=='Baixa' %}selected{% endif %}>Baixa</option>
+            <option {% if filtros.prioridade=='Normal' %}selected{% endif %}>Normal</option>
+            <option {% if filtros.prioridade=='Alta' %}selected{% endif %}>Alta</option>
+            <option {% if filtros.prioridade=='Urgente' %}selected{% endif %}>Urgente</option>
+        </select>
+    </div>
+
+    <div class="col-md-3">
+        <label>Responsável</label>
+        <select name="responsavel_id" class="form-select">
+            <option value="">Todos</option>
+            {% for f in funcionarios %}
+            <option value="{{ f.id }}" {% if filtros.responsavel_id==f.id|string %}selected{% endif %}>{{ f.nome }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="col-md-3">
+        <label>Solicitante</label>
+        <select name="solicitante_id" class="form-select">
+            <option value="">Todos</option>
+            {% for f in funcionarios %}
+            <option value="{{ f.id }}" {% if filtros.solicitante_id==f.id|string %}selected{% endif %}>{{ f.nome }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+    <hr>
+
+    <div class="col-md-2">
+        <label>Data Início (De)</label>
+        <input type="date" name="data_inicio_de" value="{{ filtros.data_inicio_de }}" class="form-control">
+        <label>Data Início (Até)</label>
+        <input type="date" name="data_inicio_ate" value="{{ filtros.data_inicio_ate }}" class="form-control">
+    </div>
+
+    <div class="col-md-2 mt-3 d-flex align-items-end">
+        <button type="submit" class="btn btn-success w-100">Filtrar</button>
+        <a href="{{ url_for('routes.relatorio_manutencoes') }}" class="btn btn-secondary btn-sm ms-2">
+            <i class="fas fa-sync-alt"></i> <!-- Ícone de atualização -->
+        </a>
+    </div>
+    
+
+
+</form>
+<div class="alert alert-info">
+    <strong>Filtros aplicados:</strong>
+    <ul class="mb-0">
+        {% if filtros.id %}<li>ID: {{ filtros.id }}</li>{% endif %}
+        {% if filtros.status %}<li>Status: {{ filtros.status }}</li>{% endif %}
+        {% if filtros.prioridade %}<li>Prioridade: {{ filtros.prioridade }}</li>{% endif %}
+        {% if filtros.responsavel_id %}<li>Responsável ID: {{ filtros.responsavel_id }}</li>{% endif %}
+        {% if filtros.solicitante_id %}<li>Solicitante ID: {{ filtros.solicitante_id }}</li>{% endif %}
+        {% if filtros.data_inicio_de or filtros.data_inicio_ate %}
+            <li>Data Início:
+                {% if filtros.data_inicio_de %} de {{ filtros.data_inicio_de }} {% endif %}
+                {% if filtros.data_inicio_ate %} até {{ filtros.data_inicio_ate }} {% endif %}
+            </li>
+        {% endif %}
+        {% if filtros.data_fim_de or filtros.data_fim_ate %}
+            <li>Data Fim:
+                {% if filtros.data_fim_de %} de {{ filtros.data_fim_de }} {% endif %}
+                {% if filtros.data_fim_ate %} até {{ filtros.data_fim_ate }} {% endif %}
+            </li>
+        {% endif %}
+        {% if not filtros.id and not filtros.status and not filtros.prioridade and not filtros.responsavel_id and not filtros.solicitante_id and not filtros.data_inicio_de and not filtros.data_inicio_ate and not filtros.data_fim_de and not filtros.data_fim_ate %}
+            <li>Nenhum filtro aplicado</li>
+        {% endif %}
+    </ul>
+</div>
+
+<!-- Resultado -->
+<table class="table table-bordered">
+    <thead class="table-light">
+        <tr>
+            <th>#</th>
+            <th>Título</th>
+            <th>Status</th>
+            <th>Prioridade</th>
+            <th>Responsável</th>
+            <th>Solicitante</th>
+            <th>Data Início</th>
+            <th>Data Fim</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for m in manutencoes %}
+        <tr>
+            <td>{{ m.id }}</td>
+            <td>{{ m.titulo }}</td>
+            <td>{{ m.status }}</td>
+            <td>{{ m.prioridade }}</td>
+            <td>{{ m.responsavel.nome if m.responsavel else '-' }}</td>
+            <td>{{ m.solicitante.nome if m.solicitante else '-' }}</td>
+            <td>{{ m.data_inicio.strftime('%d/%m/%Y') }}</td>
+            <td>{{ m.data_fim.strftime('%d/%m/%Y') if m.data_fim else '-' }}</td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="8" class="text-center">Nenhuma manutenção encontrada</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<!-- Botão de Imprimir -->
+<a href="#" onclick="window.print();" class="btn btn-primary mb-3">Imprimir Relatório</a>
+
+{% endblock %}

@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Nova Manutenção</h2>
+<hr>
+
+<form method="POST">
+    {{ form.hidden_tag() }}
+
+    <!-- Status, Tipo e Prioridade -->
+    <div class="row">
+
+        <div class="col-md-4 mb-3">
+            {{ form.titulo.label(class="form-label") }}
+            {{ form.titulo(class="form-control") }}
+        </div>
+        <div class="col-md-4 mb-3">
+            {{ form.status.label(class="form-label") }}
+            {{ form.status(class="form-select") }}
+        </div>
+        <div class="col-md-4 mb-3">
+            {{ form.tipo.label(class="form-label") }}
+            {{ form.tipo(class="form-select") }}
+        </div>
+        <div class="col-md-4 mb-3">
+            {{ form.prioridade.label(class="form-label") }}
+            {{ form.prioridade(class="form-select") }}
+        </div>
+    </div>
+
+    <!-- Solicitante e Responsável -->
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label>Solicitante</label>
+            <div class="input-group">
+                <input type="text" id="solicitante_nome" class="form-control" readonly>
+                <input type="hidden" name="solicitante_id" id="solicitante_id">
+                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalSolicitante" data-tipo="solicitante">Selecionar</button>
+            </div>
+        </div>
+        <div class="col-md-6 mb-3">
+            <label>Responsável</label>
+            <div class="input-group">
+                <input type="text" id="responsavel_nome" class="form-control" readonly>
+                <input type="hidden" name="responsavel_id" id="responsavel_id">
+                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalResponsavel" data-tipo="responsavel">Selecionar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Máquinas -->
+    <h5>Máquinas</h5>
+    <button type="button" class="btn btn-primary btn-sm mb-2" data-bs-toggle="modal" data-bs-target="#modalMaquinas">Adicionar</button>
+    <table class="table table-bordered" id="tabela-maquinas">
+        <thead>
+            <tr>
+                <th>Máquina</th>
+                <th>Ação</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <!-- Componentes -->
+    <h5>Componentes</h5>
+    <button type="button" class="btn btn-primary btn-sm mb-2" data-bs-toggle="modal" data-bs-target="#modalComponentes">Adicionar</button>
+    <table class="table table-bordered" id="tabela-componentes">
+        <thead>
+            <tr>
+                <th>Código</th>
+                <th>Descrição</th>
+                <th>Ação</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <!-- Descrição -->
+    <div class="mb-3">
+        {{ form.descricao.label(class="form-label") }}
+        {{ form.descricao(class="form-control", rows=3) }}
+    </div>
+
+    <button type="submit" class="btn btn-success">Salvar</button>
+    <a href="{{ url_for('routes.listar_manutencoes') }}" class="btn btn-secondary">Cancelar</a>
+</form>
+
+<!-- Modais -->
+{% include 'modais/modal_manutencao_funcionarios.html' %}
+{% include 'modais/modal_manutencao_maquinas.html' %}
+{% include 'modais/modal_manutencao_componentes.html' %}
+
+<script src="{{ url_for('static', filename='js/manutencao.js') }}"></script>
+{% endblock %}

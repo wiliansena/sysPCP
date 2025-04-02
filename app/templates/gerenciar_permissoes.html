@@ -7,7 +7,6 @@
     <form method="POST">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-
         <table class="table table-bordered">
             <thead class="table-dark">
                 <tr>
@@ -16,6 +15,7 @@
                     <th class="text-center">Ver</th>
                     <th class="text-center">Editar</th>
                     <th class="text-center">Excluir</th>
+                    <th class="text-center">Selecionar Tudo</th>
                 </tr>
             </thead>
             <tbody>
@@ -25,18 +25,20 @@
                     {% for acao in acoes %}
                     <td class="text-center">
                         {% if categoria == "trocar_senha" and acao != "editar" %}
-                        <!-- 🔹 Se for "trocar_senha", só mostra checkbox na coluna EDITAR -->
-                        -
+                            -
                         {% else %}
-                        <input type="checkbox" name="{{ categoria }}_{{ acao }}" {% if categoria ~ "_" ~ acao in
-                            permissoes_existentes %}checked{% endif %}>
+                            <input type="checkbox" class="chk-{{ categoria }}" name="{{ categoria }}_{{ acao }}" {% if categoria ~ "_" ~ acao in permissoes_existentes %}checked{% endif %}>
                         {% endif %}
                     </td>
                     {% endfor %}
+                    <td class="text-center">
+                        {% if categoria != "trocar_senha" %}
+                        <input type="checkbox" class="selecionar-tudo" data-categoria="{{ categoria }}">
+                        {% endif %}
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
-
         </table>
 
         <div class="text-end mt-3">
@@ -45,4 +47,14 @@
         </div>
     </form>
 </div>
+
+<script>
+    document.querySelectorAll('.selecionar-tudo').forEach(function(selectAll){
+        selectAll.addEventListener('change', function(){
+            const categoria = this.dataset.categoria;
+            const checkboxes = document.querySelectorAll('.chk-' + categoria);
+            checkboxes.forEach(c => c.checked = this.checked);
+        });
+    });
+</script>
 {% endblock %}

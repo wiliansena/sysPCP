@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h2>Detalhes da Manutenção</h2>
+<hr>
+
+<div class="card">
+    <div class="card-header 
+        {% if manutencao.status == 'Aberto' %} bg-primary text-white
+        {% elif manutencao.status == 'Verificando' %} bg-warning text-dark
+        {% elif manutencao.status == 'Finalizado' %} bg-success text-white
+        {% endif %}
+    ">
+        <h5>#{{ manutencao.id }} - {{ manutencao.titulo }}</h5>
+    </div>
+
+    <div class="card-body">
+        <p><strong>Título:</strong> {{ manutencao.titulo }}</p>
+        <p><strong>Data Início:</strong> {{ manutencao.data_inicio.strftime('%d/%m/%Y %H:%M') }}</p>
+        <p><strong>Data Fim:</strong>
+            {% if manutencao.data_fim %}
+            {{ manutencao.data_fim.strftime('%d/%m/%Y %H:%M') }}
+            {% else %}
+            -
+            {% endif %}
+        </p>
+        <p><strong>Status:</strong> {{ manutencao.status }}</p>
+        <p><strong>Tipo:</strong> {{ manutencao.tipo }}</p>
+        <p><strong>Prioridade:</strong> {{ manutencao.prioridade }}</p>
+        <p><strong>Solicitante:</strong> {{ manutencao.solicitante.nome if manutencao.solicitante else '-' }}</p>
+        <p><strong>Responsável:</strong> {{ manutencao.responsavel.nome if manutencao.responsavel else '-' }}</p>
+        <p><strong>Data Início:</strong> {{ manutencao.data_inicio.strftime('%d/%m/%Y %H:%M') }}</p>
+        <p><strong>Data Fim:</strong> {{ manutencao.data_fim.strftime('%d/%m/%Y %H:%M') if manutencao.data_fim else '-'
+            }}</p>
+        <p><strong>Descrição:</strong><br> {{ manutencao.descricao }}</p>
+
+        <hr>
+
+        <!-- Máquinas -->
+        <h5>Máquinas vinculadas</h5>
+        {% if manutencao.maquinas %}
+        <ul class="list-group mb-3">
+            {% for m in manutencao.maquinas %}
+            <li class="list-group-item">
+                {{ m.maquina.codigo }} - {{ m.maquina.descricao }}
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-muted">Nenhuma máquina vinculada.</p>
+        {% endif %}
+
+        <!-- Componentes -->
+        <h5>Componentes vinculados</h5>
+        {% if manutencao.componentes %}
+        <ul class="list-group">
+            {% for c in manutencao.componentes %}
+            <li class="list-group-item">
+                {{ c.componente.codigo }} - {{ c.componente.descricao }}
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-muted">Nenhum componente vinculado.</p>
+        {% endif %}
+
+    </div>
+</div>
+<hr>
+<div class="d-flex gap-2">
+
+    <a href="{{ url_for('routes.listar_manutencoes') }}" class="btn btn-secondary">Voltar</a>
+
+    <button class="btn btn-primary" onclick="window.print()">
+        <i class="fa fa-print"></i> Imprimir
+    </button>
+
+    <form action="{{ url_for('routes.excluir_manutencao', id=manutencao.id) }}" method="POST" onsubmit="return confirm('Deseja realmente excluir esta manutenção?')">
+        <button type="submit" class="btn btn-danger">
+            <i class="fas fa-trash"></i> Excluir
+        </button>
+    </form>
+
+</div>
+
+{% endblock %}

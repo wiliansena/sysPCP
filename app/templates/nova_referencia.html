@@ -26,9 +26,12 @@
             <select name="colecao_id" id="colecao_id" class="form-control">
                 <option value="">Selecione uma coleção</option>
                 {% for colecao in form.colecao_id.choices %}
-                    <option value="{{ colecao[0] }}">{{ colecao[1] }}</option>
+                    <option value="{{ colecao[0] }}" {% if form.colecao_id.data == colecao[0] %}selected{% endif %}>
+                        {{ colecao[1] }}
+                    </option>
                 {% endfor %}
             </select>
+            
         </div>
         <hr>
 

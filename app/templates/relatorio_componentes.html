@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" style="height: 50px;">
+    <div class="text-end">
+        <small>Data da Emissão: {{ data_emissao.strftime('%d/%m/%Y %H:%M') }}</small>
+        <small>Usuário: {{ current_user.nome }}</small>
+    </div>
+</div>
+
+<h2>Relatório de Componentes por Manutenção</h2>
+
+<!-- Botão para abrir o modal -->
+<button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalManutencoes">
+    Selecionar Manutenções
+</button>
+
+<form method="POST">
+    <table class="table table-bordered" id="tabela-manutencoes">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Título</th>
+                <th>Ação</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+    <button type="submit" class="btn btn-success">Gerar Relatório</button>
+    <a href="{{ url_for('routes.relatorio_componentes_manutencao') }}"
+        class="btn btn-secondary btn-sm ms-2"><i class="fas fa-sync-alt"></i></a><!-- ícone de atualização -->
+</form>
+
+<hr>
+
+{% if resultado %}
+{% for manutencao, data in resultado.items() %}
+<h5>Manutenção #{{ manutencao.id }} - {{ manutencao.titulo or 'Sem Título' }}</h5>
+{% if data.componentes|length == 0 %}
+<p class="text-muted">Nenhum componente nesta manutenção.</p>
+{% else %}
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Código</th>
+            <th>Descrição</th>
+            <th>Preço</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for c in data.componentes %}
+        <tr>
+            <td>{{ c[0] }}</td>
+            <td>{{ c[1] }}</td>
+            <td>R$ {{ "%.2f"|format(c[2]) }}</td>
+        </tr>
+        {% endfor %}
+        <tr>
+            <td colspan="2" class="text-end"><strong>Subtotal:</strong></td>
+            <td><strong>R$ {{ "%.2f"|format(data.subtotal) }}</strong></td>
+        </tr>
+    </tbody>
+</table>
+{% endif %}
+<hr>
+{% endfor %}
+<h5 class="text-end mt-4">Total Geral: <strong>R$ {{ "%.2f"|format(total_geral) }}</strong></h5>
+{% endif %}
+
+<!-- Modal -->
+<div class="modal fade" id="modalManutencoes" tabindex="-1" aria-labelledby="modalManutencoesLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Selecionar Manutenções</h5>
+                <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <input type="text" id="filterManutencoesModal" class="form-control"
+                        placeholder="Filtrar Manutenções">
+                </div>
+                <table class="table" id="manutencoesModalTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Título</th>
+                            <th>Status</th>
+                            <th>Prioridade</th>
+                            <th>Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for m in manutencoes %}
+                        <tr>
+                            <td>{{ m.id }}</td>
+                            <td>{{ m.titulo or 'Sem Título' }}</td>
+                            <td>{{ m.status }}</td>
+                            <td>{{ m.prioridade }}</td>
+                            <td><button type="button" class="btn btn-success btn-sm selecionar-manutencao"
+                                    data-id="{{ m.id }}"
+                                    data-titulo="{{ m.titulo or 'Sem Título' }}">Selecionar</button></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function setupFilter(filterId, tableId) {
+        const filterInput = document.getElementById(filterId);
+        if (filterInput) {
+            filterInput.addEventListener('keyup', function () {
+                const filtro = this.value.toUpperCase();
+                const rows = document.querySelectorAll('#' + tableId + ' tbody tr');
+                rows.forEach(row => {
+                    const col1 = row.querySelector('td:nth-child(1)').textContent.toUpperCase();
+                    const col2 = row.querySelector('td:nth-child(2)').textContent.toUpperCase();
+                    row.style.display = (col1.indexOf(filtro) > -1 || col2.indexOf(filtro) > -1) ? '' : 'none';
+                });
+            });
+        }
+    }
+    setupFilter('filterManutencoesModal', 'manutencoesModalTable');
+
+    $(document).ready(function () {
+        $(document).on("click", ".selecionar-manutencao", function () {
+            let id = $(this).data("id");
+            let titulo = $(this).data("titulo");
+
+            let tabela = $("#tabela-manutencoes");
+
+            if (tabela.find('tr[data-id="' + id + '"]')
+                .length === 0) {
+                let novaLinha = `
+                    <tr data-id="${id}">
+                        <td><input type="hidden" name="manutencoes[]" value="${id}">${id}</td>
+                        <td>${titulo}</td>
+                        <td><button type="button" class="btn btn-danger btn-sm remover-manutencao" style="background-color: #dc3545; color: white;">Remover</button>
+</td>
+                    </tr>
+                `;
+                tabela.append(novaLinha);
+            }
+
+          //  $("#modalManutencoes").modal("hide");
+        });
+
+        $(document).on("click", ".remover-manutencao", function () {
+            $(this).closest("tr").remove();
+        });
+    });
+</script>
+<hr>
+<!-- Botão de Imprimir -->
+<a href="#" onclick="window.print();" class="btn btn-primary mb-3">Imprimir Relatório</a>
+
+{% endblock %}

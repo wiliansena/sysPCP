@@ -1,7 +1,7 @@
 from decimal import Decimal
 from typing import Optional
 from flask_wtf import FlaskForm
-from wtforms import DateField, DecimalField, HiddenField, SelectMultipleField, StringField, SubmitField, FloatField, FileField
+from wtforms import DateField, DecimalField, HiddenField, SelectMultipleField, StringField, SubmitField, FloatField, FileField, TextAreaField
 from wtforms.validators import DataRequired
 from wtforms import SelectField
 from flask_wtf import FlaskForm
@@ -306,6 +306,30 @@ class FuncionarioForm(FlaskForm):
     funcao = SelectField("Função", choices=[("Operador", "Operador"), ("Trocador", "Trocador"), ("Técnico", "Técnico")])
     submit = SubmitField("Salvar")
 
+
+class ManutencaoForm(FlaskForm):
+    tipo = SelectField('Tipo', choices=[('PREVENTIVA', 'Preventiva'), ('CORRETIVA', 'Corretiva'), ('MELHORIA', 'Melhoria')], validators=[DataRequired()])
+    prioridade = SelectField('Prioridade', choices=[('BAIXA', 'Baixa'), ('NORMAL', 'Normal'), ('ALTA', 'Alta'), ('URGENTE', 'Urgente')], validators=[DataRequired()])
+    status = HiddenField()  # inicia automaticamente com "ABERTO"
+    solicitante_id = HiddenField(validators=[DataRequired()])
+    responsavel_id = HiddenField()
+    maquina_id = HiddenField()
+    componente_id = HiddenField()
+    descricao = TextAreaField('Descrição', validators=[DataRequired()])
+
+# forms.py
+
+from flask_wtf import FlaskForm
+from wtforms import StringField, TextAreaField, SelectField, SubmitField
+from wtforms.validators import DataRequired
+
+class ManutencaoForm(FlaskForm):
+    titulo = StringField('Título', validators=[DataRequired(), Length(max=100)])
+    status = SelectField('Status', choices=[('Aberto', 'Aberto'), ('Verificando', 'Verificando'), ('Finalizado', 'Finalizado')])
+    tipo = SelectField('Tipo', choices=[('Preventiva', 'Preventiva'), ('Corretiva', 'Corretiva'), ('Melhoria', 'Melhoria')])
+    prioridade = SelectField('Prioridade', choices=[('Baixa', 'Baixa'), ('Normal', 'Normal'), ('Alta', 'Alta'), ('Urgente', 'Urgente')])  
+
+    descricao = TextAreaField('Descrição', validators=[DataRequired()])
 
 
 

@@ -60,7 +60,6 @@ h2, h4 {
     border-color: #007bff;
 }
 
-
 /* 🔹 Botões 3D */
 
 .btn {
@@ -70,6 +69,23 @@ h2, h4 {
     transition: all 0.3s ease-in-out;
     box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.2), -2px -2px 4px rgba(255, 255, 255, 0.6);
 }
+
+
+
+/* 🔹 Ajuste de espaçamento entre botões dentro do <td> */
+td .btn {
+    margin-right: 5px;
+    margin-bottom: 5px; /* resolve o espaço vertical sem precisar de wrap */
+}
+
+td .btn:last-child {
+    margin-right: 0;
+}
+
+
+
+
+
 
 
 .btn:hover {
@@ -101,24 +117,6 @@ h2, h4 {
     border: none;
     color: white;
 }
-
-
-
-
-.modal-dialog {
-    width: auto;
-    max-width: 800px; /* ajuste conforme o limite que deseja */
-    margin: 1.75rem auto;
-  }
-  
-  .modal-content {
-    width: 100%;
-  }
-  
-  
-
-
-
 
 /* 🔹 Ajustando o botão ao clicar */
 .btn:active {
@@ -366,16 +364,6 @@ h2, h4 {
     padding: 20px;
 }
 
-/* 🔹 Linhas adicionadas manualmente via modal */
-/* Destaque em linhas adicionadas */
-.table tbody tr.linha-adicionada td {
-    background-color: #fff3cd !important; /* amarelo claro */
-    transition: background-color 0.5s ease-in-out;
-}
-
-
-
-
 
 @media print {
     /* Remove sombras, bordas e fundo das divs */
@@ -473,4 +461,52 @@ h2, h4 {
         display: none !important; /* Remove botões e elementos desnecessários na impressão */
     }
 }
+@media print {
+    /* Oculta o formulário e botões */
+    form, .btn, .alert-success, .alert-danger, .alert-warning, .navbar, .sidebar, .footer {
+        display: none !important;
+    }
 
+    /* Ajusta o layout da área de impressão */
+    .alert-info {
+        margin-top: 0;
+    }
+
+    .table {
+        width: 100%;
+        border: 1px solid #000;
+        border-collapse: collapse;
+        font-size: 12px;
+    }
+
+    .table th, .table td {
+        border: 1px solid #000;
+        padding: 4px;
+    }
+
+    /* Título ajustado para impressão */
+    h2 {
+        margin-top: 0;
+    }
+
+    body {
+        background: #fff;
+        color: #000;
+    }
+
+    /* Remove borda, sombra ou elementos decorativos que gastam espaço */
+    .card, .box, .panel {
+        box-shadow: none !important;
+        border: none !important;
+    }
+}
+
+/* Estilo quando estiver em modo tela cheia */
+.content.expandido {
+    margin-left: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    transition: all 0.3s ease;
+}
+
+/* Se a .content tiver um padding/margin lateral fixo, pode ajustar aqui também */

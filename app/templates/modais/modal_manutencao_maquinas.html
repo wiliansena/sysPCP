@@ -1,0 +1,38 @@
+<!-- Modal de Seleção de Máquinas -->
+<div class="modal fade" id="modalMaquinas" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Selecionar Máquina</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Descrição</th>
+                            <th>Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for m in maquinas %}
+                        <tr>
+                            <td>{{ m.codigo }}</td>
+                            <td>{{ m.descricao }}</td>
+                            <td>
+                                <button type="button" class="btn btn-primary btn-sm selecionar-maquina"
+                                    data-id="{{ m.id }}"
+                                    data-codigo="{{ m.codigo }}"
+                                    data-descricao="{{ m.descricao }}">
+                                    Selecionar
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

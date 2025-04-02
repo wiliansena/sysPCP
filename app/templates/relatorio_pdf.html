@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Relatório de Manutenções</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            margin: 20px;
+        }
+
+        h2, h4 {
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #000;
+            padding-bottom: 5px;
+        }
+
+        .footer {
+            position: fixed;
+            bottom: 0;
+            text-align: center;
+            font-size: 10px;
+            width: 100%;
+            border-top: 1px solid #000;
+            padding-top: 5px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            border: 1px solid #000;
+            padding: 5px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f0f0f0;
+        }
+
+        .small {
+            font-size: 10px;
+            color: #555;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <h2>Relatório de Manutenções</h2>
+        <h4>{{ data_atual or '' }}</h4>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Título</th>
+                <th>Status</th>
+                <th>Prioridade</th>
+                <th>Responsável</th>
+                <th>Solicitante</th>
+                <th>Data Início</th>
+                <th>Data Fim</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for m in manutencoes %}
+            <tr>
+                <td>{{ m.id }}</td>
+                <td>{{ m.titulo }}</td>
+                <td>{{ m.status }}</td>
+                <td>{{ m.prioridade }}</td>
+                <td>{{ m.responsavel.nome if m.responsavel else '-' }}</td>
+                <td>{{ m.solicitante.nome if m.solicitante else '-' }}</td>
+                <td>{{ m.data_inicio.strftime('%d/%m/%Y') }}</td>
+                <td>{{ m.data_fim.strftime('%d/%m/%Y') if m.data_fim else '-' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="footer">
+        Relatório gerado em {{ data_atual or '' }} - Sistema de Manutenções
+    </div>
+
+</body>
+
+</html>

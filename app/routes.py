@@ -2,8 +2,8 @@ from sqlite3 import IntegrityError
 from flask import Blueprint, jsonify, render_template, redirect, url_for, flash, request
 from flask_login import current_user, login_required
 from app import db, csrf
-from app.models import FormulacaoSolado, FormulacaoSoladoFriso, Funcionario, LogAcao, Maquina, MargemPorPedido, MargemPorPedidoReferencia, Permissao, Referencia, Componente, CustoOperacional, ReferenciaAlca, ReferenciaComponentes, ReferenciaCustoOperacional, ReferenciaEmbalagem1, ReferenciaEmbalagem2, ReferenciaEmbalagem3, ReferenciaMaoDeObra, ReferenciaSolado, Salario, MaoDeObra, Margem, TrocaHorario, TrocaMatriz, Usuario
-from app.forms import FuncionarioForm, MaquinaForm, MargemForm, MargemPorPedidoForm, MargemPorPedidoReferenciaForm, ReferenciaForm, ComponenteForm, CustoOperacionalForm, SalarioForm, MaoDeObraForm, TrocaMatrizForm, UsuarioForm
+from app.models import FormulacaoSolado, FormulacaoSoladoFriso, Funcionario, LogAcao, Manutencao, ManutencaoComponente, ManutencaoMaquina, Maquina, MargemPorPedido, MargemPorPedidoReferencia, Permissao, Referencia, Componente, CustoOperacional, ReferenciaAlca, ReferenciaComponentes, ReferenciaCustoOperacional, ReferenciaEmbalagem1, ReferenciaEmbalagem2, ReferenciaEmbalagem3, ReferenciaMaoDeObra, ReferenciaSolado, Salario, MaoDeObra, Margem, TrocaHorario, TrocaMatriz, Usuario
+from app.forms import FuncionarioForm, ManutencaoForm, MaquinaForm, MargemForm, MargemPorPedidoForm, MargemPorPedidoReferenciaForm, ReferenciaForm, ComponenteForm, CustoOperacionalForm, SalarioForm, MaoDeObraForm, TrocaMatrizForm, UsuarioForm
 import os
 from flask import render_template, redirect, url_for, flash, request
 from app.models import Solado, Tamanho, Componente, FormulacaoSolado, Alca, TamanhoAlca, FormulacaoAlca, Colecao
@@ -27,6 +27,8 @@ import random, string
 
 
 
+
+
 bp = Blueprint('routes', __name__)
 
 UPLOAD_FOLDER = 'app/static/uploads'
@@ -47,7 +49,6 @@ def carregar_permissoes():
     else:
         g.permissoes = set()  # Usuário sem permissões
 
-    
     
 @bp.route('/usuarios')
 @login_required
@@ -136,7 +137,10 @@ def gerenciar_permissoes(id):
         flash("As permissões do Admin não podem ser modificadas por outro usuário!", "danger")
         return redirect(url_for('routes.listar_usuarios'))
 
-    categorias = ["margens", "custoproducao", "componentes", "controleproducao", "maquinas", "funcionario", "relatorio", "usuarios", "trocar_senha"]
+    categorias = ["comercial","manutencao","margens",
+                  "custoproducao", "componentes",
+                  "controleproducao", "maquinas",
+                  "funcionario", "relatorio", "usuarios", "trocar_senha"]
     acoes = ["criar", "ver", "editar", "excluir"]
 
     if request.method == "POST":
@@ -229,8 +233,13 @@ def nova_referencia():
     custos_operacionais = CustoOperacional.query.all()
     mao_de_obra = MaoDeObra.query.all()
     colecoes = Colecao.query.all()
+    
+        # Definir uma coleção padrão
+    if request.method == "GET":
+        form.colecao_id.data = 3  # COLEÇÃO 2025.1 PADRÃO
 
     if form.validate_on_submit():
+        
         referencia = Referencia(
             codigo_referencia=form.codigo_referencia.data,
             descricao=form.descricao.data,
@@ -1226,7 +1235,12 @@ def novo_solado():
     componentes = Componente.query.all()
 
     if form.validate_on_submit():
-        print(request.form)  # <-- Adicionado para debug
+        
+        # Verificação se já existe um solado com a mesma referência
+        solado_existente = Solado.query.filter_by(referencia=form.referencia.data).first()
+        if solado_existente:
+            flash("Já existe um solado com essa referência!", "warning")
+            return redirect(url_for('routes.novo_solado'))
 
         # Criar um novo objeto Solado
         novo_solado = Solado(
@@ -1520,6 +1534,12 @@ def nova_alca():
     componentes = Componente.query.all()
 
     if form.validate_on_submit():
+        # Verificação se já existe uma alça com a mesma referência
+        alca_existente = Alca.query.filter_by(referencia=form.referencia.data).first()
+        if alca_existente:
+            flash("Já existe uma alça com essa referência!", "warning")
+            return redirect(url_for('routes.nova_alca'))
+        
         nova_alca = Alca(
             referencia=form.referencia.data,
             descricao=form.descricao.data
@@ -2529,7 +2549,7 @@ def listar_trocas_matriz():
     return render_template('trocas_matriz.html', trocas=trocas)
 
 
-from datetime import datetime, time  # 🔹 Importando time corretamente
+from datetime import datetime, time, timezone  # 🔹 Importando time corretamente
 
 def parse_time(value):
     """ Converte string para time ou retorna 00:00 se vazia. """
@@ -2771,6 +2791,288 @@ def excluir_funcionario(id):
     db.session.commit()
     flash("Funcionário removido!", "success")
     return redirect(url_for('routes.listar_funcionarios'))
+
+
+@bp.route('/manutencoes')
+@login_required
+def listar_manutencoes():
+    manutencoes_query = Manutencao.query.options(
+        db.joinedload(Manutencao.solicitante)
+    ).all()
+
+    manutencoes = {"Aberto": [], "Verificando": [], "Finalizado": []}
+    prioridades = {"Aberto": {}, "Verificando": {}, "Finalizado": {}}
+
+    for status in manutencoes:
+        prioridades[status] = {"Baixa": 0, "Normal": 0, "Alta": 0, "Urgente": 0}
+
+    for m in manutencoes_query:
+        manutencoes[m.status].append(m)
+        prioridades[m.status][m.prioridade] += 1
+
+    # ✅ Ordenar dentro de cada status pela ordem decrescente de ID (mais recente primeiro)
+    for status in manutencoes:
+        manutencoes[status] = sorted(manutencoes[status], key=lambda x: x.id, reverse=True)
+
+    return render_template('listar_manutencoes.html', manutencoes=manutencoes, prioridades=prioridades)
+
+
+
+@bp.route('/manutencao/ver/<int:id>')
+@login_required
+@requer_permissao('manutencao', 'ver')
+def ver_manutencao(id):
+    manutencao = Manutencao.query.options(
+        db.joinedload(Manutencao.solicitante),
+        db.joinedload(Manutencao.responsavel),
+        db.joinedload(Manutencao.maquinas).joinedload(ManutencaoMaquina.maquina),
+        db.joinedload(Manutencao.componentes).joinedload(ManutencaoComponente.componente)
+    ).get_or_404(id)
+
+    return render_template(
+        'ver_manutencao.html',
+        manutencao=manutencao
+    )
+
+
+# ROTA nova_manutencao
+
+@bp.route('/manutencao/nova', methods=['GET', 'POST'])
+@login_required
+@requer_permissao('manutencao', 'criar')
+def nova_manutencao():
+    form = ManutencaoForm()
+
+    maquinas = Maquina.query.all()
+    componentes = Componente.query.all()
+    funcionarios = Funcionario.query.all()  # 🔹 Agora carregando todos os funcionários sem filtro
+
+    if form.validate_on_submit():
+        manutencao = Manutencao(
+            titulo=form.titulo.data,
+            status=form.status.data,
+            tipo=form.tipo.data,
+            prioridade=form.prioridade.data,
+            solicitante_id=request.form.get("solicitante_id") or None,
+            responsavel_id=request.form.get("responsavel_id") or None,
+            descricao=form.descricao.data
+        )
+
+
+        db.session.add(manutencao)
+        db.session.flush()  # 🔹 Garante o ID da manutenção antes de associar as outras tabelas
+
+        # 🔹 Vincula máquinas selecionadas
+        for maquina_id in request.form.getlist('maquina_id[]'):
+            db.session.add(ManutencaoMaquina(
+                manutencao_id=manutencao.id,
+                maquina_id=int(maquina_id)
+            ))
+
+        # 🔹 Vincula componentes selecionados
+        for componente_id in request.form.getlist('componente_id[]'):
+            db.session.add(ManutencaoComponente(
+                manutencao_id=manutencao.id,
+                componente_id=int(componente_id)
+            ))
+
+        db.session.commit()
+        flash("Manutenção cadastrada com sucesso!", "success")
+        return redirect(url_for('routes.listar_manutencoes'))
+
+    return render_template(
+        'nova_manutencao.html',
+        form=form,
+        maquinas=maquinas,
+        componentes=componentes,
+        funcionarios=funcionarios  # 🔹 Passa os funcionários pro template
+    )
+
+# rota de editar manutenção com carregamento de máquinas, componentes e funcionários corretamente
+@bp.route('/manutencao/editar/<int:id>', methods=['GET', 'POST'])
+@login_required
+@requer_permissao('manutencao', 'editar')
+def editar_manutencao(id):
+    manutencao = Manutencao.query.get_or_404(id)
+    form = ManutencaoForm()
+
+    maquinas = Maquina.query.all()
+    componentes = Componente.query.all()
+    funcionarios = Funcionario.query.all()
+
+    if form.validate_on_submit():
+        
+        #Bloqueio no POST caso já esteja finalizada
+        if manutencao.status == "Finalizado":
+            flash("Esta manutenção está finalizada e não pode mais ser alterada.", "warning")
+            return redirect(url_for('routes.listar_manutencoes'))
+        
+        status_anterior = manutencao.status
+        manutencao.titulo = form.titulo.data
+        manutencao.status = form.status.data
+        manutencao.tipo = form.tipo.data
+        manutencao.prioridade = form.prioridade.data
+        manutencao.solicitante_id = request.form.get("solicitante_id") or None
+        manutencao.responsavel_id = request.form.get("responsavel_id") or None
+        manutencao.descricao = form.descricao.data
+        
+        # Só gera a data_fim se o status tiver sido ALTERADO para Finalizado
+        if status_anterior != "Finalizado" and manutencao.status == "Finalizado":
+            manutencao.data_fim = datetime.now().replace(microsecond=0)
+
+
+
+        # Limpa as ligações anteriores
+        ManutencaoMaquina.query.filter_by(manutencao_id=manutencao.id).delete()
+        ManutencaoComponente.query.filter_by(manutencao_id=manutencao.id).delete()
+
+        # Reinsere máquinas
+        for maquina_id in request.form.getlist('maquina_id[]'):
+            db.session.add(ManutencaoMaquina(
+                manutencao_id=manutencao.id,
+                maquina_id=int(maquina_id)
+            ))
+
+        # Reinsere componentes
+        for componente_id in request.form.getlist('componente_id[]'):
+            db.session.add(ManutencaoComponente(
+                manutencao_id=manutencao.id,
+                componente_id=int(componente_id)
+            ))
+
+        db.session.commit()
+        flash("Manutenção atualizada com sucesso!", "success")
+        return redirect(url_for('routes.listar_manutencoes'))
+
+    # Pré-carregar o form
+    form.titulo.data = manutencao.titulo
+    form.status.data = manutencao.status
+    form.tipo.data = manutencao.tipo
+    form.prioridade.data = manutencao.prioridade
+    form.descricao.data = manutencao.descricao
+
+    return render_template(
+        'editar_manutencao.html',
+        form=form,
+        manutencao=manutencao,
+        maquinas=maquinas,
+        componentes=componentes,
+        funcionarios=funcionarios
+    )
+
+
+
+@bp.route('/manutencao/excluir/<int:id>', methods=['POST'])
+@login_required
+@requer_permissao('manutencao', 'excluir')
+def excluir_manutencao(id):
+    manutencao = Manutencao.query.get_or_404(id)
+
+    # Remove máquinas e componentes vinculados
+    ManutencaoMaquina.query.filter_by(manutencao_id=manutencao.id).delete()
+    ManutencaoComponente.query.filter_by(manutencao_id=manutencao.id).delete()
+
+    db.session.delete(manutencao)
+    db.session.commit()
+    flash("Manutenção excluída com sucesso!", "success")
+    return redirect(url_for('routes.listar_manutencoes'))
+
+from datetime import datetime, timedelta
+
+@bp.route('/manutencao/relatorio', methods=['GET'])
+@login_required
+@requer_permissao('manutencao', 'ver')
+def relatorio_manutencoes():
+    funcionarios = Funcionario.query.all()
+
+    filtros = {
+        "id": request.args.get('id'),
+        "status": request.args.get('status'),
+        "prioridade": request.args.get('prioridade'),
+        "responsavel_id": request.args.get('responsavel_id'),
+        "solicitante_id": request.args.get('solicitante_id'),
+        "data_inicio_de": request.args.get('data_inicio_de'),
+        "data_inicio_ate": request.args.get('data_inicio_ate'),
+        "data_fim_de": request.args.get('data_fim_de'),
+        "data_fim_ate": request.args.get('data_fim_ate')
+    }
+
+    manutencoes = []
+
+    if request.args:
+        query = Manutencao.query
+        if filtros["id"]:
+            query = query.filter(Manutencao.id == int(filtros["id"]))
+        if filtros["status"]:
+            query = query.filter(Manutencao.status == filtros["status"])
+        if filtros["prioridade"]:
+            query = query.filter(Manutencao.prioridade == filtros["prioridade"])
+        if filtros["responsavel_id"]:
+            query = query.filter(Manutencao.responsavel_id == int(filtros["responsavel_id"]))
+        if filtros["solicitante_id"]:
+            query = query.filter(Manutencao.solicitante_id == int(filtros["solicitante_id"]))
+        
+        # Filtro Data Início
+        if filtros["data_inicio_de"]:
+            query = query.filter(Manutencao.data_inicio >= filtros["data_inicio_de"])
+        if filtros["data_inicio_ate"]:
+            data_ate = datetime.strptime(filtros["data_inicio_ate"], '%Y-%m-%d') + timedelta(hours=23, minutes=59, seconds=59)
+            query = query.filter(Manutencao.data_inicio <= data_ate)
+
+        # Filtro Data Fim
+        if filtros["data_fim_de"]:
+            query = query.filter(Manutencao.data_fim >= filtros["data_fim_de"])
+        if filtros["data_fim_ate"]:
+            data_fim_ate = datetime.strptime(filtros["data_fim_ate"], '%Y-%m-%d') + timedelta(hours=23, minutes=59, seconds=59)
+            query = query.filter(Manutencao.data_fim <= data_fim_ate)
+            
+        # ✅ Ordenação pelo mais recente
+        query = query.order_by(Manutencao.id.desc())
+
+        manutencoes = query.all()
+
+    return render_template(
+        'relatorio_manutencoes.html',
+        manutencoes=manutencoes,
+        funcionarios=funcionarios,
+        filtros=filtros, data_emissao=datetime.now()
+    )
+
+@bp.route('/manutencao/relatorio-componentes', methods=['GET', 'POST'])
+@login_required
+@requer_permissao('manutencao', 'ver')
+def relatorio_componentes_manutencao():
+    manutencoes = Manutencao.query.order_by(Manutencao.id.desc()).all()
+    resultado = {}
+    total_geral = 0
+
+    if request.method == 'POST':
+        manutencao_ids = request.form.getlist('manutencoes[]')  # <- Corrigido
+        if manutencao_ids:
+            for mid in manutencao_ids:
+                manutencao = Manutencao.query.get(int(mid))
+                componentes = db.session.query(
+                    Componente.codigo,
+                    Componente.descricao,
+                    Componente.preco
+                ).join(ManutencaoComponente, Componente.id == ManutencaoComponente.componente_id) \
+                 .filter(ManutencaoComponente.manutencao_id == mid).all()
+
+                subtotal = sum([float(c[2]) for c in componentes]) if componentes else 0
+                total_geral += subtotal
+
+                resultado[manutencao] = {
+                    "componentes": componentes,
+                    "subtotal": subtotal
+                }
+
+    return render_template('relatorio_componentes.html',
+                           manutencoes=manutencoes, resultado=resultado,
+                           total_geral=total_geral, data_emissao=datetime.now())
+
+
+
+
 
 
 

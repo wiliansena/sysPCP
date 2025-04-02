@@ -1,0 +1,38 @@
+<!-- Modal de Seleção de Componentes -->
+<div class="modal fade" id="modalComponentes" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Selecionar Componente</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Descrição</th>
+                            <th>Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for c in componentes %}
+                        <tr>
+                            <td>{{ c.codigo }}</td>
+                            <td>{{ c.descricao }}</td>
+                            <td>
+                                <button type="button" class="btn btn-primary btn-sm selecionar-componente"
+                                    data-id="{{ c.id }}"
+                                    data-codigo="{{ c.codigo }}"
+                                    data-descricao="{{ c.descricao }}">
+                                    Selecionar
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

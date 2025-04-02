@@ -7,6 +7,7 @@
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
+
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
@@ -90,20 +91,24 @@
             <i class="fas fa-chevron-down"></i>
         </div>
         <div class="sidebar-submenu" id="controleproducao">
+            <a href="{{ url_for('routes.listar_maquinas') }}"><i class="fa-solid fa-gears"></i> Máquinas</a>
             <a href="{{ url_for('routes.listar_trocas_matriz') }}"><i class="fas fa-exchange-alt"></i> Troca de
                 Matriz</a>
         </div>
         {% endif %}
 
-        <!-- Máquinas e Equipamentos -->
-        {% if ('maquinas', 'ver') in g.permissoes %}
-        <div class="sidebar-category" onclick="toggleMenu('maquinas')">
-            <i class="fas fa-wrench"></i> Máquinas e Equipamentos
+        <!-- Manutenção -->
+        {% if ('manutencao', 'ver') in g.permissoes %}
+        <div class="sidebar-category" onclick="toggleMenu('manutencao')">
+            <i class="fa-solid fa-screwdriver-wrench"></i> Manutenção
             <i class="fas fa-chevron-down"></i>
         </div>
-        <div class="sidebar-submenu" id="maquinas">
-            <a href="{{ url_for('routes.listar_maquinas') }}"><i class="fas fa-wrench"></i> Máquinas</a>
+        <div class="sidebar-submenu" id="manutencao">
+            <a href="{{ url_for('routes.listar_manutencoes') }}"><i class="fa-solid fa-screwdriver-wrench"></i>Ordem de serviço</a>
+            <a href="{{ url_for('routes.relatorio_manutencoes') }}"><i class="fa-solid fa-clipboard-list"></i>Relatório de Manutenções</a>
+            <a href="{{ url_for('routes.relatorio_componentes_manutencao') }}"><i class="fa-solid fa-clipboard-list"></i>Componentes por Manutenção</a>
         </div>
+            
         {% endif %}
 
         <!-- Funcionários -->
@@ -114,17 +119,6 @@
         </div>
         <div class="sidebar-submenu" id="funcionario">
             <a href="{{ url_for('routes.listar_funcionarios') }}"><i class="bi bi-people"></i> Pessoas e Funções</a>
-        </div>
-        {% endif %}
-
-        <!-- Relatórios -->
-        {% if ('relatorio', 'ver') in g.permissoes %}
-        <div class="sidebar-category" onclick="toggleMenu('relatorio')">
-            <i class="bi bi-file-earmark-text"></i> Relatórios
-            <i class="fas fa-chevron-down"></i>
-        </div>
-        <div class="sidebar-submenu" id="relatorio">
-            <a href="#"><i class="bi bi-file-earmark-text"></i> Relatórios Gerais</a>
         </div>
         {% endif %}
 
@@ -162,17 +156,6 @@
 
         {% block content %}{% endblock %}
     </div>
-    <script>
-        // Faz qualquer flash desaparecer após 4 segundos
-        setTimeout(() => {
-          const alerts = document.querySelectorAll('.alert');
-          alerts.forEach(alert => {
-            alert.classList.remove('show');
-            alert.classList.add('fade');
-            setTimeout(() => alert.remove(), 500); // Remove do DOM após o fade
-          });
-        }, 6000); // 4 segundos
-      </script>      
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -181,7 +164,7 @@
     <script src="{{ url_for('static', filename='js/formatacao_numeros.js') }}"></script>
     <script src="{{ url_for('static', filename='js/zoom.js') }}"></script>
     <script src="{{ url_for('static', filename='js/marcar_botoes_selecionados.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/abrir_fechar_acoes.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/tela_cheia.js') }}"></script>
 
 
     <script>

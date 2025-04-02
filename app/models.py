@@ -916,6 +916,50 @@ class Funcionario(db.Model):
     nome = db.Column(db.String(100), nullable=False)
     funcao = db.Column(db.String(50), nullable=False)  # Exemplo: Operador, Trocador, Técnico
 
+# Modelo correto
+
+class Manutencao(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    data_inicio = db.Column(db.DateTime, default=lambda: datetime.now().replace(microsecond=0))
+    data_fim = db.Column(db.DateTime, nullable=True)
+    titulo = db.Column(db.String(100), nullable=True)
+    status = db.Column(db.String(20), nullable=False, default="Aberto")
+    tipo = db.Column(db.String(20), nullable=False, default="Corretiva")
+    prioridade = db.Column(db.String(20), nullable=False, default="Baixa")
+    solicitante_id = db.Column(db.Integer, db.ForeignKey('funcionario.id'), nullable=True)
+    responsavel_id = db.Column(db.Integer, db.ForeignKey('funcionario.id'), nullable=True)
+    descricao = db.Column(db.String(150), nullable=False)
+
+    #RELAÇÕES
+    solicitante = db.relationship("Funcionario", foreign_keys=[solicitante_id])
+    responsavel = db.relationship("Funcionario", foreign_keys=[responsavel_id])
+    maquinas = db.relationship("ManutencaoMaquina", backref="manutencao", cascade="all, delete-orphan", lazy="joined")
+    componentes = db.relationship("ManutencaoComponente", backref="manutencao", cascade="all, delete-orphan", lazy="joined")
+
+class ManutencaoMaquina(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    manutencao_id = db.Column(db.Integer, db.ForeignKey('manutencao.id'))
+    maquina_id = db.Column(db.Integer, db.ForeignKey('maquina.id'))
+
+    maquina = db.relationship("Maquina")
+
+
+class ManutencaoComponente(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    manutencao_id = db.Column(db.Integer, db.ForeignKey('manutencao.id'))
+    componente_id = db.Column(db.Integer, db.ForeignKey('componente.id'))
+
+    componente = db.relationship("Componente")
+
+
+    
+    
+    
+    
+    
+    
+    
+
 
 
 

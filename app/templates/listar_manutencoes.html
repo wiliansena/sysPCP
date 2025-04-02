@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h2>Manutenções</h2>
+
+<a href="{{ url_for('routes.nova_manutencao') }}" class="btn btn-success mb-3">Adicionar</a>
+<hr>
+<button id="btn-tela-cheia" class="btn btn-outline-dark btn-sm mb-3">
+    <i class="fas fa-expand"></i> Tela Cheia
+</button>
+<h5><strong>O.S de Manutenções</strong></h5>
+<div class="row">
+
+
+
+    {% for status in ["Aberto", "Verificando", "Finalizado"] %}
+    <div class="col-md-4">
+
+        <div class="card mb-4 card-status
+            {% if status == 'Aberto' %} border-primary
+            {% elif status == 'Verificando' %} border-warning
+            {% elif status == 'Finalizado' %} border-success
+            {% endif %}
+        ">
+
+            <!-- Cabeçalho -->
+            <div class="card-header 
+                {% if status == 'Aberto' %} bg-primary text-white
+                {% elif status == 'Verificando' %} bg-warning text-dark
+                {% elif status == 'Finalizado' %} bg-success text-white
+                {% endif %}
+            ">
+                <h5>
+                    {% if status == 'Aberto' %}<i class="bi bi-exclamation-circle"></i>{% endif %}
+                    {% if status == 'Verificando' %}<i class="bi bi-hourglass-split"></i>{% endif %}
+                    {% if status == 'Finalizado' %}<i class="bi bi-check-circle"></i>{% endif %}
+                    {{ status }} ({{ manutencoes[status]|length }})
+                </h5>
+
+                <!-- Contagem de prioridades -->
+                <small>
+                    Urgente: {{ prioridades[status]['Urgente'] }} |
+                    Alta: {{ prioridades[status]['Alta'] }} |
+                    Normal: {{ prioridades[status]['Normal'] }} |
+                    Baixa: {{ prioridades[status]['Baixa'] }}
+                </small>
+            </div>
+
+            <!-- Corpo -->
+            <div class="card-body 
+                {% if status == 'Aberto' %} bg-primary bg-opacity-10
+                {% elif status == 'Verificando' %} bg-warning bg-opacity-25
+                {% elif status == 'Finalizado' %} bg-success bg-opacity-10
+                {% endif %}
+            " style="min-height: 300px;">
+
+                {% if manutencoes[status] %}
+                <ul class="list-group list-group-flush">
+
+                    {% for m in manutencoes[status] %}
+                    <li class="list-group-item">
+
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <strong>#{{ m.id }} - {{ m.titulo }}</strong><br>
+                            <small>Tipo: {{ m.tipo }}</small>
+
+                            <span class="badge
+                                        {% if m.prioridade == 'Baixa' %} bg-secondary
+                                        {% elif m.prioridade == 'Normal' %} bg-info
+                                        {% elif m.prioridade == 'Alta' %} bg-warning text-dark
+                                        {% elif m.prioridade == 'Urgente' %} bg-danger
+                                        {% endif %}
+                                    ">
+                                {{ m.prioridade }}
+                            </span>
+                        </div>
+
+                        <small>Solicitante: {{ m.solicitante.nome if m.solicitante else '-' }}</small><br>
+                        <small>Início: {{ m.data_inicio.strftime('%d/%m/%Y %H:%M') }}</small><br>
+
+
+                        <a href="{{ url_for('routes.editar_manutencao', id=m.id) }}"
+                            class="btn btn-sm btn-outline-primary mt-2 w-100">Editar</a>
+                        <a href="{{ url_for('routes.ver_manutencao', id=m.id) }}"
+                            class="btn btn-sm btn-outline-primary mt-2 w-100">Ver</a>
+
+                    </li>
+                    {% endfor %}
+
+                </ul>
+                {% else %}
+                <p class="text-muted">Nenhuma manutenção</p>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+    {% endfor %}
+
+</div>
+
+
+<!-- ATUALIZAR A PÁGINA A CADA 30 SEGUNDOS!
+<script>
+    setInterval(() => {
+        location.reload();
+    }, 30000); // Atualiza a cada 10 segundos
+
+</script>-->
+
+{% endblock %}
