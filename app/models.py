@@ -829,6 +829,12 @@ class TrocaHorario(db.Model):
     troca_matriz_id = db.Column(db.Integer, db.ForeignKey('troca_matriz.id'), nullable=False)
     horario = db.Column(db.String(20), nullable=False)
     pares = db.Column(db.Integer, default=0)
+    producao_esperada = db.Column(db.Integer, default=0)  # pares esperados nesse horário
+
+        # Relação com a matriz utilizada nesse horário
+    matriz_id = db.Column(db.Integer, db.ForeignKey('matriz.id'), nullable=True)
+    matriz = db.relationship("Matriz", backref=db.backref("usos", lazy=True))
+
 
     # Horários das trocas
     inicio_1 = db.Column(db.Time, nullable=True)
@@ -845,6 +851,16 @@ class TrocaHorario(db.Model):
     fim_6 = db.Column(db.Time, nullable=True)
     inicio_7 = db.Column(db.Time, nullable=True)
     fim_7 = db.Column(db.Time, nullable=True)
+
+    # motivo
+    motivo_1 = db.Column(db.String(50), nullable=True)
+    motivo_2 = db.Column(db.String(50), nullable=True)
+    motivo_3 = db.Column(db.String(50), nullable=True)
+    motivo_4 = db.Column(db.String(50), nullable=True)
+    motivo_5 = db.Column(db.String(50), nullable=True)
+    motivo_6 = db.Column(db.String(50), nullable=True)
+    motivo_7 = db.Column(db.String(50), nullable=True)
+
 
     # Campos de duração para cada troca
     duracao_1 = db.Column(db.Integer, default=0)  # Minutos
@@ -879,6 +895,14 @@ class TrocaHorario(db.Model):
             self.duracao_1 + self.duracao_2 + self.duracao_3 +
             self.duracao_4 + self.duracao_5 + self.duracao_6 + self.duracao_7
         )
+        
+    
+    def eficiencia_por_tempo(self):
+        tempo_util = 60 - self.tempo_total_troca
+        if tempo_util <= 0:
+            return 0  # Evita divisão por zero ou tempo negativo
+        return round(self.pares / tempo_util, 2)  # 2 casas decimais
+
 
 
 class TrocaMatriz(db.Model):
@@ -907,6 +931,43 @@ class TrocaMatriz(db.Model):
     def calcular_total_pares(self):
         """Calcula a quantidade total de pares produzidos e atualiza o campo."""
         self.total_pares_produzidos = sum(h.pares for h in self.horarios)
+
+    def calcular_eficiencia_geral(self):
+        tempo_util = 600 - self.tempo_total_geral  # 600 minutos = 10h de turno
+        if tempo_util > 0:
+            return round(self.total_pares_produzidos / tempo_util, 2)
+        return 0.00
+    
+    def calcular_total_esperado(self):
+        return sum(h.producao_esperada for h in self.horarios)
+    
+    
+    def calcular_tempo_produtivo_real(self):
+        """
+        Retorna o tempo produtivo real com base nos horários preenchidos,
+        subtraindo o tempo de troca dentro desses blocos.
+        """
+        tempo_produtivo = 0
+        for horario in self.horarios:
+            if horario.pares > 0 or horario.tempo_total_troca > 0:
+                tempo_util_bloco = 60 - horario.tempo_total_troca
+                if tempo_util_bloco > 0:
+                    tempo_produtivo += tempo_util_bloco
+        return tempo_produtivo
+
+
+
+
+class Matriz(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    codigo = db.Column(db.String(20), nullable=False, unique=True)
+    descricao = db.Column(db.String(100), nullable=False)
+    tipo = db.Column(db.String(50), nullable=False)
+    status = db.Column(db.String(10), nullable=False, default='Ativa')  # Ativa ou Inativa
+    capacidade = db.Column(db.Integer, nullable=True)  # ✅ Novo campo
+
+
+
 
 
 

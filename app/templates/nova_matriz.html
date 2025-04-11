@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Nova Matriz</h2>
+<form method="POST">
+    {{ form.hidden_tag() }}
+    <div class="mb-3">
+        {{ form.codigo.label(class="form-label") }}
+        {{ form.codigo(class="form-control") }}
+    </div>
+    <div class="mb-3">
+        {{ form.descricao.label(class="form-label") }}
+        {{ form.descricao(class="form-control") }}
+    </div>
+    <div class="mb-3">
+        {{ form.tipo.label(class="form-label") }}
+        {{ form.tipo(class="form-select") }}
+    </div>
+    <div class="mb-3">
+        {{ form.status.label(class="form-label") }}
+        {{ form.status(class="form-select") }}
+    </div>
+    <div class="mb-3">
+        {{ form.capacidade.label(class="form-label") }}
+        {{ form.capacidade(class="form-control") }}
+    </div>
+    <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Salvar</button>
+    <a href="{{ url_for('routes.listar_matrizes') }}" class="btn btn-secondary">Cancelar</a>
+</form>
+{% endblock %}

@@ -2,8 +2,8 @@ from sqlite3 import IntegrityError
 from flask import Blueprint, jsonify, render_template, redirect, url_for, flash, request
 from flask_login import current_user, login_required
 from app import db, csrf
-from app.models import FormulacaoSolado, FormulacaoSoladoFriso, Funcionario, LogAcao, Manutencao, ManutencaoComponente, ManutencaoMaquina, Maquina, MargemPorPedido, MargemPorPedidoReferencia, Permissao, Referencia, Componente, CustoOperacional, ReferenciaAlca, ReferenciaComponentes, ReferenciaCustoOperacional, ReferenciaEmbalagem1, ReferenciaEmbalagem2, ReferenciaEmbalagem3, ReferenciaMaoDeObra, ReferenciaSolado, Salario, MaoDeObra, Margem, TrocaHorario, TrocaMatriz, Usuario
-from app.forms import FuncionarioForm, ManutencaoForm, MaquinaForm, MargemForm, MargemPorPedidoForm, MargemPorPedidoReferenciaForm, ReferenciaForm, ComponenteForm, CustoOperacionalForm, SalarioForm, MaoDeObraForm, TrocaMatrizForm, UsuarioForm
+from app.models import FormulacaoSolado, FormulacaoSoladoFriso, Funcionario, LogAcao, Manutencao, ManutencaoComponente, ManutencaoMaquina, Maquina, MargemPorPedido, MargemPorPedidoReferencia, Matriz, Permissao, Referencia, Componente, CustoOperacional, ReferenciaAlca, ReferenciaComponentes, ReferenciaCustoOperacional, ReferenciaEmbalagem1, ReferenciaEmbalagem2, ReferenciaEmbalagem3, ReferenciaMaoDeObra, ReferenciaSolado, Salario, MaoDeObra, Margem, TrocaHorario, TrocaMatriz, Usuario
+from app.forms import FuncionarioForm, ManutencaoForm, MaquinaForm, MargemForm, MargemPorPedidoForm, MargemPorPedidoReferenciaForm, MatrizForm, ReferenciaForm, ComponenteForm, CustoOperacionalForm, SalarioForm, MaoDeObraForm, TrocaMatrizForm, UsuarioForm
 import os
 from flask import render_template, redirect, url_for, flash, request
 from app.models import Solado, Tamanho, Componente, FormulacaoSolado, Alca, TamanhoAlca, FormulacaoAlca, Colecao
@@ -2577,6 +2577,7 @@ def parse_time(value):
 @requer_permissao('controleproducao', 'criar')
 def nova_troca_matriz():
     form = TrocaMatrizForm()
+    matrizes = Matriz.query.order_by(Matriz.codigo).all()
 
     # 🔹 Carregar as máquinas cadastradas
         # Carregar opções de funcionários e máquinas
@@ -2604,10 +2605,9 @@ def nova_troca_matriz():
         for i, troca in enumerate(form.trocas.entries):
             nova_troca = TrocaHorario(
                 troca_matriz_id=troca_matriz.id,
-                horario=horarios[i],  # 🔹 Usa os horários fixos
-                pares=troca.form.pares.data or 0,  # 🔹 Se não for preenchido, fica 0
-
-                # 🔹 Captura horários e converte corretamente
+                horario=horarios[i],
+                pares=troca.form.pares.data or 0,
+                matriz_id=troca.form.matriz_id.data if troca.form.matriz_id.data else None,
                 inicio_1=parse_time(troca.form.inicio_1.data),
                 fim_1=parse_time(troca.form.fim_1.data),
                 inicio_2=parse_time(troca.form.inicio_2.data),
@@ -2621,10 +2621,19 @@ def nova_troca_matriz():
                 inicio_6=parse_time(troca.form.inicio_6.data),
                 fim_6=parse_time(troca.form.fim_6.data),
                 inicio_7=parse_time(troca.form.inicio_7.data),
-                fim_7=parse_time(troca.form.fim_7.data)
+                fim_7=parse_time(troca.form.fim_7.data),
+                producao_esperada=troca.form.producao_esperada.data or 0,
+
+                # NOVO: motivos individuais
+                motivo_1=troca.form.motivo_1.data,
+                motivo_2=troca.form.motivo_2.data,
+                motivo_3=troca.form.motivo_3.data,
+                motivo_4=troca.form.motivo_4.data,
+                motivo_5=troca.form.motivo_5.data,
+                motivo_6=troca.form.motivo_6.data,
+                motivo_7=troca.form.motivo_7.data,
             )
 
-            # 🔹 Calcula automaticamente o tempo total da troca
             nova_troca.atualizar_tempo_total()
             db.session.add(nova_troca)
 
@@ -2636,8 +2645,7 @@ def nova_troca_matriz():
         flash('Troca de matriz registrada com sucesso!', 'success')
         return redirect(url_for('routes.listar_trocas_matriz'))
 
-    return render_template('nova_troca_matriz.html', form=form)
-
+    return render_template('nova_troca_matriz.html', form=form, matrizes=matrizes)
 
 @bp.route('/troca_matriz/editar/<int:id>', methods=['GET', 'POST'])
 @login_required
@@ -2645,83 +2653,157 @@ def nova_troca_matriz():
 def editar_troca_matriz(id):
     troca_matriz = TrocaMatriz.query.get_or_404(id)
     form = TrocaMatrizForm(obj=troca_matriz)
-    
-        # 🔹 Carregar os funcionários cadastrados por funções, só aparece na tela se for da função
-    form.trocador_id.choices = [(f.id, f.nome) for f in Funcionario.query.
-                                filter_by(funcao="Trocador").order_by(Funcionario.nome).all()]
-    form.operador_id.choices = [(f.id, f.nome) for f in Funcionario.query.
-                                filter_by(funcao="Operador").order_by(Funcionario.nome).all()]
+    matrizes = Matriz.query.order_by(Matriz.codigo).all()
 
-
-    # 🔹 Carregar as máquinas cadastradas
+    form.trocador_id.choices = [(f.id, f.nome) for f in Funcionario.query.filter_by(funcao="Trocador").order_by(Funcionario.nome).all()]
+    form.operador_id.choices = [(f.id, f.nome) for f in Funcionario.query.filter_by(funcao="Operador").order_by(Funcionario.nome).all()]
     form.maquina_id.choices = [(m.id, f"{m.codigo} - {m.descricao}") for m in Maquina.query.order_by(Maquina.codigo).all()]
 
-    
-    # 🔹 Horários fixos
-    horarios = ["7h às 8h", "8h às 9h", "9h às 10h", "10h às 11h", "11h às 12h",
-                "12h às 13h", "13h às 14h", "14h às 15h", "15h às 16h", "16h às 17h"]
-
-    # 🔹 Ordenar os horários para garantir a exibição correta
+    horarios = [
+        "7h às 8h", "8h às 9h", "9h às 10h", "10h às 11h", "11h às 12h",
+        "12h às 13h", "13h às 14h", "14h às 15h", "15h às 16h", "16h às 17h"
+    ]
     troca_matriz.horarios.sort(key=lambda x: horarios.index(x.horario))
 
     if request.method == 'GET':
         for i, troca in enumerate(troca_matriz.horarios):
-            if i < len(form.trocas.entries):  # Evita erro de índice
+            if i < len(form.trocas.entries):
                 form.trocas[i].horario.data = troca.horario
                 form.trocas[i].pares.data = troca.pares
-                form.trocas[i].inicio_1.data = troca.inicio_1.strftime("%H:%M") if troca.inicio_1 else ""
-                form.trocas[i].fim_1.data = troca.fim_1.strftime("%H:%M") if troca.fim_1 else ""
-                form.trocas[i].inicio_2.data = troca.inicio_2.strftime("%H:%M") if troca.inicio_2 else ""
-                form.trocas[i].fim_2.data = troca.fim_2.strftime("%H:%M") if troca.fim_2 else ""
-                form.trocas[i].inicio_3.data = troca.inicio_3.strftime("%H:%M") if troca.inicio_3 else ""
-                form.trocas[i].fim_3.data = troca.fim_3.strftime("%H:%M") if troca.fim_3 else ""
-                form.trocas[i].inicio_4.data = troca.inicio_4.strftime("%H:%M") if troca.inicio_4 else ""
-                form.trocas[i].fim_4.data = troca.fim_4.strftime("%H:%M") if troca.fim_4 else ""
-                form.trocas[i].inicio_5.data = troca.inicio_5.strftime("%H:%M") if troca.inicio_5 else ""
-                form.trocas[i].fim_5.data = troca.fim_5.strftime("%H:%M") if troca.fim_5 else ""
-                form.trocas[i].inicio_6.data = troca.inicio_6.strftime("%H:%M") if troca.inicio_6 else ""
-                form.trocas[i].fim_6.data = troca.fim_6.strftime("%H:%M") if troca.fim_6 else ""
-                form.trocas[i].inicio_7.data = troca.inicio_7.strftime("%H:%M") if troca.inicio_7 else ""
-                form.trocas[i].fim_7.data = troca.fim_7.strftime("%H:%M") if troca.fim_7 else ""
+                form.trocas[i].producao_esperada.data = troca.producao_esperada
+
+                # Passa a matriz selecionada, se houver
+                form.trocas[i].matriz_id = troca.matriz_id
+                form.trocas[i].matriz_codigo = troca.matriz.codigo if troca.matriz else ""
+                form.trocas[i].matriz_descricao = troca.matriz.descricao if troca.matriz else ""
+
+                for j in range(1, 8):
+                    inicio = getattr(troca, f'inicio_{j}')
+                    fim = getattr(troca, f'fim_{j}')
+                    motivo = getattr(troca, f'motivo_{j}', '')
+
+                    getattr(form.trocas[i], f'inicio_{j}').data = inicio.strftime("%H:%M") if inicio else ""
+                    getattr(form.trocas[i], f'fim_{j}').data = fim.strftime("%H:%M") if fim else ""
+                    if hasattr(form.trocas[i], f'motivo_{j}'):
+                        getattr(form.trocas[i], f'motivo_{j}').data = motivo
 
     if form.validate_on_submit():
         troca_matriz.data = form.data.data
         troca_matriz.trocador_id = form.trocador_id.data
         troca_matriz.maquina_id = form.maquina_id.data
         troca_matriz.operador_id = form.operador_id.data
-        
-
 
         for i, troca in enumerate(troca_matriz.horarios):
-            if i < len(form.trocas.entries):  # Evita erro de índice
+            if i < len(form.trocas.entries):
                 troca.pares = form.trocas[i].pares.data or 0
-                troca.inicio_1 = parse_time(form.trocas[i].inicio_1.data)
-                troca.fim_1 = parse_time(form.trocas[i].fim_1.data)
-                troca.inicio_2 = parse_time(form.trocas[i].inicio_2.data)
-                troca.fim_2 = parse_time(form.trocas[i].fim_2.data)
-                troca.inicio_3 = parse_time(form.trocas[i].inicio_3.data)
-                troca.fim_3 = parse_time(form.trocas[i].fim_3.data)
-                troca.inicio_4 = parse_time(form.trocas[i].inicio_4.data)
-                troca.fim_4 = parse_time(form.trocas[i].fim_4.data)
-                troca.inicio_5 = parse_time(form.trocas[i].inicio_5.data)
-                troca.fim_5 = parse_time(form.trocas[i].fim_5.data)
-                troca.inicio_6 = parse_time(form.trocas[i].inicio_6.data)
-                troca.fim_6 = parse_time(form.trocas[i].fim_6.data)
-                troca.inicio_7 = parse_time(form.trocas[i].inicio_7.data)
-                troca.fim_7 = parse_time(form.trocas[i].fim_7.data)
+                troca.producao_esperada = form.trocas[i].producao_esperada.data or 0
 
-                # 🔹 Recalcula o tempo total da troca
+                # Atualiza a matriz usada nessa linha
+                # ✅ NOVO: atualiza a matriz_id
+                matriz_id_form = request.form.get(f'matriz_id_{i}')
+                if matriz_id_form:
+                    troca.matriz_id = int(matriz_id_form)
+                else:
+                    troca.matriz_id = None
+
+                for j in range(1, 8):
+                    setattr(troca, f'inicio_{j}', parse_time(getattr(form.trocas[i], f'inicio_{j}').data))
+                    setattr(troca, f'fim_{j}', parse_time(getattr(form.trocas[i], f'fim_{j}').data))
+                    if hasattr(form.trocas[i], f'motivo_{j}'):
+                        setattr(troca, f'motivo_{j}', getattr(form.trocas[i], f'motivo_{j}').data)
+
                 troca.atualizar_tempo_total()
+                troca.eficiencia_por_tempo()
 
-        # 🔹 Atualiza os cálculos gerais da troca matriz
         troca_matriz.atualizar_tempo_total_geral()
         troca_matriz.calcular_total_pares()
+        troca_matriz.calcular_eficiencia_geral()
+        troca_matriz.calcular_total_esperado()
 
         db.session.commit()
         flash('Troca de matriz editada com sucesso!', 'success')
         return redirect(url_for('routes.listar_trocas_matriz'))
 
-    return render_template('editar_troca_matriz.html', form=form, troca_matriz=troca_matriz)
+    return render_template('editar_troca_matriz.html', form=form, troca_matriz=troca_matriz, matrizes=matrizes)
+
+
+
+from flask import send_file
+from io import BytesIO
+from openpyxl import Workbook
+
+@bp.route('/troca_matriz/<int:id>/exportar_excel')
+@login_required
+@requer_permissao('controleproducao', 'ver')
+def exportar_troca_excel(id):
+    from openpyxl import Workbook
+    from flask import send_file
+    from io import BytesIO
+
+    troca = TrocaMatriz.query.get_or_404(id)
+
+    horarios_padrao = [
+        "7h às 8h", "8h às 9h", "9h às 10h", "10h às 11h", "11h às 12h",
+        "12h às 13h", "13h às 14h", "14h às 15h", "15h às 16h", "16h às 17h"
+    ]
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Troca de Matriz"
+
+    # Cabeçalho simplificado
+    cabecalho = ["Horário", "Pares", "Matriz", "Capacidade", "Diferença"]
+    for i in range(1, 8):
+        cabecalho.extend([f"Início {i}ª", f"Fim {i}ª", f"Motivo {i}ª", f"Total {i}ª"])
+    cabecalho.append("Total Tempo")
+    ws.append(cabecalho)
+
+    for h_padrao in horarios_padrao:
+        linha = []
+        h = next((item for item in troca.horarios if item.horario == h_padrao), None)
+        if h:
+            matriz = h.matriz
+            linha.extend([
+                h.horario,
+                h.pares,
+                f"{matriz.codigo} - {matriz.descricao}" if matriz else "Nenhuma",
+                h.producao_esperada,
+                h.pares - h.producao_esperada
+            ])
+            for i in range(1, 8):
+                ini = getattr(h, f'inicio_{i}')
+                fim = getattr(h, f'fim_{i}')
+                motivo = getattr(h, f'motivo_{i}', '')
+                duracao = getattr(h, f'duracao_{i}', 0)
+                linha.extend([
+                    ini.strftime("%H:%M") if ini else "",
+                    fim.strftime("%H:%M") if fim else "",
+                    motivo or "",
+                    f"{duracao // 60:02}:{duracao % 60:02}"
+                ])
+            linha.append(f"{h.tempo_total_troca // 60:02}:{h.tempo_total_troca % 60:02}")
+        else:
+            linha = [h_padrao] + [""] * (len(cabecalho) - 1)
+        ws.append(linha)
+
+    # Aba de Eficiência
+    aba = wb.create_sheet("Eficiência Geral")
+    aba.append(["Tempo Produtivo Real", f"{troca.calcular_tempo_produtivo_real() // 60:02}:{troca.calcular_tempo_produtivo_real() % 60:02}"])
+    aba.append(["Tempo Parado", f"{troca.tempo_total_geral // 60:02}:{troca.tempo_total_geral % 60:02}"])
+    aba.append(["Total Pares Produzidos", troca.total_pares_produzidos])
+    aba.append(["Capacidade Total", troca.calcular_total_esperado()])
+    aba.append(["Diferença Total", troca.total_pares_produzidos - troca.calcular_total_esperado()])
+    aba.append(["Pares por Minuto", troca.calcular_eficiencia_geral()])
+    aba.append(["Pares por Hora", round(troca.calcular_eficiencia_geral() * 60, 2)])
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    return send_file(output, as_attachment=True,
+                     download_name=f'TrocaMatriz_{troca.id}.xlsx',
+                     mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+
 
 
 
@@ -2741,6 +2823,66 @@ def excluir_troca_matriz(id):
         flash(f"Erro ao excluir troca de matriz: {str(e)}", "danger")
 
     return redirect(url_for('routes.listar_trocas_matriz'))
+
+
+
+# 🔹 Listar Matrizes
+@bp.route('/matrizes')
+@login_required
+@requer_permissao('controleproducao', 'ver')
+def listar_matrizes():
+    matrizes = Matriz.query.order_by(Matriz.codigo).all()
+    return render_template('listar_matrizes.html', matrizes=matrizes)
+
+# 🔹 Nova Matriz
+@bp.route('/matriz/nova', methods=['GET', 'POST'])
+@login_required
+@requer_permissao('controleproducao', 'criar')
+def nova_matriz():
+    form = MatrizForm()
+    if form.validate_on_submit():
+        matriz = Matriz(
+            codigo=form.codigo.data,
+            descricao=form.descricao.data,
+            tipo=form.tipo.data,
+            status=form.status.data,
+            capacidade=form.capacidade.data
+        )
+        db.session.add(matriz)
+        db.session.commit()
+        flash("Matriz cadastrada com sucesso!", "success")
+        return redirect(url_for('routes.listar_matrizes'))
+    return render_template('nova_matriz.html', form=form)
+
+# 🔹 Editar Matriz
+@bp.route('/matriz/editar/<int:id>', methods=['GET', 'POST'])
+@login_required
+@requer_permissao('controleproducao', 'editar')
+def editar_matriz(id):
+    matriz = Matriz.query.get_or_404(id)
+    form = MatrizForm(obj=matriz)
+    if form.validate_on_submit():
+        matriz.codigo = form.codigo.data
+        matriz.descricao = form.descricao.data
+        matriz.tipo = form.tipo.data
+        matriz.status = form.status.data
+        matriz.capacidade = form.capacidade.data
+        db.session.commit()
+        flash("Matriz atualizada com sucesso!", "success")
+        return redirect(url_for('routes.listar_matrizes'))
+    return render_template('editar_matriz.html', form=form, matriz=matriz)
+
+# 🔹 Excluir Matriz
+@bp.route('/matriz/excluir/<int:id>', methods=['POST'])
+@login_required
+@requer_permissao('controleproducao', 'excluir')
+def excluir_matriz(id):
+    matriz = Matriz.query.get_or_404(id)
+    db.session.delete(matriz)
+    db.session.commit()
+    flash("Matriz excluída com sucesso!", "success")
+    return redirect(url_for('routes.listar_matrizes'))
+
 
 
 @bp.route('/funcionarios', methods=['GET'])
@@ -2765,6 +2907,8 @@ def novo_funcionario():
         flash("Funcionário cadastrado com sucesso!", "success")
         return redirect(url_for('routes.listar_funcionarios'))
     return render_template('novo_funcionario.html', form=form)
+
+
 
 @bp.route('/funcionario/editar/<int:id>', methods=['GET', 'POST'])
 @login_required

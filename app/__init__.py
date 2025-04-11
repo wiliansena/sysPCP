@@ -14,6 +14,9 @@ login_manager = LoginManager()
 
 def create_app():
     app = Flask(__name__)
+    # Torna o getattr disponível nos templates Jinja2
+    app.jinja_env.globals.update(getattr=getattr)
+
     app.config.from_object(Config)  # Carrega as configurações do config.py
 
     # 🔹 Configuração do tempo de sessão

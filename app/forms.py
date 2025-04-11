@@ -273,20 +273,31 @@ class MaquinaForm(FlaskForm):
 class TrocaForm(FlaskForm):
     horario = StringField("Horário", render_kw={"readonly": True})
     pares = IntegerField("Pares Produzidos", validators=[Optional()])
-    inicio_1 = StringField("1ª Troca - Início", validators=[Optional()])
-    fim_1 = StringField("1ª Troca - Fim", validators=[Optional()])
-    inicio_2 = StringField("2ª Troca - Início", validators=[Optional()])
-    fim_2 = StringField("2ª Troca - Fim", validators=[Optional()])
-    inicio_3 = StringField("3ª Troca - Início", validators=[Optional()])
-    fim_3 = StringField("3ª Troca - Fim", validators=[Optional()])
-    inicio_4 = StringField("4ª Troca - Início", validators=[Optional()])
-    fim_4 = StringField("4ª Troca - Fim", validators=[Optional()])
-    inicio_5 = StringField("5ª Troca - Início", validators=[Optional()])
-    fim_5 = StringField("5ª Troca - Fim", validators=[Optional()])
-    inicio_6 = StringField("6ª Troca - Início", validators=[Optional()])
-    fim_6 = StringField("6ª Troca - Fim", validators=[Optional()])
-    inicio_7 = StringField("7ª Troca - Início", validators=[Optional()])
-    fim_7 = StringField("7ª Troca - Fim", validators=[Optional()])
+    producao_esperada = IntegerField("Produção Esperada", validators=[Optional()])
+
+        # Campos visuais para matriz (preenchidos via JS)
+    matriz_id = HiddenField("ID da Matriz", validators=[Optional()])
+    matriz_codigo = StringField("Código da Matriz", render_kw={"readonly": True})
+    matriz_descricao = StringField("Descrição da Matriz", render_kw={"readonly": True})
+
+    # Opções fixas de motivos
+    motivo_choices = [
+        ("", "-- Selecione --"),
+        ("Manutenção", "Manutenção"),
+        ("Troca_cor", "Troca_cor"),
+        ("Falta_matéria-prima", "Falta_matéria-prima"),
+        ("Ajuste_técnico", "Ajuste_técnico"),
+        ("Almoço", "Almoço")
+    ]
+
+    # Criar dinamicamente os campos para 7 trocas
+    for i in range(1, 8):
+        locals()[f'inicio_{i}'] = StringField(f'{i}ª Troca - Início', validators=[Optional()])
+        locals()[f'fim_{i}'] = StringField(f'{i}ª Troca - Fim', validators=[Optional()])
+        locals()[f'motivo_{i}'] = SelectField(f'Motivo {i}ª Troca', choices=motivo_choices, validators=[Optional()])
+
+
+
 
 
 class TrocaMatrizForm(FlaskForm):
@@ -300,10 +311,25 @@ class TrocaMatrizForm(FlaskForm):
     
     submit = SubmitField("Salvar")
 
+class MatrizForm(FlaskForm):
+    codigo = StringField("Código", validators=[DataRequired(), Length(max=20)])
+    descricao = StringField("Descrição", validators=[DataRequired(), Length(max=100)])
+    tipo = StringField("Tipo", validators=[DataRequired(), Length(max=50)])
+    status = SelectField("Status", choices=[('Ativa', 'Ativa'), ('Inativa', 'Inativa')], validators=[DataRequired()])
+    capacidade = IntegerField("Capacidade", validators=[Optional()])
+
 
 class FuncionarioForm(FlaskForm):
     nome = StringField("Nome", validators=[DataRequired()])
-    funcao = SelectField("Função", choices=[("Operador", "Operador"), ("Trocador", "Trocador"), ("Técnico", "Técnico")])
+    funcao = SelectField("Função", choices=[ 
+                                            ("Técnico", "Técnico"),
+                                            ("Líder", "Líder"),
+                                            ("Produção", "Produção"),
+                                            ("Administrativo", "Administrativo"),
+                                            ("Gestor", "Gestor"),
+                                            ("Operador", "Operador"),
+                                            ("Trocador", "Trocador")
+                                            ])
     submit = SubmitField("Salvar")
 
 
@@ -317,7 +343,9 @@ class ManutencaoForm(FlaskForm):
     componente_id = HiddenField()
     descricao = TextAreaField('Descrição', validators=[DataRequired()])
 
-# forms.py
+
+
+
 
 from flask_wtf import FlaskForm
 from wtforms import StringField, TextAreaField, SelectField, SubmitField

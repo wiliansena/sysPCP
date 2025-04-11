@@ -58,9 +58,9 @@
         <tr>
             <td>{{ solado.solado.referencia }}</td>
             <td>{{ solado.solado.descricao }}</td>
-            <td>R$ {{ "%.6f"|format(solado.solado.custo_total) }}</td>
+            <td>R$ {{ "%.4f"|format(solado.solado.custo_total) }}</td>
             <td>{{ solado.consumo }}</td>
-            <td>R$ {{ "%.6f"|format(solado.custo_total) }}</td>
+            <td>R$ {{ "%.4f"|format(solado.custo_total) }}</td>
         </tr>
         {% endfor %}
     </tbody>
@@ -83,9 +83,9 @@
         <tr>
             <td>{{ alca.alca.referencia }}</td>
             <td>{{ alca.alca.descricao }}</td>
-            <td>R$ {{ "%.6f"|format(alca.alca.preco_total) }}</td>
+            <td>R$ {{ "%.4f"|format(alca.alca.preco_total) }}</td>
             <td>{{ alca.consumo }}</td>
-            <td>R$ {{ "%.6f"|format(alca.custo_total) }}</td>
+            <td>R$ {{ "%.4f"|format(alca.custo_total) }}</td>
         </tr>
         {% endfor %}
     </tbody>
@@ -108,9 +108,9 @@
         <tr>
             <td>{{ componente.componente.codigo }}</td>
             <td>{{ componente.componente.descricao }}</td>
-            <td>R$ {{ "%.6f"|format(componente.componente.preco) }}</td>
+            <td>R$ {{ "%.4f"|format(componente.componente.preco) }}</td>
             <td>{{ componente.consumo }}</td>
-            <td>R$ {{ "%.6f"|format(componente.custo_total) }}</td>
+            <td>R$ {{ "%.4f"|format(componente.custo_total) }}</td>
         </tr>
         {% endfor %}
     </tbody>
@@ -132,9 +132,9 @@
         <tr>
             <td>{{ item.componente.codigo }}</td>
             <td>{{ item.componente.descricao }}</td>
-            <td>R$ {{ "%.6f"|format(item.preco_unitario) }}</td>
+            <td>R$ {{ "%.4f"|format(item.preco_unitario) }}</td>
             <td>{{ item.consumo }}</td>
-            <td>R$ {{ "%.6f"|format(item.custo_total) }}</td>
+            <td>R$ {{ "%.4f"|format(item.custo_total) }}</td>
         </tr>
         {% endfor %}
     </tbody>
@@ -156,9 +156,9 @@
         <tr>
             <td>{{ item.componente.codigo }}</td>
             <td>{{ item.componente.descricao }}</td>
-            <td>R$ {{ "%.6f"|format(item.preco_unitario) }}</td>
+            <td>R$ {{ "%.4f"|format(item.preco_unitario) }}</td>
             <td>{{ item.consumo }}</td>
-            <td>R$ {{ "%.6f"|format(item.custo_total) }}</td>
+            <td>R$ {{ "%.4f"|format(item.custo_total) }}</td>
         </tr>
         {% endfor %}
     </tbody>
@@ -180,9 +180,9 @@
         <tr>
             <td>{{ item.componente.codigo }}</td>
             <td>{{ item.componente.descricao }}</td>
-            <td>R$ {{ "%.6f"|format(item.preco_unitario) }}</td>
+            <td>R$ {{ "%.4f"|format(item.preco_unitario) }}</td>
             <td>{{ item.consumo }}</td>
-            <td>R$ {{ "%.6f"|format(item.custo_total) }}</td>
+            <td>R$ {{ "%.4f"|format(item.custo_total) }}</td>
 
         </tr>
         {% endfor %}
@@ -206,9 +206,9 @@
         <tr>
             <td>{{ custo.custo.id }}</td>
             <td>{{ custo.custo.descricao }}</td>
-            <td>R$ {{ "%.6f"|format(custo.custo.preco) }}</td>
+            <td>R$ {{ "%.4f"|format(custo.custo.preco) }}</td>
             <td>{{ custo.consumo }}</td>
-            <td>R$ {{ "%.6f"|format(custo.custo_total) }}</td>
+            <td>R$ {{ "%.4f"|format(custo.custo_total) }}</td>
         </tr>
         {% endfor %}
     </tbody>
@@ -233,10 +233,10 @@
         <tr>
             <td>{{ mao.mao_de_obra.id }}</td>
             <td>{{ mao.mao_de_obra.descricao }}</td>
-            <td>R$ {{ "%.6f"|format(mao.mao_de_obra.diaria) }}</td>
+            <td>R$ {{ "%.4f"|format(mao.mao_de_obra.diaria) }}</td>
             <td>{{ mao.consumo }}</td>
             <td>{{ mao.producao }}</td>
-            <td>R$ {{ "%.6f"|format(mao.custo_total) }}</td>
+            <td>R$ {{ "%.4f"|format(mao.custo_total) }}</td>
         </tr>
         {% endfor %}
     </tbody>
@@ -254,23 +254,23 @@
     <tbody>
         <tr>
             <td>Solado</td>
-            <td>R$ {{ "%.6f"|format(referencia.total_solado) }}</td>
+            <td>R$ {{ "%.4f"|format(referencia.total_solado) }}</td>
         </tr>
         <tr>
             <td>Alças</td>
-            <td>R$ {{ "%.6f"|format(referencia.total_alcas) }}</td>
+            <td>R$ {{ "%.4f"|format(referencia.total_alcas) }}</td>
         </tr>
         <tr>
             <td>Componentes</td>
-            <td>R$ {{ "%.6f"|format(referencia.total_componentes) }}</td>
+            <td>R$ {{ "%.4f"|format(referencia.total_componentes) }}</td>
         </tr>
         <tr>
             <td>Custos Operacionais</td>
-            <td>R$ {{ "%.6f"|format(referencia.total_operacional) }}</td>
+            <td>R$ {{ "%.4f"|format(referencia.total_operacional) }}</td>
         </tr>
         <tr>
             <td>Mão de Obra</td>
-            <td>R$ {{ "%.6f"|format(referencia.total_mao_de_obra) }}</td>
+            <td>R$ {{ "%.4f"|format(referencia.total_mao_de_obra) }}</td>
         </tr>
     </tbody>
 </table>

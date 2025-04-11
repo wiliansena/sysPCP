@@ -78,7 +78,7 @@
                 <td>{{ "%.2f"|format(item.carga) }}</td>
                 <td>{{ "%.2f"|format(item.porcentagem) }}%</td>
                 <td>{{ "%.2f"|format(pares_por_carga) }}</td>
-                <td>{{ "%.6f"|format(item.consumo) }}</td>
+                <td>{{ "%.4f"|format(item.consumo) }}</td>
                 <td>R$ {{ "%.2f"|format(item.preco_unitario) }}</td>
             </tr>
             {% endfor %}

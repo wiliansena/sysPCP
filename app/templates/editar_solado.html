@@ -10,12 +10,12 @@
     <!-- 🔹 Adicionado action na form -->
     <form method="POST" action="{{ url_for('routes.editar_solado', id=solado.id) }}" enctype="multipart/form-data">
         {{ form.hidden_tag() }}
-    
+
         <div class="form-group">
             <label>Referência</label>
             {{ form.referencia(class="form-control") }}
         </div>
-    
+
 
         <div class="form-group">
             <label>Descrição</label>
@@ -84,10 +84,12 @@
             <tbody id="tabela-sem_friso">
                 {% for item in solado.formulacao %}
                 <tr data-id="{{ item.componente.id }}">
-                    <td><input type="hidden" name="componentes_sem_friso[]" value="{{ item.componente.id }}">{{ item.componente.id }}</td>
+                    <td><input type="hidden" name="componentes_sem_friso[]" value="{{ item.componente.id }}">{{
+                        item.componente.id }}</td>
                     <td>{{ item.componente.descricao }}</td>
                     <td>R$ {{ "%.6f"|format(item.componente.preco) }}</td>
-                    <td><input type="number" name="carga_sem_friso[]" class="form-control carga-input" value="{{ item.carga }}" step="0.000001" min="0"></td>
+                    <td><input type="number" name="carga_sem_friso[]" class="form-control carga-input"
+                            value="{{ item.carga }}" step="0.000001" min="0"></td>
                     <td><button type="button" class="btn btn-danger btn-sm remover-componente">Remover</button></td>
                 </tr>
                 {% endfor %}
@@ -112,14 +114,16 @@
             <tbody id="tabela-friso">
                 {% for item in solado.formulacao_friso %}
                 <tr data-id="{{ item.componente.id }}">
-                    <td><input type="hidden" name="componentes_friso[]" value="{{ item.componente.id }}">{{ item.componente.id }}</td>
+                    <td><input type="hidden" name="componentes_friso[]" value="{{ item.componente.id }}">{{
+                        item.componente.id }}</td>
                     <td>{{ item.componente.descricao }}</td>
                     <td>R$ {{ "%.6f"|format(item.componente.preco) }}</td>
-                    <td><input type="number" name="carga_friso[]" class="form-control carga-input" value="{{ item.carga }}" step="0.000001" min="0"></td>
+                    <td><input type="number" name="carga_friso[]" class="form-control carga-input"
+                            value="{{ item.carga }}" step="0.000001" min="0"></td>
                     <td><button type="button" class="btn btn-danger btn-sm remover-componente">Remover</button></td>
                 </tr>
                 {% endfor %}
-            </tbody>            
+            </tbody>
         </table>
 
 
@@ -142,7 +146,8 @@
             <div class="modal-body">
                 <!-- Campo de filtro -->
                 <div class="mb-3">
-                    <input type="text" id="filterComponentesSemFriso" class="form-control" placeholder="Filtrar Componentes Sem Friso">
+                    <input type="text" id="filterComponentesSemFriso" class="form-control"
+                        placeholder="Filtrar Componentes Sem Friso">
                 </div>
                 <table class="table" id="componentesSemFrisoTable">
                     <thead>
@@ -161,10 +166,8 @@
                             <td>R$ {{ "%.6f"|format(componente.preco) }}</td>
                             <td>
                                 <button type="button" class="btn btn-success btn-sm selecionar-componente"
-                                    data-id="{{ componente.id }}" 
-                                    data-descricao="{{ componente.descricao }}"
-                                    data-preco="{{ "%.6f"|format(componente.preco) }}" 
-                                    data-tipo="sem_friso">
+                                    data-id="{{ componente.id }}" data-descricao="{{ componente.descricao }}"
+                                    data-preco="{{ " %.6f"|format(componente.preco) }}" data-tipo="sem_friso">
                                     Selecionar
                                 </button>
                             </td>
@@ -178,7 +181,8 @@
 </div>
 
 <!-- 🔹 Modal para selecionar componentes (Com Friso) -->
-<div class="modal fade" id="modalComponentesFriso" tabindex="-1" aria-labelledby="modalComponentesFrisoLabel" aria-hidden="true">
+<div class="modal fade" id="modalComponentesFriso" tabindex="-1" aria-labelledby="modalComponentesFrisoLabel"
+    aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -190,7 +194,8 @@
             <div class="modal-body">
                 <!-- Campo de filtro -->
                 <div class="mb-3">
-                    <input type="text" id="filterComponentesFriso" class="form-control" placeholder="Filtrar Componentes Com Friso">
+                    <input type="text" id="filterComponentesFriso" class="form-control"
+                        placeholder="Filtrar Componentes Com Friso">
                 </div>
                 <table class="table" id="componentesFrisoTable">
                     <thead>
@@ -209,10 +214,8 @@
                             <td>R$ {{ "%.6f"|format(componente.preco) }}</td>
                             <td>
                                 <button type="button" class="btn btn-success btn-sm selecionar-componente"
-                                    data-id="{{ componente.id }}" 
-                                    data-descricao="{{ componente.descricao }}"
-                                    data-preco="{{ "%.6f"|format(componente.preco) }}" 
-                                    data-tipo="friso">
+                                    data-id="{{ componente.id }}" data-descricao="{{ componente.descricao }}"
+                                    data-preco="{{ " %.6f"|format(componente.preco) }}" data-tipo="friso">
                                     Selecionar
                                 </button>
                             </td>
@@ -227,23 +230,23 @@
 
 <!-- Script para filtrar as tabelas dos modais -->
 <script>
-function setupFilter(filterId, tableId) {
-    const filterInput = document.getElementById(filterId);
-    if (filterInput) {
-        filterInput.addEventListener('keyup', function() {
-            const filtro = this.value.toUpperCase();
-            const rows = document.querySelectorAll('#' + tableId + ' tbody tr');
-            rows.forEach(row => {
-                const col1 = row.querySelector('td:nth-child(1)').textContent.toUpperCase();
-                const col2 = row.querySelector('td:nth-child(2)').textContent.toUpperCase();
-                row.style.display = (col1.indexOf(filtro) > -1 || col2.indexOf(filtro) > -1) ? '' : 'none';
+    function setupFilter(filterId, tableId) {
+        const filterInput = document.getElementById(filterId);
+        if (filterInput) {
+            filterInput.addEventListener('keyup', function () {
+                const filtro = this.value.toUpperCase();
+                const rows = document.querySelectorAll('#' + tableId + ' tbody tr');
+                rows.forEach(row => {
+                    const col1 = row.querySelector('td:nth-child(1)').textContent.toUpperCase();
+                    const col2 = row.querySelector('td:nth-child(2)').textContent.toUpperCase();
+                    row.style.display = (col1.indexOf(filtro) > -1 || col2.indexOf(filtro) > -1) ? '' : 'none';
+                });
             });
-        });
+        }
     }
-}
 
-setupFilter('filterComponentesSemFriso', 'componentesSemFrisoTable');
-setupFilter('filterComponentesFriso', 'componentesFrisoTable');
+    setupFilter('filterComponentesSemFriso', 'componentesSemFrisoTable');
+    setupFilter('filterComponentesFriso', 'componentesFrisoTable');
 </script>
 
 <script>
@@ -281,7 +284,7 @@ setupFilter('filterComponentesFriso', 'componentesFrisoTable');
         `;
 
             tabela.append(novaLinha);
-           // $("#modalComponentes, #modalComponentesFriso").modal("hide");  // Fecha os modais corretamente
+            // $("#modalComponentes, #modalComponentesFriso").modal("hide");  // Fecha os modais corretamente
         });
 
         $(document).on("click", ".remover-componente", function () {
@@ -317,24 +320,19 @@ setupFilter('filterComponentesFriso', 'componentesFrisoTable');
             console.log("Campos preenchidos automaticamente:", $(this).serializeArray());
         });
     });
-
 </script>
 <script>
-    document.addEventListener("DOMContentLoaded", function () {
-        for (let i = 0; i < 8; i++) {
-            let campo = document.getElementById(`tamanhos-${i}-nome`);
-            if (campo) {
-                campo.addEventListener("input", function () {
-                    let valor = campo.value.replace(/\D/g, ''); // Remove tudo que não é número
-
-                    if (valor.length > 2) {
-                        valor = valor.slice(0, 2) + '/' + valor.slice(2);
-                    }
-
-                    campo.value = valor;
-                });
-            }
-        }
-    });
+    (function formatarTamanhosAgora() {
+        const campos = document.querySelectorAll("input[name*='tamanhos'][name*='nome']");
+        campos.forEach(function (campo) {
+            campo.addEventListener("input", function () {
+                let valor = campo.value.replace(/\D/g, '');
+                if (valor.length > 2) {
+                    valor = valor.slice(0, 2) + '/' + valor.slice(2);
+                }
+                campo.value = valor;
+            });
+        });
+    })();
 </script>
 {% endblock %}

@@ -510,3 +510,132 @@ td .btn:last-child {
 }
 
 /* Se a .content tiver um padding/margin lateral fixo, pode ajustar aqui também */
+
+
+.toggle-sidebar-btn {
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    z-index: 9999;
+    background-color: #0d6efd; /* azul padrão Bootstrap */
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 45px;
+    height: 45px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    font-size: 20px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.toggle-sidebar-btn:hover {
+    background-color: #0b5ed7; /* azul hover */
+}
+
+body.hide-sidebar .sidebar {
+    width: 0 !important;
+    overflow: hidden;
+}
+
+body.hide-sidebar .content {
+    margin-left: 0 !important;
+}
+
+.sidebar {
+    transition: all 0.3s ease;
+}
+
+@media print {
+
+
+    body {
+        zoom: 75%; /* 🔹 Escala ideal para visualização/impressão */
+        font-size: 10px;
+        background: white !important;
+        color: black;
+    }
+
+    .container, .content {
+        margin: 0 !important;
+        padding: 10px !important;
+        width: 100% !important;
+    }
+
+    .sidebar, .top-bar, .btn, .no-print, .navbar, .footer {
+        display: none !important;
+    }
+
+    .table {
+        font-size: 8px;
+        width: 100%;
+        border-collapse: collapse !important;
+        table-layout: fixed;
+    }
+
+    .table th, .table td {
+        border: 1px solid black !important;
+        padding: 3px;
+        word-break: break-word;
+        text-align: center;
+    }
+
+    h2, h4, p, strong, small {
+        font-size: 11px !important;
+    }
+
+    .alert-info {
+        font-size: 10px !important;
+        page-break-inside: avoid;
+    }
+
+    .table-responsive {
+        overflow: visible !important;
+    }
+
+    table, tr, td, th {
+        page-break-inside: avoid !important;
+    }
+}
+
+
+.motivo-select {
+    background-color: #e7f1ff !important;
+    border: 2px solid #339af0 !important;
+    color: #084298;
+    font-weight: 600;
+}
+
+
+.btn-selecionar-matriz {
+    background-color: #007bff;
+    color: white;
+    font-weight: 600;
+    font-size: 0.95rem;
+    padding: 10px 16px;
+    border-radius: 10px;
+    box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease-in-out;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-selecionar-matriz:hover {
+    background-color: #0056b3;
+    transform: translateY(-2px);
+}
+
+.btn-selecionar-matriz i {
+    font-size: 1rem;
+}
+
+@media print {
+    .no-print {
+      display: none !important;
+    }
+  }
+  
