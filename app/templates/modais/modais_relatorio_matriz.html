@@ -1,0 +1,78 @@
+<!-- Modal de Selecionar Matriz -->
+<div class="modal fade" id="modalMatriz" tabindex="-1" aria-labelledby="modalMatrizLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalMatrizLabel">Selecionar Matriz</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <ul class="list-group">
+                    {% for matriz in matrizes %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        {{ matriz.codigo }}
+                        <button type="button" class="btn btn-sm btn-success selecionar-matriz"
+                            data-id="{{ matriz.id }}" data-codigo="{{ matriz.codigo }}">
+                            Selecionar
+                        </button>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Selecionar Linha -->
+<div class="modal fade" id="modalLinha" tabindex="-1" aria-labelledby="modalLinhaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalLinhaLabel">Selecionar Linha</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <ul class="list-group">
+                    {% for linha in linhas %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center linha-item"
+                    data-matrizes="{% for m in linha.matrizes %}{{ m.id }}{% if not loop.last %}-{% endif %}{% endfor %}">
+                        {{ linha.nome }}
+                        <button type="button" class="btn btn-sm btn-success selecionar-linha"
+                            data-id="{{ linha.id }}" data-nome="{{ linha.nome }}">
+                            Selecionar
+                        </button>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Selecionar Cor -->
+<div class="modal fade" id="modalCor" tabindex="-1" aria-labelledby="modalCorLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalCorLabel">Selecionar Cor</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <ul class="list-group">
+                    {% for cor in cores %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center cor-item"
+                    data-matrizes="{% for m in cor.matrizes %}{{ m.id }}{% if not loop.last %}-{% endif %}{% endfor %}">
+                        {{ cor.nome }}
+                        <button type="button" class="btn btn-sm btn-success selecionar-cor"
+                            data-id="{{ cor.id }}" data-nome="{{ cor.nome }}">
+                            Selecionar
+                        </button>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+

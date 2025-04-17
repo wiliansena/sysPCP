@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Detalhes da Movimentação</h2>
+
+<div class="row mb-3">
+    <div class="col-md-3"><strong>Data:</strong><br> {{ movimentacao.data.strftime('%d/%m/%Y %H:%M') }}</div>
+    <div class="col-md-3"><strong>Tipo:</strong><br> 
+        <span class="badge {% if movimentacao.tipo == 'Entrada' %}bg-success{% else %}bg-danger{% endif %}">
+            {{ movimentacao.tipo }}
+        </span>
+    </div>
+    <div class="col-md-3"><strong>Matriz:</strong><br> {{ movimentacao.matriz.codigo }}</div>
+    <div class="col-md-3"><strong>Cor:</strong><br> {{ movimentacao.cor.nome }}</div>
+</div>
+
+<div class="row mb-3">
+    <div class="col-md-6"><strong>Motivo:</strong><br> {{ movimentacao.motivo }}</div>
+    <div class="col-md-6"><strong>Posição no Estoque:</strong><br> {{ movimentacao.posicao_estoque or '--' }}</div>
+</div>
+
+<hr>
+<h4>Tamanhos Movimentados</h4>
+
+<div class="table-responsive">
+    <table class="table table-sm table-bordered">
+        <thead class="table-light">
+            <tr>
+                {% for tam in movimentacao.tamanhos_movimentados %}
+                    <th>{{ tam.nome }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                {% for tam in movimentacao.tamanhos_movimentados %}
+                    <td class="{% if tam.quantidade > 0 %}text-success{% else %}text-danger{% endif %} fw-bold">
+                        {{ tam.quantidade }}
+                    </td>
+                {% endfor %}
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<div class="d-flex gap-2 mt-4">
+    <a href="{{ url_for('routes.listar_movimentacoes_matriz') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Voltar
+    </a>
+    <button class="btn btn-primary" onclick="window.print()">
+        <i class="fas fa-print"></i> Imprimir
+    </button>
+</div>
+{% endblock %}

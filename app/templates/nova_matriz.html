@@ -1,29 +1,175 @@
 {% extends 'base.html' %}
+
 {% block content %}
 <h2>Nova Matriz</h2>
-<form method="POST">
+<form method="POST" enctype="multipart/form-data">
     {{ form.hidden_tag() }}
-    <div class="mb-3">
-        {{ form.codigo.label(class="form-label") }}
-        {{ form.codigo(class="form-control") }}
+
+    <div class="row">
+        <div class="col-md-4">
+            {{ form.codigo.label(class="form-label") }}
+            {{ form.codigo(class="form-control") }}
+        </div>
+        <div class="col-md-4">
+            {{ form.descricao.label(class="form-label") }}
+            {{ form.descricao(class="form-control") }}
+        </div>
+        <div class="col-md-4">
+            {{ form.tipo.label(class="form-label") }}
+            {{ form.tipo(class="form-control") }}
+        </div>
     </div>
-    <div class="mb-3">
-        {{ form.descricao.label(class="form-label") }}
-        {{ form.descricao(class="form-control") }}
+
+    <div class="row mt-3">
+        <div class="col-md-4">
+            {{ form.status.label(class="form-label") }}
+            {{ form.status(class="form-select") }}
+        </div>
+        <div class="col-md-4">
+            {{ form.capacidade.label(class="form-label") }}
+            {{ form.capacidade(class="form-control") }}
+        </div>
+        <div class="col-md-4">
+            {{ form.imagem.label(class="form-label") }}
+            {{ form.imagem(class="form-control") }}
+        </div>
     </div>
-    <div class="mb-3">
-        {{ form.tipo.label(class="form-label") }}
-        {{ form.tipo(class="form-select") }}
+
+    <div class="row mt-3">
+        <div class="col-md-6">
+            <label class="form-label">Linha</label><br>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalLinha">Selecionar</button>
+            <div id="linhaSelecionada" class="mt-3" style="display: none;">
+                <span class="badge bg-info text-dark fs-6 d-inline-flex align-items-center px-3 py-2" id="linhaBadge">
+                    <span id="linhaTexto" class="me-2 fw-bold"></span>
+                    <button type="button" class="btn-close btn-close-white btn-sm remover-linha" aria-label="Fechar"></button>
+                </span>
+            </div>
+            <input type="hidden" name="linha_id" id="linha_id" value="">
+        </div>
+        
+
+
+        <div class="col-md-6">
+            <label class="form-label">Cores</label><br>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal"
+                data-bs-target="#modalCores">Selecionar</button>
+            <div id="coresSelecionadas" class="mt-2 d-flex flex-wrap gap-2"></div>
+        </div>
     </div>
-    <div class="mb-3">
-        {{ form.status.label(class="form-label") }}
-        {{ form.status(class="form-select") }}
-    </div>
-    <div class="mb-3">
-        {{ form.capacidade.label(class="form-label") }}
-        {{ form.capacidade(class="form-control") }}
-    </div>
+
+
+    <hr class="my-4">
+    <h4>Ficha Técnica</h4>
+    <table class="table table-bordered text-center align-middle">
+        <tbody>
+            <tr>
+                <th class="text-start">TAMANHOS</th>
+                {% for campo in form.tamanhos %}
+                <td>{{ campo.nome(class="form-control") }}</td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <th class="text-start">GRADE (INICIAL 0)</th>
+                {% for campo in form.tamanhos %}
+                <td>{{ campo.quantidade(class="form-control", type="number", min="0", readonly=True) }}</td>
+                {% endfor %}
+            </tr>
+        </tbody>
+    </table>
+
+
+
     <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Salvar</button>
     <a href="{{ url_for('routes.listar_matrizes') }}" class="btn btn-secondary">Cancelar</a>
 </form>
+
+{% include 'modais/modais_matriz.html' %}
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const linhaTexto = document.getElementById("linhaTexto");
+        const linhaSelecionada = document.getElementById("linhaSelecionada");
+        const linhaInput = document.getElementById("linha_id");
+
+        // Selecionar Linha
+        document.querySelectorAll(".selecionar-linha").forEach(btn => {
+            btn.addEventListener("click", function () {
+                const id = this.dataset.id;
+                const nome = this.dataset.nome;
+
+                linhaTexto.textContent = nome;
+                linhaInput.value = id;
+                linhaSelecionada.style.display = "block";
+
+                bootstrap.Modal.getInstance(document.getElementById("modalLinha")).hide();
+            });
+        });
+
+        // Remover Linha
+        document.addEventListener("click", function (e) {
+            if (e.target.classList.contains("remover-linha")) {
+                linhaInput.value = "";
+                linhaTexto.textContent = "";
+                linhaSelecionada.style.display = "none";
+            }
+        });
+
+        // Cores
+        const coresSelecionadas = new Set();
+        document.querySelectorAll(".selecionar-cor").forEach(btn => {
+            btn.addEventListener("click", function () {
+                const id = this.dataset.id;
+                const nome = this.dataset.nome;
+                if (!coresSelecionadas.has(id)) {
+                    coresSelecionadas.add(id);
+
+                    const badge = document.createElement("span");
+                    badge.className = "badge bg-warning text-dark fs-6 d-inline-flex align-items-center px-3 py-2";
+                    badge.innerHTML = `
+                        <span class="me-2 fw-bold">${nome}</span>
+                        <button type="button" class="btn-close btn-close-black btn-sm remover-cor ms-2" data-id="${id}" aria-label="Fechar"></button>
+                    `;
+
+                    const input = document.createElement("input");
+                    input.type = "hidden";
+                    input.name = "cores";
+                    input.value = id;
+                    badge.appendChild(input);
+
+                    document.getElementById("coresSelecionadas").appendChild(badge);
+                }
+            });
+        });
+
+        // Remover cor
+        document.addEventListener("click", function (e) {
+            if (e.target.classList.contains("remover-cor")) {
+                const id = e.target.dataset.id;
+                coresSelecionadas.delete(id);
+                e.target.closest("span.badge").remove();
+            }
+        });
+    });
+</script>
+
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        for (let i = 0; i < 10; i++) {
+            let campo = document.getElementById(`tamanhos-${i}-nome`);
+            if (campo) {
+                campo.addEventListener("input", function () {
+                    let valor = campo.value.replace(/\D/g, ''); // Remove tudo que não é número
+
+                    if (valor.length > 2) {
+                        valor = valor.slice(0, 2) + '/' + valor.slice(2);
+                    }
+
+                    campo.value = valor;
+                });
+            }
+        }
+    });
+</script>
 {% endblock %}

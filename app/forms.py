@@ -283,11 +283,23 @@ class TrocaForm(FlaskForm):
     # Opções fixas de motivos
     motivo_choices = [
         ("", "-- Selecione --"),
-        ("Manutenção", "Manutenção"),
-        ("Troca_cor", "Troca_cor"),
-        ("Falta_matéria-prima", "Falta_matéria-prima"),
-        ("Ajuste_técnico", "Ajuste_técnico"),
-        ("Almoço", "Almoço")
+        ("TROCA_MATRIZ", "TROCA_MATRIZ"),
+        ("FALTA_DE_MATERIAL", "FALTA_DE_MATERIAL"),
+        ("LIMPEZA_DE_BICO", "LIMPEZA_DE_BICO"),
+        ("FALTA_DE_PROGRAMACAO", "FALTA_DE_PROGRAMACAO"),
+        ("PROBLEMA_DE_MAQUINA", "PROBLEMA_DE_MAQUINA"),
+        ("PROBLEMA_DE_MATRIZ", "PROBLEMA_DE_MATRIZ"),
+        ("PROBLEMA_DE_MATERIAL", "PROBLEMA_DE_MATERIAL"),
+        ("FECHAMENTO", "FECHAMENTO"),
+        ("ERRO_DE_INJECAO", "ERRO_DE_INJECAO"),
+        ("FALTA_DE_OPERADOR", "FALTA_DE_OPERADOR"),
+        ("ALMOCO", "ALMOCO"),
+        ("BANHEIRO", "BANHEIRO"),
+        ("MOSTRUARIO", "MOSTRUARIO"),
+        ("TROCA_DE_COR", "TROCA_DE_COR"),
+        ("TESTE_DE_MATERIAL", "TESTE_DE_MATERIAL"),
+        ("TESTE_DE_MATRIZ", "TESTE_DE_MATRIZ"),
+        ("PORTA_MOLDE", "PORTA_MOLDE")
     ]
 
     # Criar dinamicamente os campos para 7 trocas
@@ -311,12 +323,24 @@ class TrocaMatrizForm(FlaskForm):
     
     submit = SubmitField("Salvar")
 
+
+class TamanhoMatrizForm(FlaskForm):
+    nome = StringField('Tamanho', validators=[Optional()])
+    quantidade = IntegerField('Quantidade', default=0)
+
 class MatrizForm(FlaskForm):
-    codigo = StringField("Código", validators=[DataRequired(), Length(max=20)])
-    descricao = StringField("Descrição", validators=[DataRequired(), Length(max=100)])
-    tipo = StringField("Tipo", validators=[DataRequired(), Length(max=50)])
-    status = SelectField("Status", choices=[('Ativa', 'Ativa'), ('Inativa', 'Inativa')], validators=[DataRequired()])
-    capacidade = IntegerField("Capacidade", validators=[Optional()])
+    codigo = StringField('Código', validators=[DataRequired()])
+    descricao = StringField('Descrição', validators=[DataRequired()])
+    tipo = SelectField('Tipo', choices=[('Solado', 'Solado'), ('Alca', 'Alca')], validators=[DataRequired()])
+    status = SelectField('Status', choices=[('Ativa', 'Ativa'), ('Inativa', 'Inativa')], validators=[DataRequired()])
+    capacidade = IntegerField('Capacidade', validators=[Optional()])
+    quantidade = IntegerField('Quantidade Total', validators=[Optional()])
+    imagem = FileField('Imagem', validators=[Optional()])
+    
+    # Linha será selecionada via modal e enviada como hidden
+    # Cores e tamanhos manipulados via lógica no template
+    tamanhos = FieldList(FormField(TamanhoMatrizForm), min_entries=10)
+
 
 
 class FuncionarioForm(FlaskForm):
@@ -360,7 +384,31 @@ class ManutencaoForm(FlaskForm):
     descricao = TextAreaField('Descrição', validators=[DataRequired()])
 
 
+class CorForm(FlaskForm):
+    nome = StringField('Nome', validators=[DataRequired(), Length(max=20)])
+
+class LinhaForm(FlaskForm):
+    nome = StringField('Nome', validators=[DataRequired(), Length(max=20)])
 
 
 
+class TamanhoMovimentacaoForm(FlaskForm):
+    nome = StringField('Tamanho')  # Campo somente leitura no template
+    quantidade = IntegerField('Quantidade', default=0)
 
+class MovimentacaoMatrizForm(FlaskForm):
+    tipo = SelectField('Tipo', choices=[('Entrada', 'Entrada'), ('Saída', 'Saída')], validators=[DataRequired()])
+    motivo = SelectField('Motivo', choices=[('Termino de Remessa', 'Termino de Remessa'),
+                                            ('Rotina de Atualização', 'Rotina de Atualização'),
+                                            ('Fechamento', 'Fechamento'),
+                                            ('Erro de Injeção', 'Erro de Injeção'),
+                                            ('Falha de Contagem', 'Falha de Contagem'),
+                                            ('Mostruário', 'Mostruário')
+                                            ], validators=[DataRequired()])
+    posicao_estoque = StringField('Posição no Estoque', validators=[Optional()])
+
+    matriz_id = HiddenField('Matriz ID', validators=[DataRequired()])
+    cor_id = SelectField('Cor', validate_choice=False, coerce=int)
+
+
+    tamanhos = FieldList(FormField(TamanhoMovimentacaoForm), min_entries=10)

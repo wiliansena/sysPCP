@@ -385,7 +385,7 @@ td .btn:last-child {
     }
 
     body {
-        zoom: 80%; /* Ajusta o tamanho para caber melhor em A4 */
+        zoom: 100%; /* Ajusta o tamanho para caber melhor em A4 */
         margin: 0 !important; /* 🔥 Remove qualquer margem no corpo */
         padding: 0 !important;
     }
@@ -435,7 +435,7 @@ td .btn:last-child {
 
 @media print {
     body {
-        zoom: 80%; /* Reduz um pouco o tamanho do conteúdo */
+        zoom: 100%; /* Reduz um pouco o tamanho do conteúdo */
     }
 
     .container {
@@ -549,65 +549,19 @@ body.hide-sidebar .content {
     transition: all 0.3s ease;
 }
 
-@media print {
-
-
-    body {
-        zoom: 75%; /* 🔹 Escala ideal para visualização/impressão */
-        font-size: 10px;
-        background: white !important;
-        color: black;
-    }
-
-    .container, .content {
-        margin: 0 !important;
-        padding: 10px !important;
-        width: 100% !important;
-    }
-
-    .sidebar, .top-bar, .btn, .no-print, .navbar, .footer {
-        display: none !important;
-    }
-
-    .table {
-        font-size: 8px;
-        width: 100%;
-        border-collapse: collapse !important;
-        table-layout: fixed;
-    }
-
-    .table th, .table td {
-        border: 1px solid black !important;
-        padding: 3px;
-        word-break: break-word;
-        text-align: center;
-    }
-
-    h2, h4, p, strong, small {
-        font-size: 11px !important;
-    }
-
-    .alert-info {
-        font-size: 10px !important;
-        page-break-inside: avoid;
-    }
-
-    .table-responsive {
-        overflow: visible !important;
-    }
-
-    table, tr, td, th {
-        page-break-inside: avoid !important;
-    }
-}
-
 
 .motivo-select {
-    background-color: #e7f1ff !important;
-    border: 2px solid #339af0 !important;
-    color: #084298;
+    background-color: #ffc107 !important;
+    border: 2px solid #000000 !important;
+    color: #0a0a0a;
     font-weight: 600;
+
+    min-width: 70px;      /* Garante largura mínima */
 }
+
+
+
+
 
 
 .btn-selecionar-matriz {

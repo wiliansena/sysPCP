@@ -1,6 +1,20 @@
 {% extends 'base.html' %}
 {% block content %}
+<div class="card mb-4 shadow-sm">
+    <div class="card-body d-flex justify-content-around flex-wrap gap-3">
+        <a href="{{ url_for('routes.relatorio_estoque_matriz') }}" class="btn btn-outline-primary">
+            <i class="fa-solid fa-clipboard-list me-2"></i>Relatório Estoque de Matriz
+        </a>
+        <a href="{{ url_for('routes.listar_movimentacoes_matriz') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-cube me-2"></i>Movimentação de Matrizes
+        </a>
+        <a href="{{ url_for('routes.listar_trocas_matriz') }}" class="btn btn-outline-dark">
+            <i class="fas fa-exchange-alt me-2"></i>Troca de Matriz
+        </a>
+    </div>
+</div>
 <h2>Matrizes Cadastradas</h2>
+
 <a href="{{ url_for('routes.nova_matriz') }}" class="btn btn-success mb-3">
     <i class="fas fa-plus"></i> Nova Matriz
 </a>
@@ -9,9 +23,10 @@
         <tr>
             <th>Código</th>
             <th>Descrição</th>
-            <th>Tipo</th>
+            <th>Linha</th>
+            <th>Imagem</th>
             <th>Status</th>
-            <th>Capacidade</th>
+            <th>QTDE</th>
             <th>Ações</th>
         </tr>
     </thead>
@@ -20,12 +35,27 @@
         <tr>
             <td>{{ matriz.codigo }}</td>
             <td>{{ matriz.descricao }}</td>
-            <td>{{ matriz.tipo }}</td>
-            <td>{{ matriz.status }}</td>
-            <td>{{ matriz.capacidade }}</td>
+            <td>{{ matriz.linha.nome }}</td>
             <td>
-                <a href="{{ url_for('routes.editar_matriz', id=matriz.id) }}" class="btn btn-editar btn-sm"><i class="fas fa-edit"></i></a>
-                <a href="{{ url_for('routes.excluir_matriz', id=matriz.id) }}" class="btn btn-excluir btn-sm" onclick="return confirm('Deseja excluir esta matriz?')"><i class="fas fa-trash"></i></a>
+                {% if matriz.imagem %}
+                    <img src="{{ url_for('static', filename='uploads/' + matriz.imagem) }}" width="80">
+                {% else %}
+                    Sem imagem
+                {% endif %}
+            </td>
+            <td>{{ matriz.status }}</td>
+            <td class="{% if matriz.quantidade < 100 %}text-danger fw-bold{% else %}text-success fw-bold{% endif %}">
+                {{ matriz.quantidade }}
+            </td>            
+            <td>
+                <a href="{{ url_for('routes.ver_matriz', id=matriz.id) }}"
+                class="btn btn-info btn-sm"><i class="bi bi-eye"></i>Ver</a>
+                <a href="{{ url_for('routes.editar_matriz', id=matriz.id) }}"
+                 class="btn btn-editar btn-sm"><i class="fas fa-edit"></i>Editar</a>
+                 <form action="{{ url_for('routes.excluir_matriz', id=matriz.id) }}" method="POST" style="display:inline;">
+                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Tem certeza que deseja excluir este solado?')">
+                        <i class="fas fa-trash-alt"></i> Excluir</button>
+                </form>
             </td>
         </tr>
         {% endfor %}

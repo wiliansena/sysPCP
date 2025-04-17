@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2 class="mb-4">Detalhes da Matriz</h2>
+
+<div class="row mb-3">
+    <div class="col-md-3">
+        <strong>Código:</strong><br>{{ matriz.codigo }}
+    </div>
+    <div class="col-md-3">
+        <strong>Descrição:</strong><br>{{ matriz.descricao }}
+    </div>
+    <div class="col-md-3">
+        <strong>Tipo:</strong><br>{{ matriz.tipo }}
+    </div>
+    <div class="col-md-3">
+        <strong>Status:</strong><br>{{ matriz.status }}
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col-md-3">
+        <strong>Capacidade:</strong><br>{{ matriz.capacidade or '--' }}
+    </div>
+    <div class="col-md-3">
+        <strong>Quantidade:</strong><br>{{ matriz.quantidade or '--' }}
+    </div>
+    <div class="col-md-6">
+        <strong>Linha:</strong><br>{{ matriz.linha.nome if matriz.linha else '--' }}
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <strong>Cores:</strong><br>
+        {% if matriz.cores %}
+        {% for cor in matriz.cores %}
+        <span class="badge bg-secondary me-1">{{ cor.nome }}</span>
+        {% endfor %}
+        {% else %}
+        <span class="text-muted">Nenhuma cor vinculada</span>
+        {% endif %}
+    </div>
+</div>
+
+{% if matriz.imagem %}
+<div class="row mb-4">
+    <div class="col-md-4">
+        <strong>Imagem:</strong><br>
+        <img src="{{ url_for('static', filename='uploads/' ~ matriz.imagem) }}" alt="Imagem da Matriz"
+            class="img-fluid rounded border">
+    </div>
+</div>
+{% endif %}
+
+<hr>
+<hr>
+<h4>Ficha Técnica</h4>
+<table class="table table-bordered">
+    <tbody>
+        <tr>
+            <th class="bg-light text-start px-3">TAMANHOS</th>
+            {% for tamanho in tamanhos_ordenados %}
+            <td>{{ tamanho.nome }}</td>
+            {% endfor %}
+            <th class="bg-light text-start px-3">TOTAIS</th>
+        </tr>
+        <tr>
+            <th class="bg-light text-start px-3">GRADE</th>
+            {% for tamanho in tamanhos_ordenados %}
+            <td>
+                <span class="{{ 'text-danger fw-bold' if tamanho.quantidade < 1 else 'text-success fw-bold' }}">
+                    {{ tamanho.quantidade }}
+                </span>
+            </td>
+            {% endfor %}
+            <td><strong class="text-dark">{{ matriz.quantidade }}</strong></td>
+        </tr>
+    </tbody>
+</table>
+
+
+
+
+
+<div class="d-flex align-items-center gap-2 mt-4">
+    <a href="{{ url_for('routes.listar_matrizes') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Voltar
+    </a>
+    {% if matriz.movimentacoes|length > 0 %}
+    <!-- Botão que abre o modal -->
+    <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#confirmarZerarModal">
+        <i class="fas fa-trash-restore-alt"></i> Zerar Matriz
+    </button>
+
+
+    {% endif %}
+    <button class="btn btn-primary" onclick="window.print()">
+        <i class="fas fa-print"></i> Imprimir
+    </button>
+</div>
+
+<!-- Modal de Confirmação -->
+<div class="modal fade" id="confirmarZerarModal" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('routes.zerar_matriz', id=matriz.id) }}"
+                onsubmit="return validarZerar();">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalLabel">Confirmar</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-danger fw-bold">Esta ação apagará todas as movimentações e zerará os tamanhos da
+                        matriz <strong>{{ matriz.codigo }}</strong>.</p>
+                    <p>Para confirmar, digite <strong>zerar</strong> no campo abaixo:</p>
+                    <input type="text" id="confirmarTexto" class="form-control" placeholder="Digite 'zerar'" required>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger">Confirmar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<script>
+    function validarZerar() {
+        const valor = document.getElementById('confirmarTexto').value.trim().toLowerCase();
+        if (valor === 'zerar') {
+            return true;
+        } else {
+            alert("Digite corretamente 'zerar' para confirmar.");
+            return false;
+        }
+    }
+</script>
+
+{% endblock %}

@@ -1,29 +1,160 @@
 {% extends 'base.html' %}
+
 {% block content %}
 <h2>Editar Matriz</h2>
-<form method="POST">
+<form method="POST" enctype="multipart/form-data">
     {{ form.hidden_tag() }}
-    <div class="mb-3">
-        {{ form.codigo.label(class="form-label") }}
-        {{ form.codigo(class="form-control") }}
+
+    <div class="row">
+        <div class="col-md-4">
+            {{ form.codigo.label(class="form-label") }}
+            {{ form.codigo(class="form-control") }}
+        </div>
+        <div class="col-md-4">
+            {{ form.descricao.label(class="form-label") }}
+            {{ form.descricao(class="form-control") }}
+        </div>
+        <div class="col-md-4">
+            {{ form.tipo.label(class="form-label") }}
+            {{ form.tipo(class="form-control") }}
+        </div>
     </div>
-    <div class="mb-3">
-        {{ form.descricao.label(class="form-label") }}
-        {{ form.descricao(class="form-control") }}
+
+    <div class="row mt-3">
+        <div class="col-md-4">
+            {{ form.status.label(class="form-label") }}
+            {{ form.status(class="form-select") }}
+        </div>
+        <div class="col-md-4">
+            {{ form.capacidade.label(class="form-label") }}
+            {{ form.capacidade(class="form-control") }}
+        </div>
     </div>
-    <div class="mb-3">
-        {{ form.tipo.label(class="form-label") }}
-        {{ form.tipo(class="form-select") }}
+
+    <div class="row mt-3">
+        <div class="col-md-6">
+            {{ form.imagem.label(class="form-label") }}
+            {{ form.imagem(class="form-control") }}
+            {% if matriz.imagem %}
+                <small class="text-muted">Imagem atual: {{ matriz.imagem }}</small>
+            {% endif %}
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Linha</label><br>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalLinha">
+                Selecionar Linha
+            </button>
+            <div id="linhaSelecionada" class="mt-2 text-muted">
+                {{ matriz.linha.nome if matriz.linha else '' }}
+            </div>
+            <input type="hidden" name="linha_id" id="linha_id" value="{{ matriz.linha_id }}">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Cores</label><br>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalCores">
+                Selecionar Cores
+            </button>
+            <div id="coresSelecionadas" class="mt-2 d-flex flex-wrap gap-2">
+                {% for cor in matriz.cores %}
+                    <span class="border rounded px-2 py-1 d-flex align-items-center bg-warning text-dark shadow-sm">
+                        <span class="me-2 fw-bold">{{ cor.nome }}</span>
+                        <button type="button" class="btn-close btn-sm remover-cor" data-id="{{ cor.id }}" aria-label="Remover"></button>
+                        <input type="hidden" name="cores" value="{{ cor.id }}">
+                    </span>
+                {% endfor %}
+            </div>
+        </div>
     </div>
-    <div class="mb-3">
-        {{ form.status.label(class="form-label") }}
-        {{ form.status(class="form-select") }}
-    </div>
-    <div class="mb-3">
-        {{ form.capacidade.label(class="form-label") }}
-        {{ form.capacidade(class="form-control") }}
-    </div>
-    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Atualizar</button>
+
+    <hr class="my-4">
+    <h4>Ficha Técnica</h4>
+    <table class="table table-bordered text-center align-middle">
+        <tbody>
+            <tr>
+                <th class="bg-light text-start px-3">TAMANHOS</th>
+                {% for campo in form.tamanhos %}
+                <td>{{ campo.nome(class="form-control", readonly=True) }}</td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <th class="bg-light text-start px-3">GRADE</th>
+                {% for campo in form.tamanhos %}
+                <td>{{ campo.quantidade(class="form-control", readonly=True) }}</td>
+                {% endfor %}
+            </tr>
+        </tbody>
+    </table>
+
+    <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Salvar Alterações</button>
     <a href="{{ url_for('routes.listar_matrizes') }}" class="btn btn-secondary">Cancelar</a>
 </form>
+
+<!-- Reutilização dos modais -->
+{% include 'modais/modais_matriz.html' %}
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Lógica de seleção da linha
+        document.querySelectorAll(".selecionar-linha").forEach(btn => {
+            btn.addEventListener("click", function () {
+                const id = this.dataset.id;
+                const nome = this.dataset.nome;
+                document.getElementById("linha_id").value = id;
+                document.getElementById("linhaSelecionada").innerText = nome;
+                bootstrap.Modal.getInstance(document.getElementById("modalLinha")).hide();
+            });
+        });
+    
+        // Cores já selecionadas no início
+        const coresSelecionadas = new Set([...document.querySelectorAll('input[name="cores"]')].map(i => i.value));
+    
+        // Adicionar nova cor dinamicamente
+        document.querySelectorAll(".selecionar-cor").forEach(btn => {
+            btn.addEventListener("click", function () {
+                const id = this.dataset.id;
+                const nome = this.dataset.nome;
+    
+                if (!coresSelecionadas.has(id)) {
+                    coresSelecionadas.add(id);
+    
+                    // Criar o span do badge
+                    const span = document.createElement("span");
+                    span.className = "border rounded px-2 py-1 d-flex align-items-center bg-warning text-dark shadow-sm me-2 mb-2";
+    
+                    const nomeSpan = document.createElement("span");
+                    nomeSpan.className = "me-2 fw-bold";
+                    nomeSpan.innerText = nome;
+    
+                    const botaoClose = document.createElement("button");
+                    botaoClose.type = "button";
+                    botaoClose.className = "btn-close btn-sm remover-cor";
+                    botaoClose.setAttribute("data-id", id);
+                    botaoClose.setAttribute("aria-label", "Remover");
+    
+                    const inputHidden = document.createElement("input");
+                    inputHidden.type = "hidden";
+                    inputHidden.name = "cores";
+                    inputHidden.value = id;
+    
+                    span.appendChild(nomeSpan);
+                    span.appendChild(botaoClose);
+                    span.appendChild(inputHidden);
+    
+                    document.getElementById("coresSelecionadas").appendChild(span);
+                }
+            });
+        });
+    
+        // Remoção com delegação de evento
+        document.getElementById("coresSelecionadas").addEventListener("click", function (e) {
+            if (e.target.classList.contains("remover-cor")) {
+                const corId = e.target.dataset.id;
+                coresSelecionadas.delete(corId);
+                const span = e.target.closest("span");
+                span.remove();
+            }
+        });
+    });
+    </script>
+    
 {% endblock %}

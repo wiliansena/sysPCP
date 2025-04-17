@@ -1,0 +1,199 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2 class="mb-4">Nova Movimentação de Matriz</h2>
+
+<form method="POST">
+    {{ form.hidden_tag() }}
+
+    <div class="row g-3">
+        <div class="col-md-3">
+            <label class="form-label">Matriz</label>
+            <button type="button" class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#modalMatriz">
+                Selecionar
+            </button>
+            <div id="matrizSelecionada" class="mt-2" style="display: none;">
+                <span class="badge bg-info text-dark px-3 py-2 fs-6 d-inline-flex align-items-center" id="matrizBadge">
+                    <span id="matrizTexto"></span>
+                    <button type="button" class="btn-close btn-close-white btn-sm ms-2" id="removerMatriz"></button>
+                </span>
+            </div>
+            <input type="hidden" name="matriz_id" id="matriz_id">
+        </div>
+        <div class="col-md-3">
+            {{ form.tipo.label(class="form-label") }}
+            {{ form.tipo(class="form-select") }}
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Cor</label>
+            <select id="cor_id" name="cor_id" class="form-select">
+                <option value="">Selecione uma cor</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            {{ form.posicao_estoque.label(class="form-label") }}
+            {{ form.posicao_estoque(class="form-control") }}
+        </div>
+    </div>
+
+    <div class="row mt-3">
+        <div class="col-md-6">
+            {{ form.motivo.label(class="form-label") }}
+            {{ form.motivo(class="form-select") }}
+        </div>
+    </div>
+
+    <hr class="my-4">
+
+    <h4 class="mb-3">Tamanhos Movimentados</h4>
+    <div class="table-responsive">
+        <table class="table table-bordered text-center align-middle">
+            <thead>
+                <tr id="tabela-head" class="align-middle"></tr>
+            </thead>
+            <tbody>
+                <tr id="tabela-body"></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="d-flex justify-content-start mt-4 gap-2">
+        <button type="submit" class="btn btn-success">
+            <i class="fas fa-save"></i> Salvar
+        </button>
+        <a href="{{ url_for('routes.listar_movimentacoes_matriz') }}" class="btn btn-secondary">
+            Cancelar
+        </a>
+    </div>
+</form>
+
+<!-- Modal de Selecionar Matriz -->
+<div class="modal fade" id="modalMatriz" tabindex="-1" aria-labelledby="modalMatrizLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Selecionar Matriz</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="filterMatriz" class="form-control mb-3" placeholder="Filtrar Matriz">
+                <table class="table table-sm table-bordered" id="tabelaMatrizes">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Descrição</th>
+                            <th>Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for matriz in matrizes %}
+                        <tr>
+                            <td>{{ matriz.codigo }}</td>
+                            <td>{{ matriz.descricao }}</td>
+                            <td>
+                                <button type="button" class="btn btn-sm btn-success selecionar-matriz"
+                                    data-id="{{ matriz.id }}" data-codigo="{{ matriz.codigo }} - {{ matriz.descricao }}">
+                                    Selecionar
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        function setupFiltroTabela(inputId, tabelaId) {
+            const filtro = document.getElementById(inputId);
+            const linhas = document.querySelectorAll(`#${tabelaId} tbody tr`);
+            if (filtro) {
+                filtro.addEventListener("keyup", function () {
+                    const texto = this.value.toLowerCase();
+                    linhas.forEach(row => {
+                        const col1 = row.children[0].textContent.toLowerCase();
+                        const col2 = row.children[1].textContent.toLowerCase();
+                        row.style.display = (col1.includes(texto) || col2.includes(texto)) ? '' : 'none';
+                    });
+                });
+            }
+        }
+
+        setupFiltroTabela("filterMatriz", "tabelaMatrizes");
+
+        const badge = document.getElementById("matrizBadge");
+        const texto = document.getElementById("matrizTexto");
+        const remover = document.getElementById("removerMatriz");
+        const wrapper = document.getElementById("matrizSelecionada");
+
+        document.querySelectorAll(".selecionar-matriz").forEach(btn => {
+            btn.addEventListener("click", function () {
+                const id = this.dataset.id;
+                const nome = this.dataset.codigo;
+                document.getElementById("matriz_id").value = id;
+                texto.innerText = nome;
+                wrapper.style.display = "block";
+                badge.style.display = "inline-flex";
+                bootstrap.Modal.getInstance(document.getElementById("modalMatriz")).hide();
+
+                // Cores da matriz
+                fetch(`/matriz/${id}/cores`)
+                    .then(res => res.json())
+                    .then(data => {
+                        const corSelect = document.getElementById("cor_id");
+                        corSelect.innerHTML = '<option value="">Selecione uma cor</option>';
+                        data.forEach(cor => {
+                            const option = document.createElement("option");
+                            option.value = cor.id;
+                            option.textContent = cor.nome;
+                            corSelect.appendChild(option);
+                        });
+                    });
+
+                // Tamanhos da matriz
+                fetch(`/matriz/${id}/tamanhos`)
+                    .then(res => res.json())
+                    .then(data => {
+                        const headRow = document.getElementById("tabela-head");
+                        const bodyRow = document.getElementById("tabela-body");
+                        headRow.innerHTML = "";
+                        bodyRow.innerHTML = "";
+
+                        data.forEach((t, index) => {
+                            const th = document.createElement("th");
+                            th.innerText = t.nome;
+                            headRow.appendChild(th);
+
+                            const td = document.createElement("td");
+                            const input = document.createElement("input");
+                            input.type = "number";
+                            input.name = `tamanhos-${index}-quantidade`;
+                            input.value = 0;
+                            input.className = "form-control";
+
+                            const hidden = document.createElement("input");
+                            hidden.type = "hidden";
+                            hidden.name = `tamanhos-${index}-nome`;
+                            hidden.value = t.nome;
+
+                            td.appendChild(input);
+                            td.appendChild(hidden);
+                            bodyRow.appendChild(td);
+                        });
+                    });
+            });
+        });
+
+        remover.addEventListener("click", function () {
+            badge.style.display = "none";
+            texto.innerText = "";
+            wrapper.style.display = "none";
+            document.getElementById("matriz_id").value = "";
+        });
+    });
+</script>
+
+{% endblock %}

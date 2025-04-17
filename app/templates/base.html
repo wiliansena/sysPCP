@@ -45,7 +45,7 @@
 
     <!-- Botão de alternância da sidebar -->
     <button id="toggleSidebar" class="toggle-sidebar-btn no-print" title="Abrir/Fechar Menu" >
-        <i id="toggleIcon"  class="fas fa-angle-left"></i>
+        <i id="toggleIcon"  class="fa-solid fa-angles-left"></i>
     </button>
 
     <!-- Barra superior -->
@@ -116,8 +116,8 @@
             
             <a href="{{ url_for('routes.listar_maquinas') }}"><i class="fa-solid fa-gears"></i> Máquinas</a>
             <a href="{{ url_for('routes.listar_matrizes') }}"><i class="fas fa-cube"></i> Matrizes</a>
-            <a href="{{ url_for('routes.listar_trocas_matriz') }}"><i class="fas fa-exchange-alt"></i> Troca de
-                Matriz</a>
+            <a href="{{ url_for('routes.listar_cores') }}"><i class="fa-solid fa-palette"></i>Cores</a>
+            <a href="{{ url_for('routes.listar_linhas') }}"><i class="fa-solid fa-layer-group"></i>Linhas</a>
         </div>
         {% endif %}
 
@@ -193,7 +193,7 @@
     <script src="{{ url_for('static', filename='js/marcar_botoes_selecionados.js') }}"></script>
     <script src="{{ url_for('static', filename='js/tela_cheia.js') }}"></script>
 
-
+    <!--SCRIPT PARA ALTERAR A DIREÇÃO DO BOTÃO DE ESCONDER E APARECER O MENU LATERAL-->
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             const toggleBtn = document.getElementById("toggleSidebar");
@@ -202,13 +202,13 @@
             toggleBtn.addEventListener("click", function () {
                 document.body.classList.toggle("hide-sidebar");
     
-                // Alternar ícone entre esquerda e direita
+                // Alternar ícone entre <<< e >>> usando angles
                 if (document.body.classList.contains("hide-sidebar")) {
-                    toggleIcon.classList.remove("fa-angle-left");
-                    toggleIcon.classList.add("fa-angle-right");
+                    toggleIcon.classList.remove("fa-angles-left");
+                    toggleIcon.classList.add("fa-angles-right");
                 } else {
-                    toggleIcon.classList.remove("fa-angle-right");
-                    toggleIcon.classList.add("fa-angle-left");
+                    toggleIcon.classList.remove("fa-angles-right");
+                    toggleIcon.classList.add("fa-angles-left");
                 }
             });
         });

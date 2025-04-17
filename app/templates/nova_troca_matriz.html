@@ -46,7 +46,7 @@
         <thead class="table-primary">
             <tr>
                 <th>Horário</th>
-                <th>Pares</th>
+                <th>Produção</th>
                 <th>Matriz</th>
                 <th>Capacidade</th>
                 {% for i in range(1, 8) %}
@@ -63,14 +63,16 @@
 
                 <!-- Seletor de Matriz via Modal -->
                 <td>
-                    {{ troca.matriz_id }}
-                    {{ troca.matriz_codigo(class="form-control mb-1", placeholder="Código", readonly=true) }}
-                    {{ troca.matriz_descricao(class="form-control mb-1", placeholder="Descrição", readonly=true) }}
-                    <button type="button" class="btn btn-primary btn-selecionar-matriz"
-                        data-index="{{ loop.index0 }}">
-                        <i class="fas fa-search"></i> Selecionar
+                    <button type="button" class="btn btn-primary btn-selecionar-matriz" data-index="{{ loop.index0 }}"
+                        data-bs-toggle="modal" data-bs-target="#modalMatrizes">
+                        <i class="fas fa-search"></i> Buscar
                     </button>
+                    <div class="matriz-info mt-2 text-center small text-muted" id="matriz-info-{{ loop.index0 }}">
+                        Nenhuma matriz selecionada
+                    </div>
+                    <input type="hidden" name="matriz_id_{{ loop.index0 }}" id="matriz-id-{{ loop.index0 }}" value="">
                 </td>
+                
 
                 <!-- Capacidade = Produção Esperada (readonly) -->
                 <td>{{ troca.producao_esperada(class="form-control text-center", readonly=true) }}</td>
@@ -98,7 +100,7 @@
 </form>
 
 <!-- MODAL DE SELEÇÃO DE MATRIZ -->
-<div class="modal fade" id="modalSelecionarMatriz" tabindex="-1" role="dialog" aria-labelledby="modalLabelMatriz"
+<div class="modal fade" id="modalMatrizes" tabindex="-1" role="dialog" aria-labelledby="modalLabelMatriz"
     aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
@@ -130,7 +132,7 @@
                                 <button type="button" class="btn btn-success btn-sm selecionar-matriz"
                                     data-id="{{ matriz.id }}" data-codigo="{{ matriz.codigo }}"
                                     data-descricao="{{ matriz.descricao }}" data-capacidade="{{ matriz.capacidade }}">
-                                    <i class="fas fa-check"></i> Usar
+                                    Selecionar
                                 </button>
                             </td>
                         </tr>
@@ -143,47 +145,43 @@
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        let linhaSelecionada = null;
+    let indexSelecionado = null;
 
-        // Ao clicar no botão "Selecionar Matriz" da linha
-        document.querySelectorAll('.btn-selecionar-matriz').forEach(botao => {
-            botao.addEventListener('click', function () {
-                linhaSelecionada = this.getAttribute('data-index');
-                const modal = new bootstrap.Modal(document.getElementById('modalSelecionarMatriz'));
-                modal.show();
-            });
+    // Quando clicar no botão "Selecionar"
+    document.querySelectorAll('.btn-selecionar-matriz').forEach(btn => {
+        btn.addEventListener('click', function () {
+            indexSelecionado = this.getAttribute('data-index');
         });
+    });
 
-        // Seleciona a matriz no modal e preenche os campos na linha correta
-        document.querySelectorAll('.selecionar-matriz').forEach(botao => {
-            botao.addEventListener('click', function () {
-                const id = this.getAttribute('data-id');
-                const codigo = this.getAttribute('data-codigo');
-                const descricao = this.getAttribute('data-descricao');
-                const capacidade = this.getAttribute('data-capacidade');
+    // Quando clicar no botão "Usar"
+    document.querySelectorAll('.selecionar-matriz').forEach(botao => {
+        botao.addEventListener('click', function () {
+            const id = this.dataset.id;
+            const codigo = this.dataset.codigo;
+            const descricao = this.dataset.descricao;
+            const capacidade = this.dataset.capacidade;
 
-                // Campos específicos pelo índice da linha
-                document.querySelector(`[name="trocas-${linhaSelecionada}-matriz_id"]`).value = id;
-                document.querySelector(`[name="trocas-${linhaSelecionada}-matriz_codigo"]`).value = codigo;
-                document.querySelector(`[name="trocas-${linhaSelecionada}-matriz_descricao"]`).value = descricao;
-                document.querySelector(`[name="trocas-${linhaSelecionada}-producao_esperada"]`).value = capacidade;
+            // Atualiza hidden
+            document.getElementById(`matriz-id-${indexSelecionado}`).value = id;
 
-                // Fecha o modal
-                bootstrap.Modal.getInstance(document.getElementById('modalSelecionarMatriz')).hide();
-            });
-        });
+            // Atualiza visual
+            document.getElementById(`matriz-info-${indexSelecionado}`).innerHTML =
+                `<strong>${codigo}</strong> - ${descricao}`;
 
-        // Filtro simples de busca
-        document.getElementById('buscaMatriz').addEventListener('input', function () {
-            const termo = this.value.toLowerCase();
-            document.querySelectorAll('#listaMatrizes tr').forEach(row => {
-                const texto = row.textContent.toLowerCase();
-                row.style.display = texto.includes(termo) ? '' : 'none';
-            });
+            // Preenche produção esperada com capacidade
+            const capacidadeCampo = document.querySelector(`[name="trocas-${indexSelecionado}-producao_esperada"]`);
+            if (capacidadeCampo) {
+                capacidadeCampo.value = capacidade;
+            }
+
+            // Fecha modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalMatrizes'));
+            modal.hide();
         });
     });
 </script>
+
 
 <script>
     document.addEventListener("DOMContentLoaded", function () {

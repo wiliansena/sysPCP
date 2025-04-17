@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Lista de Linhas</h2>
+<a href="{{ url_for('routes.nova_linha') }}" class="btn btn-success mb-3">
+    <i class="fas fa-plus"></i> Nova Linha
+</a>
+
+
+<div class="row mb-3">
+    <div class="col-md-4">
+        <input type="text" id="buscaLinha" class="form-control" placeholder="Buscar por nome...">
+    </div>
+</div>
+
+
+<table class="table table-bordered table-hover text-center align-middle">
+    <thead class="table-light">
+        <tr>
+            <th>ID</th>
+            <th>Nome</th>
+            <th>Ações</th>
+        </tr>
+    </thead>
+    <tbody id="listaLinhas">
+        {% for linha in linhas %}
+        <tr>
+            <td>{{ linha.id }}</td>
+            <td>{{ linha.nome }}</td>
+            <td>
+                <a href="{{ url_for('routes.editar_linha', id=linha.id) }}" class="btn btn-warning btn-sm">
+                    <i class="fas fa-edit"></i> Editar</a>
+                <form action="{{ url_for('routes.excluir_linha', id=linha.id) }}" method="post" style="display:inline;">
+                    <button type="submit" class="btn btn-danger btn-sm"
+                        onclick="return confirm('Tem certeza que deseja excluir?')">
+                        <i class="fas fa-trash-alt"></i> Excluir</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<script>
+    document.getElementById('buscaLinha').addEventListener('input', function () {
+        const termo = this.value.toLowerCase();
+        document.querySelectorAll('#listaLinhas tr').forEach(row => {
+            const nome = row.cells[1].textContent.toLowerCase();
+            row.style.display = nome.includes(termo) ? '' : 'none';
+        });
+    });
+</script>
+{% endblock %}

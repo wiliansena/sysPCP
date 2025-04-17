@@ -2,7 +2,16 @@
 
 {% block content %}
 <h2>Trocas de Matrizes</h2>
-<a href="{{ url_for('routes.nova_troca_matriz') }}" class="btn btn-success mb-3">Adicionar</a>
+<div class="d-flex align-items-center gap-2 mt-4">
+    <a href="{{ url_for('routes.listar_matrizes') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Voltar
+    </a>
+    <a href="{{ url_for('routes.nova_troca_matriz') }}" class="btn btn-success">
+        <i class="fas fa-plus"></i> Adicionar
+    </a>
+
+</div>
+<hr>
 
 <table class="table table-striped">
     <thead>

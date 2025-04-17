@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2 class="mb-4">RELATÓRIO DE ESTOQUE - MATRIZ</h2>
+<a href="{{ url_for('routes.listar_matrizes') }}" class="btn btn-secondary">
+    <i class="fas fa-arrow-left"></i> Voltar
+</a>
+<hr>
+
+<form method="GET" class="row g-3 mb-4">
+    <div class="col-md-3">
+        <label class="form-label">Linha</label>
+        <select name="linha_id" class="form-select">
+            <option value="">Todas</option>
+            {% for linha in linhas %}
+                <option value="{{ linha.id }}" {% if request.args.get('linha_id') == linha.id|string %}selected{% endif %}>{{ linha.nome }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">Matriz</label>
+        <select name="matriz_id" class="form-select">
+            <option value="">Todas</option>
+            {% for matriz in matrizes %}
+                <option value="{{ matriz.id }}" {% if request.args.get('matriz_id') == matriz.id|string %}selected{% endif %}>
+                    {{ matriz.codigo }} - {{ matriz.descricao }}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Tipo</label>
+        <select name="tipo" class="form-select">
+            <option value="">Todos (Saldo Atual)</option>
+            <option value="Entrada" {% if request.args.get('tipo') == 'Entrada' %}selected{% endif %}>Apenas Entradas</option>
+            <option value="Saída" {% if request.args.get('tipo') == 'Saída' %}selected{% endif %}>Apenas Saídas</option>
+        </select>
+    </div>
+    <div class="col-md-12 d-flex justify-content-start align-items-end gap-2">
+        <button type="submit" class="btn btn-success">
+            <i class="fas fa-filter"></i> Gerar Relatório
+        </button>
+        <a href="{{ url_for('routes.relatorio_estoque_matriz') }}" class="btn btn-secondary">
+            <i class="fas fa-sync-alt"></i>
+        </a>
+    </div>
+</form>
+
+{% if resultado %}
+<div class="table-responsive">
+    <table class="table table-sm table-bordered">
+        <thead class="table-light">
+            <tr>
+                <th>Código</th>
+                <th>Cor</th>
+                {% for t in tamanhos %}<th>{{ t }}</th>{% endfor %}
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for linha in resultado %}
+            <tr>
+                <td>{{ linha.codigo }}</td>
+                <td>{{ linha.cor }}</td>
+                {% for t in tamanhos %}
+                <td>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 18px; font-weight: bold; min-width: 30px; text-align: right;">
+                            {{ linha.tamanhos[t] }}
+                        </span>
+                        <div style="border: 2px solid #000; width: 80px; height: 40px;"></div>
+                    </div>
+                </td>
+                
+                {% endfor %}
+                <td><strong>{{ linha.total }}</strong></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr>
+                <th colspan="{{ 2 + tamanhos|length }}" class="text-end">Total Geral:</th>
+                <th class="text-danger">{{ total_geral }}</th>
+            </tr>
+        </tfoot>
+    </table>
+</div>
+<div class="mt-3 text-end">
+    <button class="btn btn-primary" onclick="window.print()">
+        <i class="fas fa-print"></i> Imprimir
+    </button>
+</div>
+{% else %}
+    <p class="text-muted">Nenhum dado encontrado para os filtros aplicados.</p>
+{% endif %}
+
+{% endblock %}

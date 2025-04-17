@@ -1,0 +1,92 @@
+<!-- Modal LINHA com Tabela -->
+<div class="modal fade" id="modalLinha" tabindex="-1" aria-labelledby="modalLinhaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalLinhaLabel">Selecionar Linha</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="filterLinhas" class="form-control mb-3" placeholder="Filtrar linhas...">
+                <table class="table table-sm" id="linhasTable">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th style="width: 100px;">Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for linha in linhas %}
+                        <tr>
+                            <td>{{ linha.nome }}</td>
+                            <td>
+                                <button type="button" class="btn btn-success btn-sm selecionar-linha"
+                                    data-id="{{ linha.id }}" data-nome="{{ linha.nome }}">
+                                    Selecionar
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal COR com Tabela -->
+<div class="modal fade" id="modalCores" tabindex="-1" aria-labelledby="modalCoresLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalCoresLabel">Selecionar Cor</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="filterCores" class="form-control mb-3" placeholder="Filtrar cores...">
+                <table class="table table-sm" id="coresTable">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th style="width: 100px;">Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for cor in cores %}
+                        <tr>
+                            <td>{{ cor.nome }}</td>
+                            <td>
+                                <button type="button" class="btn btn-success btn-sm selecionar-cor"
+                                    data-id="{{ cor.id }}" data-nome="{{ cor.nome }}">
+                                    Selecionar
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function setupFilter(inputId, tableId) {
+        const input = document.getElementById(inputId);
+        if (input) {
+            input.addEventListener('keyup', function () {
+                const filtro = this.value.toUpperCase();
+                const rows = document.querySelectorAll(`#${tableId} tbody tr`);
+                rows.forEach(row => {
+                    const texto = row.querySelector("td").textContent.toUpperCase();
+                    row.style.display = texto.includes(filtro) ? '' : 'none';
+                });
+            });
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        setupFilter('filterLinhas', 'linhasTable');
+        setupFilter('filterCores', 'coresTable');
+    });
+</script>

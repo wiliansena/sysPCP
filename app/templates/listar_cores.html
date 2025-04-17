@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Lista de Cores</h2>
+<a href="{{ url_for('routes.nova_cor') }}" class="btn btn-success mb-3">
+    <i class="fas fa-plus"></i> Nova Cor
+</a>
+
+
+<div class="row mb-3">
+    <div class="col-md-4">
+        <input type="text" id="buscaCor" class="form-control" placeholder="Buscar por nome...">
+    </div>
+</div>
+
+
+<table class="table table-bordered table-hover text-center align-middle">
+    <thead class="table-light">
+        <tr>
+            <th>ID</th>
+            <th>Nome</th>
+            <th>Ações</th>
+        </tr>
+    </thead>
+    <tbody id="listaCores">
+        {% for cor in cores %}
+        <tr>
+            <td>{{ cor.id }}</td>
+            <td>{{ cor.nome }}</td>
+            <td>
+                <a href="{{ url_for('routes.editar_cor', id=cor.id) }}" class="btn btn-warning btn-sm">
+                    <i class="fas fa-edit"></i> Editar</a>
+                <form action="{{ url_for('routes.excluir_cor', id=cor.id) }}" method="post" style="display:inline;">
+                    <button type="submit" class="btn btn-danger btn-sm"
+                        onclick="return confirm('Tem certeza que deseja excluir?')">
+                        <i class="fas fa-trash-alt"></i> Excluir</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<script>
+    document.getElementById('buscaCor').addEventListener('input', function () {
+        const termo = this.value.toLowerCase();
+        document.querySelectorAll('#listaCores tr').forEach(row => {
+            const nome = row.cells[1].textContent.toLowerCase();
+            row.style.display = nome.includes(termo) ? '' : 'none';
+        });
+    });
+</script>
+{% endblock %}

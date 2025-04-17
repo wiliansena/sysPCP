@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2 class="mb-4">Movimentações de Matriz</h2>
+<div class="d-flex align-items-center gap-2 mt-4">
+    <a href="{{ url_for('routes.listar_matrizes') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Voltar
+    </a>
+    <a href="{{ url_for('routes.nova_movimentacao_matriz') }}" class="btn btn-success">
+        <i class="fas fa-plus"></i> Adicionar
+    </a>
+
+</div>
+<hr>
+
+<form method="GET" class="row g-3 mb-4">
+    <div class="col-md-3">
+        <label class="form-label">Tipo</label>
+        <select name="tipo" class="form-select">
+            <option value="">Todos</option>
+            <option value="Entrada" {% if request.args.get('tipo')=='Entrada' %}selected{% endif %}>Entrada</option>
+            <option value="Saída" {% if request.args.get('tipo')=='Saída' %}selected{% endif %}>Saída</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Matriz</label>
+        <select name="matriz_id" class="form-select">
+            <option value="">Todas</option>
+            {% for matriz in matrizes %}
+            <option value="{{ matriz.id }}" {% if request.args.get('matriz_id')==matriz.id|string %}selected{% endif %}>
+                {{ matriz.codigo }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Data Início</label>
+        <input type="date" name="data_inicio" value="{{ request.args.get('data_inicio', '') }}" class="form-control">
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Data Fim</label>
+        <input type="date" name="data_fim" value="{{ request.args.get('data_fim', '') }}" class="form-control">
+    </div>
+    <div class="col-md-3 d-flex align-items-end">
+        <button type="submit" class="btn btn-success btn-sm me-2">
+            <i class="fas fa-filter"></i> Filtrar
+        </button>
+        <a href="{{ url_for('routes.listar_movimentacoes_matriz') }}"
+           class="btn btn-secondary btn-sm">
+            <i class="fas fa-sync-alt"></i> <!--Icone de atualização-->
+        </a>
+    </div>
+</form>
+
+
+<hr>
+
+<table class="table table-bordered table-sm text-center align-middle">
+    <thead class="table-light">
+        <tr>
+            <th>Data</th>
+            <th>Tipo</th>
+            <th>Matriz</th>
+            <th>Cor</th>
+            <th>Motivo</th>
+            <th>Posição</th>
+            <th>Total (Grade)</th>
+            <th>Ações</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for mov in movimentacoes %}
+        <tr>
+            <td>{{ mov.data.strftime('%d/%m/%Y %H:%M') }}</td>
+            <td>
+                <span class="badge {% if mov.tipo == 'Entrada' %}bg-success{% else %}bg-danger{% endif %}">
+                    {{ mov.tipo }}
+                </span>
+            </td>
+            <td>{{ mov.matriz.codigo }}</td>
+            <td>{{ mov.cor.nome }}</td>
+            <td>{{ mov.motivo }}</td>
+            <td>{{ mov.posicao_estoque or '--' }}</td>
+            <td>
+                {{ mov.tamanhos_movimentados | map(attribute='quantidade') | sum }}
+            </td>
+            <td>
+                <a href="{{ url_for('routes.ver_movimentacao_matriz', id=mov.id) }}"
+                class="btn btn-info btn-sm"><i class="bi bi-eye"> Ver</i>
+                </a>
+            </td>
+        </tr>
+        {% endfor %}
+        {% if movimentacoes|length == 0 %}
+        <tr>
+            <td colspan="8" class="text-muted">Nenhuma movimentação encontrada.</td>
+        </tr>
+        {% endif %}
+    </tbody>
+</table>
+
+
+{% endblock %}

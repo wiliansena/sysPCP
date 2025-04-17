@@ -830,6 +830,7 @@ class TrocaHorario(db.Model):
     horario = db.Column(db.String(20), nullable=False)
     pares = db.Column(db.Integer, default=0)
     producao_esperada = db.Column(db.Integer, default=0)  # pares esperados nesse horário
+    
 
         # Relação com a matriz utilizada nesse horário
     matriz_id = db.Column(db.Integer, db.ForeignKey('matriz.id'), nullable=True)
@@ -902,6 +903,11 @@ class TrocaHorario(db.Model):
         if tempo_util <= 0:
             return 0  # Evita divisão por zero ou tempo negativo
         return round(self.pares / tempo_util, 2)  # 2 casas decimais
+    
+    @property
+    def diferenca(self):
+        return (self.pares or 0) - (self.producao_esperada or 0)
+
 
 
 
@@ -933,10 +939,11 @@ class TrocaMatriz(db.Model):
         self.total_pares_produzidos = sum(h.pares for h in self.horarios)
 
     def calcular_eficiencia_geral(self):
-        tempo_util = 600 - self.tempo_total_geral  # 600 minutos = 10h de turno
-        if tempo_util > 0:
-            return round(self.total_pares_produzidos / tempo_util, 2)
+        tempo_produtivo = self.calcular_tempo_produtivo_real()
+        if tempo_produtivo > 0:
+            return round(self.total_pares_produzidos / tempo_produtivo, 2)
         return 0.00
+
     
     def calcular_total_esperado(self):
         return sum(h.producao_esperada for h in self.horarios)
@@ -964,7 +971,37 @@ class Matriz(db.Model):
     descricao = db.Column(db.String(100), nullable=False)
     tipo = db.Column(db.String(50), nullable=False)
     status = db.Column(db.String(10), nullable=False, default='Ativa')  # Ativa ou Inativa
-    capacidade = db.Column(db.Integer, nullable=True)  # ✅ Novo campo
+    capacidade = db.Column(db.Integer, nullable=True)
+    quantidade = db.Column(db.Integer, default=0)
+    imagem = db.Column(db.String(200), nullable=True)
+
+    # Relacionamentos
+    linha_id = db.Column(db.Integer, db.ForeignKey('linha.id'))
+    linha = db.relationship('Linha', backref='matrizes')
+
+    cores = db.relationship('Cor', secondary='matriz_cor', backref='matrizes')
+
+    tamanhos = db.relationship('TamanhoMatriz', back_populates='matriz', cascade='all, delete-orphan')
+
+    def calcular_total_grade(self):
+        return sum(t.quantidade for t in self.tamanhos)
+
+
+class TamanhoMatriz(db.Model):
+    __tablename__ = "tamanho_matriz"
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(20), nullable=False)  # Ex: 25/26
+    quantidade = db.Column(db.Integer, nullable=False, default=0)
+
+    matriz_id = db.Column(db.Integer, db.ForeignKey('matriz.id'))
+    matriz = db.relationship("Matriz", back_populates="tamanhos")
+
+
+# Tabela associativ a para cores
+matriz_cor = db.Table('matriz_cor',
+    db.Column('matriz_id', db.Integer, db.ForeignKey('matriz.id'), primary_key=True),
+    db.Column('cor_id', db.Integer, db.ForeignKey('cor.id'), primary_key=True)
+)
 
 
 
@@ -1012,8 +1049,38 @@ class ManutencaoComponente(db.Model):
 
     componente = db.relationship("Componente")
 
+class Cor(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(20), nullable=False)
 
-    
+class Linha(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(20), nullable=False)
+
+
+class MovimentacaoMatriz(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    data = db.Column(db.DateTime, default=lambda: datetime.now().replace(microsecond=0))
+    tipo = db.Column(db.String(10), nullable=False)  # 'Entrada' ou 'Saída'
+    motivo = db.Column(db.String(100), nullable=False)
+    posicao_estoque = db.Column(db.String(50), nullable=True)
+
+    matriz_id = db.Column(db.Integer, db.ForeignKey('matriz.id'), nullable=False)
+    cor_id = db.Column(db.Integer, db.ForeignKey('cor.id'), nullable=False)
+
+    matriz = db.relationship('Matriz', backref='movimentacoes')
+    cor = db.relationship('Cor')
+
+    tamanhos_movimentados = db.relationship('TamanhoMovimentacao', backref='movimentacao', cascade='all, delete-orphan')
+
+
+class TamanhoMovimentacao(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(20), nullable=False)  # Ex: 25/26
+    quantidade = db.Column(db.Integer, nullable=False, default=0)
+
+    movimentacao_id = db.Column(db.Integer, db.ForeignKey('movimentacao_matriz.id'), nullable=False)
+
     
     
     

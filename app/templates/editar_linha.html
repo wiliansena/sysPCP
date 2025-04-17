@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Editar Linha</h2>
+<form method="POST">
+    {{ form.hidden_tag() }}
+    <div class="row mb-3">
+        <div class="col-md-4">
+            {{ form.nome.label(class="form-label") }}
+            {{ form.nome(class="form-control") }}
+        </div>
+    </div>
+    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Atualizar</button>
+    <a href="{{ url_for('routes.listar_cores') }}" class="btn btn-secondary">Cancelar</a>
+</form>
+{% endblock %}

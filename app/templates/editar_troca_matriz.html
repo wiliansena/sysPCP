@@ -30,7 +30,7 @@
         <thead>
             <tr>
                 <th>Horário</th>
-                <th>Pares</th>
+                <th>Produção</th>
                 <th>Matriz</th>
                 <th>Capacidade</th>
                 {% for i in range(1, 8) %}
@@ -51,7 +51,7 @@
                 <td>
                     <button type="button" class="btn btn-primary btn-selecionar-matriz" data-index="{{ i }}"
                         data-bs-toggle="modal" data-bs-target="#modalMatrizes">
-                        <i class="fas fa-search"></i> Selecionar
+                        <i class="fas fa-search"></i> Buscar
                     </button>
                     <div class="matriz-info mt-2 text-center small text-muted" id="matriz-info-{{ i }}">
                         {% if troca_matriz.horarios[i].matriz %}
@@ -119,7 +119,7 @@
                                 <button type="button" class="btn btn-success btn-sm selecionar-matriz"
                                     data-id="{{ matriz.id }}" data-codigo="{{ matriz.codigo }}"
                                     data-descricao="{{ matriz.descricao }}" data-capacidade="{{ matriz.capacidade }}">
-                                    <i class="fas fa-check"></i> Usar
+                                    Selecionar
                                 </button>
                             </td>
                         </tr>

@@ -2,8 +2,8 @@ from sqlite3 import IntegrityError
 from flask import Blueprint, jsonify, render_template, redirect, url_for, flash, request
 from flask_login import current_user, login_required
 from app import db, csrf
-from app.models import FormulacaoSolado, FormulacaoSoladoFriso, Funcionario, LogAcao, Manutencao, ManutencaoComponente, ManutencaoMaquina, Maquina, MargemPorPedido, MargemPorPedidoReferencia, Matriz, Permissao, Referencia, Componente, CustoOperacional, ReferenciaAlca, ReferenciaComponentes, ReferenciaCustoOperacional, ReferenciaEmbalagem1, ReferenciaEmbalagem2, ReferenciaEmbalagem3, ReferenciaMaoDeObra, ReferenciaSolado, Salario, MaoDeObra, Margem, TrocaHorario, TrocaMatriz, Usuario
-from app.forms import FuncionarioForm, ManutencaoForm, MaquinaForm, MargemForm, MargemPorPedidoForm, MargemPorPedidoReferenciaForm, MatrizForm, ReferenciaForm, ComponenteForm, CustoOperacionalForm, SalarioForm, MaoDeObraForm, TrocaMatrizForm, UsuarioForm
+from app.models import Cor, FormulacaoSolado, FormulacaoSoladoFriso, Funcionario, Linha, LogAcao, Manutencao, ManutencaoComponente, ManutencaoMaquina, Maquina, MargemPorPedido, MargemPorPedidoReferencia, Matriz, MovimentacaoMatriz, Permissao, Referencia, Componente, CustoOperacional, ReferenciaAlca, ReferenciaComponentes, ReferenciaCustoOperacional, ReferenciaEmbalagem1, ReferenciaEmbalagem2, ReferenciaEmbalagem3, ReferenciaMaoDeObra, ReferenciaSolado, Salario, MaoDeObra, Margem, TamanhoMatriz, TamanhoMovimentacao, TrocaHorario, TrocaMatriz, Usuario
+from app.forms import CorForm, FuncionarioForm, LinhaForm, ManutencaoForm, MaquinaForm, MargemForm, MargemPorPedidoForm, MargemPorPedidoReferenciaForm, MatrizForm, MovimentacaoMatrizForm, ReferenciaForm, ComponenteForm, CustoOperacionalForm, SalarioForm, MaoDeObraForm, TrocaMatrizForm, UsuarioForm
 import os
 from flask import render_template, redirect, url_for, flash, request
 from app.models import Solado, Tamanho, Componente, FormulacaoSolado, Alca, TamanhoAlca, FormulacaoAlca, Colecao
@@ -24,6 +24,7 @@ from flask import current_app
 from app.utils import allowed_file, requer_permissao
 from flask import g
 import random, string
+from sqlalchemy import case
 
 
 
@@ -2563,7 +2564,16 @@ def parse_time(value):
 @requer_permissao('controleproducao', 'ver')
 def ver_troca_matriz(id):
     troca = TrocaMatriz.query.get_or_404(id)
-    return render_template('ver_troca_matriz.html', troca=troca)
+
+    # Detectar trocas com dados preenchidos
+    trocas_ativas = []
+    for i in range(1, 8):
+        for horario in troca.horarios:
+            if getattr(horario, f"inicio_{i}") or getattr(horario, f"fim_{i}") or getattr(horario, f"motivo_{i}"):
+                trocas_ativas.append(i)
+            break  # Não precisa verificar mais se já encontrou dados nessa troca
+
+    return render_template('ver_troca_matriz.html', troca=troca, trocas_ativas=trocas_ativas)
 
 from datetime import datetime, time
 
@@ -2603,11 +2613,14 @@ def nova_troca_matriz():
         db.session.flush()  # 🔹 Garante que o ID da troca matriz está disponível
 
         for i, troca in enumerate(form.trocas.entries):
+            matriz_id_form = request.form.get(f'matriz_id_{i}')
             nova_troca = TrocaHorario(
                 troca_matriz_id=troca_matriz.id,
                 horario=horarios[i],
                 pares=troca.form.pares.data or 0,
-                matriz_id=troca.form.matriz_id.data if troca.form.matriz_id.data else None,
+                producao_esperada=troca.form.producao_esperada.data or 0,
+                matriz_id=int(matriz_id_form) if matriz_id_form else None,
+
                 inicio_1=parse_time(troca.form.inicio_1.data),
                 fim_1=parse_time(troca.form.fim_1.data),
                 inicio_2=parse_time(troca.form.inicio_2.data),
@@ -2622,9 +2635,7 @@ def nova_troca_matriz():
                 fim_6=parse_time(troca.form.fim_6.data),
                 inicio_7=parse_time(troca.form.inicio_7.data),
                 fim_7=parse_time(troca.form.fim_7.data),
-                producao_esperada=troca.form.producao_esperada.data or 0,
 
-                # NOVO: motivos individuais
                 motivo_1=troca.form.motivo_1.data,
                 motivo_2=troca.form.motivo_2.data,
                 motivo_3=troca.form.motivo_3.data,
@@ -2637,9 +2648,13 @@ def nova_troca_matriz():
             nova_troca.atualizar_tempo_total()
             db.session.add(nova_troca)
 
+
+        # 🔹 Atualiza os cálculos gerais da troca matriz
         # 🔹 Atualiza os cálculos gerais da troca matriz
         troca_matriz.atualizar_tempo_total_geral()
         troca_matriz.calcular_total_pares()
+        troca_matriz.calcular_total_esperado()
+        troca_matriz.calcular_eficiencia_geral()
 
         db.session.commit()
         flash('Troca de matriz registrada com sucesso!', 'success')
@@ -2709,8 +2724,11 @@ def editar_troca_matriz(id):
                 for j in range(1, 8):
                     setattr(troca, f'inicio_{j}', parse_time(getattr(form.trocas[i], f'inicio_{j}').data))
                     setattr(troca, f'fim_{j}', parse_time(getattr(form.trocas[i], f'fim_{j}').data))
-                    if hasattr(form.trocas[i], f'motivo_{j}'):
-                        setattr(troca, f'motivo_{j}', getattr(form.trocas[i], f'motivo_{j}').data)
+
+                    motivo_valor = getattr(form.trocas[i], f'motivo_{j}').data
+                    setattr(troca, f'motivo_{j}', motivo_valor if motivo_valor is not None else "")
+
+
 
                 troca.atualizar_tempo_total()
                 troca.eficiencia_por_tempo()
@@ -2831,28 +2849,81 @@ def excluir_troca_matriz(id):
 @login_required
 @requer_permissao('controleproducao', 'ver')
 def listar_matrizes():
-    matrizes = Matriz.query.order_by(Matriz.codigo).all()
+    matrizes = Matriz.query.order_by(Matriz.id.desc()).all()
     return render_template('listar_matrizes.html', matrizes=matrizes)
 
+
+
+
+@bp.route('/matriz/ver/<int:id>')
+@login_required
+@requer_permissao('controleproducao', 'ver')
+def ver_matriz(id):
+    matriz = Matriz.query.get_or_404(id)
+
+    # Ordenar tamanhos corretamente
+    tamanhos_ordenados = sorted(
+        matriz.tamanhos,
+        key=lambda t: list(map(int, t.nome.split("/"))) if "/" in t.nome else [int(t.nome)] if t.nome.isdigit() else [float("inf")]
+    )
+
+    return render_template('ver_matriz.html', matriz=matriz, tamanhos_ordenados=tamanhos_ordenados)
+
 # 🔹 Nova Matriz
+
 @bp.route('/matriz/nova', methods=['GET', 'POST'])
 @login_required
 @requer_permissao('controleproducao', 'criar')
 def nova_matriz():
     form = MatrizForm()
+    linhas = Linha.query.order_by(Linha.nome).all()
+    cores = Cor.query.order_by(Cor.nome).all()
+
     if form.validate_on_submit():
-        matriz = Matriz(
+        nova_matriz = Matriz(
             codigo=form.codigo.data,
             descricao=form.descricao.data,
             tipo=form.tipo.data,
             status=form.status.data,
-            capacidade=form.capacidade.data
+            capacidade=form.capacidade.data or 0,
+            quantidade=form.quantidade.data or 0,
+            linha_id=request.form.get('linha_id')
         )
-        db.session.add(matriz)
+
+        # ✅ Salvar imagem se houver
+        if form.imagem.data:
+            imagem_filename = secure_filename(form.imagem.data.filename)
+            upload_path = current_app.config['UPLOAD_FOLDER']
+            os.makedirs(upload_path, exist_ok=True)
+            caminho_imagem = os.path.join(upload_path, imagem_filename)
+            form.imagem.data.save(caminho_imagem)
+            nova_matriz.imagem = imagem_filename
+
+        # ✅ Adicionar tamanhos corretamente
+        for campo in form.tamanhos.entries:
+            nome = campo.form.nome.data.strip() or '--'
+            quantidade = campo.form.quantidade.data or 0  # <-- aqui permanece int
+            tamanho = TamanhoMatriz(nome=nome, quantidade=quantidade)
+            nova_matriz.tamanhos.append(tamanho)
+
+        # ✅ Adicionar cores selecionadas
+        cores_ids = request.form.getlist('cores')
+        if cores_ids:
+            cores_selecionadas = Cor.query.filter(Cor.id.in_(cores_ids)).all()
+            nova_matriz.cores = cores_selecionadas
+        
+        # ✅ Atualiza o total com base nas quantidades dos tamanhos
+        nova_matriz.quantidade = nova_matriz.calcular_total_grade()
+
+        db.session.add(nova_matriz)
         db.session.commit()
-        flash("Matriz cadastrada com sucesso!", "success")
+
+        flash('Matriz cadastrada com sucesso!', 'success')
         return redirect(url_for('routes.listar_matrizes'))
-    return render_template('nova_matriz.html', form=form)
+
+    return render_template('nova_matriz.html', form=form, linhas=linhas, cores=cores)
+
+
 
 # 🔹 Editar Matriz
 @bp.route('/matriz/editar/<int:id>', methods=['GET', 'POST'])
@@ -2861,16 +2932,97 @@ def nova_matriz():
 def editar_matriz(id):
     matriz = Matriz.query.get_or_404(id)
     form = MatrizForm(obj=matriz)
+
+    # Choices para SelectField
+    form.status.choices = [('Ativa', 'Ativa'), ('Inativa', 'Inativa')]
+
+    linhas = Linha.query.order_by(Linha.nome).all()
+    cores = Cor.query.order_by(Cor.nome).all()
+
+    if request.method == 'GET':
+        for i in range(len(form.tamanhos.entries)):
+            if i < len(matriz.tamanhos):
+                form.tamanhos[i].nome.data = matriz.tamanhos[i].nome
+                form.tamanhos[i].quantidade.data = matriz.tamanhos[i].quantidade
+
     if form.validate_on_submit():
         matriz.codigo = form.codigo.data
         matriz.descricao = form.descricao.data
         matriz.tipo = form.tipo.data
         matriz.status = form.status.data
         matriz.capacidade = form.capacidade.data
+
+        # Linha
+        linha_id = request.form.get("linha_id")
+        matriz.linha_id = int(linha_id) if linha_id else None
+
+        # Cores
+        cores_ids = request.form.getlist("cores")
+        matriz.cores = Cor.query.filter(Cor.id.in_(cores_ids)).all()
+
+        # Tamanhos
+        matriz.tamanhos = []  # limpa
+        for campo in form.tamanhos:
+            nome = campo.nome.data or "--"
+            qtd = campo.quantidade.data or 0
+            matriz.tamanhos.append(TamanhoMatriz(nome=nome, quantidade=qtd))
+
+        matriz.quantidade = matriz.calcular_total_grade()
+
+
+        # Upload da imagem
+        imagem = form.imagem.data
+        if imagem:
+            filename = secure_filename(imagem.filename)
+            path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+            imagem.save(path)
+            matriz.imagem = filename
+        
+                # 🔹 Salva o log
+        log = LogAcao(
+            usuario_id=current_user.id,
+            usuario_nome=current_user.nome,
+            acao=f"Editou a Matriz: {matriz.codigo}"
+        )
+        db.session.add(log)
+
         db.session.commit()
         flash("Matriz atualizada com sucesso!", "success")
         return redirect(url_for('routes.listar_matrizes'))
-    return render_template('editar_matriz.html', form=form, matriz=matriz)
+
+    return render_template('editar_matriz.html', form=form, matriz=matriz, linhas=linhas, cores=cores)
+
+@bp.route('/matriz/<int:id>/zerar', methods=['POST'])
+@login_required
+@requer_permissao('controleproducao', 'excluir')  # use a permissão que preferir
+def zerar_matriz(id):
+    matriz = Matriz.query.get_or_404(id)
+
+    # Zera a quantidade de todos os tamanhos
+    for tamanho in matriz.tamanhos:
+        tamanho.quantidade = 0
+
+    # Zera a quantidade total da matriz
+    matriz.quantidade = 0
+
+    # Remove as movimentações da matriz
+    movimentacoes = MovimentacaoMatriz.query.filter_by(matriz_id=id).all()
+    for mov in movimentacoes:
+        db.session.delete(mov)
+    
+    # 🔹 Salva o log
+    log = LogAcao(
+        usuario_id=current_user.id,
+        usuario_nome=current_user.nome,
+        acao=f"Zerou a Matriz: {matriz.codigo}"
+    )
+    db.session.add(log)
+
+    db.session.commit()
+    flash('Todas as movimentações da matriz foram apagadas e os tamanhos zerados.', 'success')
+    return redirect(url_for('routes.listar_movimentacoes_matriz'))
+
+
 
 # 🔹 Excluir Matriz
 @bp.route('/matriz/excluir/<int:id>', methods=['POST'])
@@ -2882,6 +3034,282 @@ def excluir_matriz(id):
     db.session.commit()
     flash("Matriz excluída com sucesso!", "success")
     return redirect(url_for('routes.listar_matrizes'))
+
+
+
+
+### CORES DA MATRIZ #####
+
+@bp.route('/matriz/<int:matriz_id>/cores')
+@login_required
+def obter_cores_por_matriz(matriz_id):
+    matriz = Matriz.query.get_or_404(matriz_id)
+    cores = [{"id": cor.id, "nome": cor.nome} for cor in matriz.cores]
+    return jsonify(cores)
+
+### TAMANHOS DA MATRIZ #####
+@bp.route('/matriz/<int:matriz_id>/tamanhos')
+def tamanhos_por_matriz(matriz_id):
+    matriz = Matriz.query.get_or_404(matriz_id)
+
+    def chave_ordenacao(t):
+        try:
+            if "/" in t.nome:
+                return [int(n) for n in t.nome.split("/")]
+            else:
+                return [int(t.nome)]
+        except ValueError:
+            return [float('inf')]  # joga no final se não for número
+
+    tamanhos_ordenados = sorted(matriz.tamanhos, key=chave_ordenacao)
+
+    tamanhos = [{'nome': t.nome, 'quantidade': t.quantidade} for t in tamanhos_ordenados]
+    return jsonify(tamanhos)
+
+
+
+@bp.route('/movimentacao_matriz/nova', methods=['GET', 'POST'])
+@login_required
+@requer_permissao('controleproducao', 'criar')
+def nova_movimentacao_matriz():
+    form = MovimentacaoMatrizForm()
+    matriz_id = request.args.get("matriz_id") or request.form.get("matriz_id")
+
+    matrizes = Matriz.query.order_by(Matriz.codigo).all()
+    cores = Cor.query.order_by(Cor.nome).all()
+    matriz = Matriz.query.get(matriz_id) if matriz_id else None
+
+    if matriz and not form.tamanhos.entries[0].nome.data:
+        form.matriz_id.data = matriz.id
+
+        while len(form.tamanhos) > 0:
+            form.tamanhos.pop_entry()
+
+        tamanhos_ordenados = sorted(matriz.tamanhos, key=lambda t: t.nome)
+
+        for t in tamanhos_ordenados:
+            form.tamanhos.append_entry({
+                'nome': t.nome,
+                'quantidade': 0
+            })
+
+
+
+    if not form.validate_on_submit():
+        print("Erros no formulário:", form.errors)
+    else:
+
+        nova_movimentacao = MovimentacaoMatriz(
+            tipo=form.tipo.data,
+            motivo=form.motivo.data,
+            posicao_estoque=form.posicao_estoque.data,
+            matriz_id=form.matriz_id.data,
+            cor_id=form.cor_id.data,
+            data=datetime.utcnow()
+        )
+
+        total_movimento = 0
+
+        for campo in form.tamanhos.entries:
+            nome = campo.form.nome.data
+            qtd = campo.form.quantidade.data or 0
+
+            if qtd != 0:
+                nova_movimentacao.tamanhos_movimentados.append(
+                    TamanhoMovimentacao(nome=nome, quantidade=qtd)
+                )
+                total_movimento += qtd
+
+        # Aplica a movimentação na matriz
+        matriz = Matriz.query.get(form.matriz_id.data)
+        for campo in form.tamanhos.entries:
+            tamanho = next((t for t in matriz.tamanhos if t.nome == campo.form.nome.data), None)
+            if tamanho:
+                if form.tipo.data == "Entrada":
+                    tamanho.quantidade += campo.form.quantidade.data or 0
+                else:
+                    tamanho.quantidade -= campo.form.quantidade.data or 0
+
+        # Atualiza o campo `quantidade` da matriz
+        matriz.quantidade = matriz.calcular_total_grade()
+
+        db.session.add(nova_movimentacao)
+        db.session.commit()
+
+        flash("Movimentação registrada com sucesso!", "success")
+        return redirect(url_for('routes.listar_movimentacoes_matriz'))
+
+    return render_template(
+        'nova_movimentacao_matriz.html',
+        form=form,
+        matrizes=matrizes,
+        cores=cores,
+        matriz=matriz
+    )
+
+@bp.route('/movimentacoes_matriz', methods=['GET'])
+@login_required
+@requer_permissao('controleproducao', 'ver')
+def listar_movimentacoes_matriz():
+    tipo = request.args.get('tipo')
+    matriz_id = request.args.get('matriz_id')
+    data_inicio = request.args.get('data_inicio')
+    data_fim = request.args.get('data_fim')
+
+    query = MovimentacaoMatriz.query
+
+    if tipo:
+        query = query.filter_by(tipo=tipo)
+    if matriz_id:
+        query = query.filter_by(matriz_id=matriz_id)
+
+    if data_inicio:
+        try:
+            data_i = datetime.strptime(data_inicio, '%Y-%m-%d')
+            query = query.filter(MovimentacaoMatriz.data >= data_i)
+        except:
+            pass
+
+    if data_fim:
+        try:
+            data_f = datetime.strptime(data_fim, '%Y-%m-%d') + timedelta(days=1)
+            query = query.filter(MovimentacaoMatriz.data < data_f)
+        except:
+            pass
+
+    movimentacoes = query.order_by(MovimentacaoMatriz.data.desc()).all()
+    matrizes = Matriz.query.order_by(Matriz.codigo).all()
+
+    return render_template('listar_movimentacoes_matriz.html', movimentacoes=movimentacoes, matrizes=matrizes)
+
+
+
+@bp.route('/movimentacao_matriz/<int:id>/ver')
+@login_required
+@requer_permissao('controleproducao', 'ver')
+def ver_movimentacao_matriz(id):
+    movimentacao = MovimentacaoMatriz.query.get_or_404(id)
+    return render_template('ver_movimentacao_matriz.html', movimentacao=movimentacao)
+
+@bp.route('/movimentacao_matriz/<int:id>/excluir', methods=['POST', 'GET'])
+@login_required
+@requer_permissao('controleproducao', 'excluir')
+def excluir_movimentacao_matriz(id):
+    movimentacao = MovimentacaoMatriz.query.get_or_404(id)
+
+    # ⚠️ Ao excluir a movimentação, desfaz o efeito na matriz
+    matriz = movimentacao.matriz
+    tipo = movimentacao.tipo
+
+    for item in movimentacao.tamanhos_movimentados:
+        tamanho = next((t for t in matriz.tamanhos if t.nome == item.nome), None)
+        if tamanho:
+            if tipo == "Entrada":
+                tamanho.quantidade -= item.quantidade
+            else:
+                tamanho.quantidade += item.quantidade
+
+    # Atualiza total da matriz
+    matriz.quantidade = matriz.calcular_total_grade()
+
+    db.session.delete(movimentacao)
+    db.session.commit()
+    flash("Movimentação excluída com sucesso!", "success")
+    return redirect(url_for('routes.listar_movimentacoes_matriz'))
+
+
+@bp.route('/relatorio/estoque_matriz', methods=['GET'])
+@login_required
+@requer_permissao('controleproducao', 'ver')
+def relatorio_estoque_matriz():
+    linha_id = request.args.get("linha_id")
+    matriz_id = request.args.get("matriz_id")
+    tipo_filtro = request.args.get("tipo")
+
+    linhas = Linha.query.order_by(Linha.nome).all()
+    matrizes = Matriz.query.order_by(Matriz.codigo).all()
+
+    resultado = []
+    tamanhos = []
+    total_geral = 0
+
+    matrizes_filtradas = []
+    if matriz_id:
+        matriz = Matriz.query.get(matriz_id)
+        if matriz:
+            matrizes_filtradas = [matriz]
+    elif linha_id:
+        matrizes_filtradas = Matriz.query.filter_by(linha_id=linha_id).all()
+
+    if matrizes_filtradas:
+        tamanhos_set = set()
+        for matriz in matrizes_filtradas:
+            tamanhos_set.update([t.nome for t in matriz.tamanhos if t.nome != '--'])
+        tamanhos = sorted(tamanhos_set)
+
+        for matriz in matrizes_filtradas:
+            for cor in matriz.cores:
+                linha_dados = {
+                    'codigo': matriz.codigo,
+                    'matriz': matriz.id,
+                    'cor': cor.nome,
+                    'tamanhos': {},
+                    'total': 0
+                }
+
+                for tamanho in tamanhos:
+                    if tipo_filtro == "Entrada":
+                        qtd_total = db.session.query(
+                            db.func.sum(TamanhoMovimentacao.quantidade)
+                        ).join(MovimentacaoMatriz).filter(
+                            MovimentacaoMatriz.matriz_id == matriz.id,
+                            MovimentacaoMatriz.cor_id == cor.id,
+                            TamanhoMovimentacao.nome == tamanho,
+                            MovimentacaoMatriz.tipo == "Entrada"
+                        )
+                    elif tipo_filtro == "Saída":
+                        qtd_total = db.session.query(
+                            db.func.sum(TamanhoMovimentacao.quantidade)
+                        ).join(MovimentacaoMatriz).filter(
+                            MovimentacaoMatriz.matriz_id == matriz.id,
+                            MovimentacaoMatriz.cor_id == cor.id,
+                            TamanhoMovimentacao.nome == tamanho,
+                            MovimentacaoMatriz.tipo == "Saída"
+                        )
+                    else:
+                        qtd_total = db.session.query(
+                            db.func.sum(
+                                case(
+                                    (MovimentacaoMatriz.tipo == 'Entrada', TamanhoMovimentacao.quantidade),
+                                    (MovimentacaoMatriz.tipo == 'Saída', -TamanhoMovimentacao.quantidade),
+                                    else_=0
+                                )
+                            )
+                        ).join(MovimentacaoMatriz).filter(
+                            MovimentacaoMatriz.matriz_id == matriz.id,
+                            MovimentacaoMatriz.cor_id == cor.id,
+                            TamanhoMovimentacao.nome == tamanho
+                        )
+
+                    qtd = qtd_total.scalar() or 0
+                    linha_dados['tamanhos'][tamanho] = qtd
+                    linha_dados['total'] += qtd
+
+                resultado.append(linha_dados)
+                total_geral += linha_dados['total']
+
+    return render_template(
+        'relatorio_estoque_matriz.html',
+        linhas=linhas,
+        matrizes=matrizes,
+        resultado=resultado,
+        tamanhos=tamanhos,
+        total_geral=total_geral
+    )
+
+
+
+
 
 
 
@@ -3218,5 +3646,113 @@ def relatorio_componentes_manutencao():
 
 
 
+### COR  #####
+
+@bp.route('/cores', methods=['GET'])
+@login_required
+@requer_permissao('controleproducao', 'ver')
+def listar_cores():
+    cores = Cor.query.order_by(Cor.id).all()
+    return render_template('listar_cores.html', cores=cores)
+
+@bp.route('/cor/nova', methods=['GET', 'POST'])
+@login_required
+@requer_permissao('controleproducao', 'criar')
+def nova_cor():
+    form = CorForm()
+    if form.validate_on_submit():
+        nova_cor = Cor(
+            nome=form.nome.data
+        )
+        db.session.add(nova_cor)
+        db.session.commit()
+        flash("Cor cadastrada com sucesso!", "success")
+        return redirect(url_for('routes.listar_cores'))
+    return render_template('nova_cor.html', form=form)
 
 
+
+@bp.route('/cor/editar/<int:id>', methods=['GET', 'POST'])
+@login_required
+@requer_permissao('controleproducao', 'editar')
+def editar_cor(id):
+    cor = Cor.query.get_or_404(id)
+    form = CorForm(obj=cor)
+
+    if form.validate_on_submit():
+        cor.nome = form.nome.data
+
+        db.session.commit()
+        flash("Cor atualizada!", "success")
+        return redirect(url_for('routes.listar_cores'))
+    
+    return render_template('editar_cor.html', form=form, cor=cor)
+
+@bp.route('/cor/excluir/<int:id>', methods=['POST'])
+@login_required
+@requer_permissao('controleproducao', 'excluir')
+def excluir_cor(id):
+    cor = Cor.query.get_or_404(id)
+
+    db.session.delete(cor)
+    db.session.commit()
+
+    flash("Cor removido!", "success")
+    return redirect(url_for('routes.listar_cores'))
+
+
+#### LINHA ####
+
+### COR  #####
+
+@bp.route('/linhas', methods=['GET'])
+@login_required
+@requer_permissao('controleproducao', 'ver')
+def listar_linhas():
+    linhas = Linha.query.order_by(Linha.id).all()
+    return render_template('listar_linhas.html', linhas=linhas)
+
+@bp.route('/linha/nova', methods=['GET', 'POST'])
+@login_required
+@requer_permissao('controleproducao', 'criar')
+def nova_linha():
+    form = LinhaForm()
+    if form.validate_on_submit():
+        nova_linha = Linha(
+            nome=form.nome.data
+        )
+        db.session.add(nova_linha)
+        db.session.commit()
+        flash("Linha cadastrada com sucesso!", "success")
+        return redirect(url_for('routes.listar_linhas'))
+    return render_template('nova_linha.html', form=form)
+
+
+
+@bp.route('/linha/editar/<int:id>', methods=['GET', 'POST'])
+@login_required
+@requer_permissao('controleproducao', 'editar')
+def editar_linha(id):
+    linha = Linha.query.get_or_404(id)
+    form = LinhaForm(obj=linha)
+
+    if form.validate_on_submit():
+        linha.nome = form.nome.data
+
+        db.session.commit()
+        flash("Linha atualizada!", "success")
+        return redirect(url_for('routes.listar_linhas'))
+    
+    return render_template('editar_linha.html', form=form, linha=linha)
+
+@bp.route('/linha/excluir/<int:id>', methods=['POST'])
+@login_required
+@requer_permissao('controleproducao', 'excluir')
+def excluir_linha(id):
+    linha = Linha.query.get_or_404(id)
+
+    db.session.delete(linha)
+    db.session.commit()
+
+    flash("Linha removida!", "success")
+    return redirect(url_for('routes.listar_linhas'))
