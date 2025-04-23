@@ -145,6 +145,27 @@
 </div>
 
 <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const inputBusca = document.getElementById("buscaMatriz");
+        const linhasTabela = document.querySelectorAll("#listaMatrizes tr");
+
+        if (inputBusca) {
+            inputBusca.addEventListener("keyup", function () {
+                const texto = this.value.toLowerCase();
+
+                linhasTabela.forEach(row => {
+                    const visivel = Array.from(row.children).some(td =>
+                        td.textContent.toLowerCase().includes(texto)
+                    );
+                    row.style.display = visivel ? '' : 'none';
+                });
+            });
+        }
+    });
+</script>
+
+
+<script>
     let indexSelecionado = null;
 
     // Quando clicar no botão "Selecionar"

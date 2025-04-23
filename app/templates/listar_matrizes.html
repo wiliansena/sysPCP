@@ -1,23 +1,64 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="card mb-4 shadow-sm">
-    <div class="card-body d-flex justify-content-around flex-wrap gap-3">
-        <a href="{{ url_for('routes.relatorio_estoque_matriz') }}" class="btn btn-outline-primary">
-            <i class="fa-solid fa-clipboard-list me-2"></i>Relatório Estoque de Matriz
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <a href="{{ url_for('routes.listar_movimentacoes_matriz') }}" class="text-decoration-none">
+            <div class="card text-dark bg-warning h-100 shadow-sm">
+                <div class="card-body text-center">
+                    <i class="fas fa-cube fa-2x mb-2"></i>
+                    <h6 class="card-title">Movimentação de Matrizes</h6>
+                </div>
+            </div>
         </a>
-        <a href="{{ url_for('routes.listar_movimentacoes_matriz') }}" class="btn btn-outline-secondary">
-            <i class="fas fa-cube me-2"></i>Movimentação de Matrizes
+    </div>
+    <div class="col-md-3">
+        <a href="{{ url_for('routes.listar_trocas_matriz') }}" class="text-decoration-none">
+            <div class="card text-white bg-secondary h-100 shadow-sm">
+                <div class="card-body text-center">
+                    <i class="fas fa-exchange-alt fa-2x mb-2"></i>
+                    <h6 class="card-title">Troca de Matriz</h6>
+                </div>
+            </div>
         </a>
-        <a href="{{ url_for('routes.listar_trocas_matriz') }}" class="btn btn-outline-dark">
-            <i class="fas fa-exchange-alt me-2"></i>Troca de Matriz
+    </div>
+
+    <div class="col-md-3">
+        <a href="{{ url_for('routes.relatorio_matriz_tempo_real') }}" class="text-decoration-none">
+            <div class="card text-white bg-info h-100 shadow-sm">
+                <div class="card-body text-center">
+                    <i class="fa-solid fa-clock fa-2x mb-2"></i>
+                    <h6 class="card-title">Relatório Tempo Real</h6>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-3">
+        <a href="{{ url_for('routes.relatorio_estoque_matriz') }}" class="text-decoration-none">
+            <div class="card text-white bg-primary h-100 shadow-sm">
+                <div class="card-body text-center">
+                    <i class="fa-solid fa-clipboard-list fa-2x mb-2"></i>
+                    <h6 class="card-title">Relatório Estoque de Matriz</h6>
+                </div>
+            </div>
         </a>
     </div>
 </div>
-<h2>Matrizes Cadastradas</h2>
+
 
 <a href="{{ url_for('routes.nova_matriz') }}" class="btn btn-success mb-3">
     <i class="fas fa-plus"></i> Nova Matriz
 </a>
+<hr>
+<!-- Campo de Pesquisa -->
+<div class="row mb-3">
+    <div class="col-md-4">
+        <input type="text" id="filtroTabelaMatrizes" class="form-control" placeholder="Buscar Matriz...">
+    </div>
+</div>
+<h2>Matrizes Cadastradas</h2>
+
+
+
 <table class="table table-bordered table-striped">
     <thead class="table-primary">
         <tr>
@@ -38,22 +79,24 @@
             <td>{{ matriz.linha.nome }}</td>
             <td>
                 {% if matriz.imagem %}
-                    <img src="{{ url_for('static', filename='uploads/' + matriz.imagem) }}" width="80">
+                <img src="{{ url_for('static', filename='uploads/' + matriz.imagem) }}" width="80">
                 {% else %}
-                    Sem imagem
+                Sem imagem
                 {% endif %}
             </td>
             <td>{{ matriz.status }}</td>
             <td class="{% if matriz.quantidade < 100 %}text-danger fw-bold{% else %}text-success fw-bold{% endif %}">
                 {{ matriz.quantidade }}
-            </td>            
+            </td>
             <td>
-                <a href="{{ url_for('routes.ver_matriz', id=matriz.id) }}"
-                class="btn btn-info btn-sm"><i class="bi bi-eye"></i>Ver</a>
-                <a href="{{ url_for('routes.editar_matriz', id=matriz.id) }}"
-                 class="btn btn-editar btn-sm"><i class="fas fa-edit"></i>Editar</a>
-                 <form action="{{ url_for('routes.excluir_matriz', id=matriz.id) }}" method="POST" style="display:inline;">
-                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Tem certeza que deseja excluir este solado?')">
+                <a href="{{ url_for('routes.ver_matriz', id=matriz.id) }}" class="btn btn-info btn-sm"><i
+                        class="bi bi-eye"></i>Ver</a>
+                <a href="{{ url_for('routes.editar_matriz', id=matriz.id) }}" class="btn btn-editar btn-sm"><i
+                        class="fas fa-edit"></i>Editar</a>
+                <form action="{{ url_for('routes.excluir_matriz', id=matriz.id) }}" method="POST"
+                    style="display:inline;">
+                    <button type="submit" class="btn btn-danger btn-sm"
+                        onclick="return confirm('Tem certeza que deseja excluir este solado?')">
                         <i class="fas fa-trash-alt"></i> Excluir</button>
                 </form>
             </td>
@@ -61,4 +104,24 @@
         {% endfor %}
     </tbody>
 </table>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const filtro = document.getElementById("filtroTabelaMatrizes");
+        const linhas = document.querySelectorAll("table tbody tr");
+
+        if (filtro) {
+            filtro.addEventListener("keyup", function () {
+                const texto = this.value.toLowerCase();
+
+                linhas.forEach(row => {
+                    const visivel = Array.from(row.children).some(td =>
+                        td.textContent.toLowerCase().includes(texto)
+                    );
+                    row.style.display = visivel ? '' : 'none';
+                });
+            });
+        }
+    });
+</script>
+
 {% endblock %}

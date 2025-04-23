@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2 class="text-center mb-4">
+    <img src="{{ url_for('static', filename='images/estoque.png') }}" alt="Estoque" style="height: 150px;" class="me-2">
+    ESTOQUE EM TEMPO REAL
+</h2>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <a href="{{ url_for('routes.listar_matrizes') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Voltar
+    </a>
+    <button id="btn-tela-cheia" class="btn btn-outline-dark btn-sm">
+        <i class="fas fa-expand"></i> Tela Cheia
+    </button>
+</div>
+
+<div class="row justify-content-center mb-4">
+    {% for item in totais_linha %}
+    {% set cor = 'bg-danger' if item.total < 100 else 'bg-primary' %}
+    <div class="col-md-2 text-center">
+        <div class="fw-bold fs-5 text-dark mb-2">{{ item.nome }}</div>
+        <div class="text-white py-4 rounded shadow {{ cor }} border border-dark fs-4 fw-bold">
+            {{ "{:,.0f}".format(item.total).replace(",", ".") }}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="text-center my-4">
+    <div class="fs-1 fw-bold text-dark bg-warning d-inline-block px-5 py-3 rounded shadow border border-dark">
+        TOTAL: {{ "{:,.0f}".format(total_geral).replace(",", ".") }}
+    </div>
+</div>
+
+<div class="text-center">
+    <div class="fs-5 fw-bold text-primary" id="dataHora"></div>
+</div>
+
+<script>
+    // Atualiza a data/hora em tempo real
+    function atualizarDataHora() {
+        const agora = new Date();
+        const options = {
+            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+            hour: '2-digit', minute: '2-digit', second: '2-digit'
+        };
+        const dataHora = agora.toLocaleDateString('pt-BR', options);
+        document.getElementById("dataHora").innerText = dataHora;
+    }
+
+    setInterval(atualizarDataHora, 1000);
+    atualizarDataHora();
+
+    // 🔁 Atualiza a página automaticamente a cada 5 minutos (300000 ms)
+    setInterval(() => {
+        location.reload();
+    }, 120000);
+</script>
+
+{% endblock %}

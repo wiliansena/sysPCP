@@ -23,12 +23,12 @@
     </div>
     <div class="col-md-3">
         <label class="form-label">Matriz</label>
-        <select name="matriz_id" class="form-select">
+        <select name="matriz_id" id="selectMatriz" class="form-select">
             <option value="">Todas</option>
             {% for matriz in matrizes %}
-            <option value="{{ matriz.id }}" {% if request.args.get('matriz_id')==matriz.id|string %}selected{% endif %}>
-                {{ matriz.codigo }}
-            </option>
+                <option value="{{ matriz.id }}" {% if request.args.get('matriz_id') == matriz.id|string %}selected{% endif %}>
+                    {{ matriz.codigo }} - {{ matriz.descricao }}
+                </option>
             {% endfor %}
         </select>
     </div>
@@ -98,5 +98,14 @@
     </tbody>
 </table>
 
-
+<!--SCRIPT PARA PESQUISAR MATRIZ DENTRO DE UM SELETOR2-->
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        $('#selectMatriz').select2({
+            placeholder: "Selecione a matriz...",
+            allowClear: true,
+            width: '100%'
+        });
+    });
+</script>
 {% endblock %}

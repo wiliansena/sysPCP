@@ -138,7 +138,7 @@ def gerenciar_permissoes(id):
         flash("As permissões do Admin não podem ser modificadas por outro usuário!", "danger")
         return redirect(url_for('routes.listar_usuarios'))
 
-    categorias = ["comercial","manutencao","margens",
+    categorias = ["comercial","desenvolvimento","manutencao","margens",
                   "custoproducao", "componentes",
                   "controleproducao", "maquinas",
                   "funcionario", "relatorio", "usuarios", "trocar_senha"]
@@ -773,14 +773,14 @@ def excluir_referencia(id):
 
 @bp.route('/colecoes')
 @login_required
-@requer_permissao('custoproducao', 'ver')
+@requer_permissao('desenvolvimento', 'ver')
 def listar_colecoes():
     colecoes = Colecao.query.order_by(Colecao.id.desc()).all()
     return render_template('colecoes.html', colecoes=colecoes)
 
 @bp.route('/colecao/novo', methods=['GET', 'POST'])
 @login_required
-@requer_permissao('custoproducao', 'criar')
+@requer_permissao('desenvolvimento', 'criar')
 def nova_colecao():
     form = ColecaoForm()
     if form.validate_on_submit():
@@ -795,7 +795,7 @@ def nova_colecao():
 
 @bp.route('/colecao/editar/<int:id>', methods=['GET', 'POST'])
 @login_required
-@requer_permissao('custoproducao', 'editar')
+@requer_permissao('desenvolvimento', 'editar')
 def editar_colecao(id):
     colecao = Colecao.query.get_or_404(id)
     form = ColecaoForm(obj=colecao)
@@ -810,7 +810,7 @@ def editar_colecao(id):
 
 @bp.route('/colecao/excluir/<int:id>', methods=['POST'])
 @login_required
-@requer_permissao('custoproducao', 'excluir')
+@requer_permissao('desenvolvimento', 'excluir')
 def excluir_colecao(id):
     colecao = Colecao.query.get_or_404(id)
     referencias_vinculadas = Referencia.query.filter_by(colecao_id=colecao.id).all()
@@ -2754,9 +2754,6 @@ from openpyxl import Workbook
 @login_required
 @requer_permissao('controleproducao', 'ver')
 def exportar_troca_excel(id):
-    from openpyxl import Workbook
-    from flask import send_file
-    from io import BytesIO
 
     troca = TrocaMatriz.query.get_or_404(id)
 
@@ -2879,49 +2876,61 @@ def nova_matriz():
     linhas = Linha.query.order_by(Linha.nome).all()
     cores = Cor.query.order_by(Cor.nome).all()
 
-    if form.validate_on_submit():
-        nova_matriz = Matriz(
-            codigo=form.codigo.data,
-            descricao=form.descricao.data,
-            tipo=form.tipo.data,
-            status=form.status.data,
-            capacidade=form.capacidade.data or 0,
-            quantidade=form.quantidade.data or 0,
-            linha_id=request.form.get('linha_id')
-        )
-
-        # ✅ Salvar imagem se houver
-        if form.imagem.data:
-            imagem_filename = secure_filename(form.imagem.data.filename)
-            upload_path = current_app.config['UPLOAD_FOLDER']
-            os.makedirs(upload_path, exist_ok=True)
-            caminho_imagem = os.path.join(upload_path, imagem_filename)
-            form.imagem.data.save(caminho_imagem)
-            nova_matriz.imagem = imagem_filename
-
-        # ✅ Adicionar tamanhos corretamente
-        for campo in form.tamanhos.entries:
-            nome = campo.form.nome.data.strip() or '--'
-            quantidade = campo.form.quantidade.data or 0  # <-- aqui permanece int
-            tamanho = TamanhoMatriz(nome=nome, quantidade=quantidade)
-            nova_matriz.tamanhos.append(tamanho)
-
-        # ✅ Adicionar cores selecionadas
+    if request.method == 'POST':
+        linha_id = request.form.get('linha_id')
         cores_ids = request.form.getlist('cores')
-        if cores_ids:
+
+        # ⚠️ Validação manual antes de salvar
+        if not linha_id:
+            flash('Você precisa selecionar uma LINHA.', 'danger')
+            return render_template('nova_matriz.html', form=form, linhas=linhas, cores=cores)
+
+        if not cores_ids:
+            flash('Você precisa selecionar pelo menos uma COR.', 'danger')
+            return render_template('nova_matriz.html', form=form, linhas=linhas, cores=cores)
+
+        if form.validate_on_submit():
+            nova_matriz = Matriz(
+                codigo=form.codigo.data,
+                descricao=form.descricao.data,
+                tipo=form.tipo.data,
+                status=form.status.data,
+                capacidade=form.capacidade.data or 0,
+                quantidade=form.quantidade.data or 0,
+                linha_id=int(linha_id)  # 🔹 converte para int aqui
+            )
+
+            # ✅ Salvar imagem se houver
+            if form.imagem.data:
+                imagem_filename = secure_filename(form.imagem.data.filename)
+                upload_path = current_app.config['UPLOAD_FOLDER']
+                os.makedirs(upload_path, exist_ok=True)
+                caminho_imagem = os.path.join(upload_path, imagem_filename)
+                form.imagem.data.save(caminho_imagem)
+                nova_matriz.imagem = imagem_filename
+
+            # ✅ Adicionar tamanhos corretamente
+            for campo in form.tamanhos.entries:
+                nome = campo.form.nome.data.strip() or '--'
+                quantidade = campo.form.quantidade.data or 0
+                tamanho = TamanhoMatriz(nome=nome, quantidade=quantidade)
+                nova_matriz.tamanhos.append(tamanho)
+
+            # ✅ Adicionar cores selecionadas
             cores_selecionadas = Cor.query.filter(Cor.id.in_(cores_ids)).all()
             nova_matriz.cores = cores_selecionadas
-        
-        # ✅ Atualiza o total com base nas quantidades dos tamanhos
-        nova_matriz.quantidade = nova_matriz.calcular_total_grade()
 
-        db.session.add(nova_matriz)
-        db.session.commit()
+            # ✅ Atualiza o total com base nas quantidades dos tamanhos
+            nova_matriz.quantidade = nova_matriz.calcular_total_grade()
 
-        flash('Matriz cadastrada com sucesso!', 'success')
-        return redirect(url_for('routes.listar_matrizes'))
+            db.session.add(nova_matriz)
+            db.session.commit()
+
+            flash('Matriz cadastrada com sucesso!', 'success')
+            return redirect(url_for('routes.listar_matrizes'))
 
     return render_template('nova_matriz.html', form=form, linhas=linhas, cores=cores)
+
 
 
 
@@ -2991,6 +3000,28 @@ def editar_matriz(id):
         return redirect(url_for('routes.listar_matrizes'))
 
     return render_template('editar_matriz.html', form=form, matriz=matriz, linhas=linhas, cores=cores)
+
+
+@bp.route("/relatorio/matriz_tempo_real")
+@login_required
+@requer_permissao('controleproducao', 'ver')
+def relatorio_matriz_tempo_real():
+    from sqlalchemy import func
+
+    totais_linha = db.session.query(
+        Linha.nome.label("nome"),
+        func.sum(TamanhoMatriz.quantidade).label("total")
+    ).select_from(Matriz)\
+     .join(Linha, Matriz.linha_id == Linha.id)\
+     .join(TamanhoMatriz, TamanhoMatriz.matriz_id == Matriz.id)\
+     .group_by(Linha.nome)\
+     .order_by(Linha.nome)\
+     .all()
+
+    total_geral = sum(item.total or 0 for item in totais_linha)
+
+    return render_template("relatorio_matriz_tempo_real.html", totais_linha=totais_linha, total_geral=total_geral)
+
 
 @bp.route('/matriz/<int:id>/zerar', methods=['POST'])
 @login_required
@@ -3650,14 +3681,14 @@ def relatorio_componentes_manutencao():
 
 @bp.route('/cores', methods=['GET'])
 @login_required
-@requer_permissao('controleproducao', 'ver')
+@requer_permissao('desenvolvimento', 'ver')
 def listar_cores():
     cores = Cor.query.order_by(Cor.id).all()
     return render_template('listar_cores.html', cores=cores)
 
 @bp.route('/cor/nova', methods=['GET', 'POST'])
 @login_required
-@requer_permissao('controleproducao', 'criar')
+@requer_permissao('desenvolvimento', 'criar')
 def nova_cor():
     form = CorForm()
     if form.validate_on_submit():
@@ -3674,7 +3705,7 @@ def nova_cor():
 
 @bp.route('/cor/editar/<int:id>', methods=['GET', 'POST'])
 @login_required
-@requer_permissao('controleproducao', 'editar')
+@requer_permissao('desenvolvimento', 'editar')
 def editar_cor(id):
     cor = Cor.query.get_or_404(id)
     form = CorForm(obj=cor)
@@ -3690,7 +3721,7 @@ def editar_cor(id):
 
 @bp.route('/cor/excluir/<int:id>', methods=['POST'])
 @login_required
-@requer_permissao('controleproducao', 'excluir')
+@requer_permissao('desenvolvimento', 'excluir')
 def excluir_cor(id):
     cor = Cor.query.get_or_404(id)
 
@@ -3707,14 +3738,14 @@ def excluir_cor(id):
 
 @bp.route('/linhas', methods=['GET'])
 @login_required
-@requer_permissao('controleproducao', 'ver')
+@requer_permissao('desenvolvimento', 'ver')
 def listar_linhas():
     linhas = Linha.query.order_by(Linha.id).all()
     return render_template('listar_linhas.html', linhas=linhas)
 
 @bp.route('/linha/nova', methods=['GET', 'POST'])
 @login_required
-@requer_permissao('controleproducao', 'criar')
+@requer_permissao('desenvolvimento', 'criar')
 def nova_linha():
     form = LinhaForm()
     if form.validate_on_submit():
@@ -3731,7 +3762,7 @@ def nova_linha():
 
 @bp.route('/linha/editar/<int:id>', methods=['GET', 'POST'])
 @login_required
-@requer_permissao('controleproducao', 'editar')
+@requer_permissao('desenvolvimento', 'editar')
 def editar_linha(id):
     linha = Linha.query.get_or_404(id)
     form = LinhaForm(obj=linha)
@@ -3747,7 +3778,7 @@ def editar_linha(id):
 
 @bp.route('/linha/excluir/<int:id>', methods=['POST'])
 @login_required
-@requer_permissao('controleproducao', 'excluir')
+@requer_permissao('desenvolvimento', 'excluir')
 def excluir_linha(id):
     linha = Linha.query.get_or_404(id)
 

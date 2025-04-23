@@ -82,6 +82,7 @@
                         <tr>
                             <th>Código</th>
                             <th>Descrição</th>
+                            <th>Linha</th>
                             <th>Ação</th>
                         </tr>
                     </thead>
@@ -90,6 +91,7 @@
                         <tr>
                             <td>{{ matriz.codigo }}</td>
                             <td>{{ matriz.descricao }}</td>
+                            <td>{{ matriz.linha.nome }}</td>
                             <td>
                                 <button type="button" class="btn btn-sm btn-success selecionar-matriz"
                                     data-id="{{ matriz.id }}" data-codigo="{{ matriz.codigo }} - {{ matriz.descricao }}">

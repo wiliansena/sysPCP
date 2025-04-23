@@ -333,7 +333,7 @@ class MatrizForm(FlaskForm):
     descricao = StringField('Descrição', validators=[DataRequired()])
     tipo = SelectField('Tipo', choices=[('Solado', 'Solado'), ('Alca', 'Alca')], validators=[DataRequired()])
     status = SelectField('Status', choices=[('Ativa', 'Ativa'), ('Inativa', 'Inativa')], validators=[DataRequired()])
-    capacidade = IntegerField('Capacidade', validators=[Optional()])
+    capacidade = IntegerField('Capacidade', validators=[DataRequired()])
     quantidade = IntegerField('Quantidade Total', validators=[Optional()])
     imagem = FileField('Imagem', validators=[Optional()])
     

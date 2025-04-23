@@ -39,13 +39,20 @@
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
     <meta name="theme-color" content="#0d6efd">
 
+    <!-- HEAD: CSS do Select2 -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+
 </head>
+<!-- Antes de </body>: JS do Select2 -->
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
 
 <body>
 
     <!-- Botão de alternância da sidebar -->
-    <button id="toggleSidebar" class="toggle-sidebar-btn no-print" title="Abrir/Fechar Menu" >
-        <i id="toggleIcon"  class="fa-solid fa-angles-left"></i>
+    <button id="toggleSidebar" class="toggle-sidebar-btn no-print" title="Abrir/Fechar Menu">
+        <i id="toggleIcon" class="fa-solid fa-angles-left"></i>
     </button>
 
     <!-- Barra superior -->
@@ -91,7 +98,6 @@
             <a href="{{ url_for('routes.listar_custos') }}"><i class="fas fa-dollar-sign"></i> Custos Operacionais</a>
             <a href="{{ url_for('routes.listar_mao_de_obra') }}"><i class="fas fa-user"></i> Mão de Obra</a>
             <a href="{{ url_for('routes.listar_salarios') }}"><i class="fas fa-money-bill"></i> Salários</a>
-            <a href="{{ url_for('routes.listar_colecoes') }}"><i class="bi bi-tags"></i> Coleções</a>
         </div>
         {% endif %}
 
@@ -106,6 +112,7 @@
         </div>
         {% endif %}
 
+
         <!-- Controle de Produção -->
         {% if ('controleproducao', 'ver') in g.permissoes %}
         <div class="sidebar-category" onclick="toggleMenu('controleproducao')">
@@ -113,12 +120,24 @@
             <i class="fas fa-chevron-down"></i>
         </div>
         <div class="sidebar-submenu" id="controleproducao">
-            
+
             <a href="{{ url_for('routes.listar_maquinas') }}"><i class="fa-solid fa-gears"></i> Máquinas</a>
             <a href="{{ url_for('routes.listar_matrizes') }}"><i class="fas fa-cube"></i> Matrizes</a>
+        </div>
+        {% endif %}
+
+        <!-- DESENVOLVIMENTO -->
+        {% if ('desenvolvimento', 'ver') in g.permissoes %}
+        <div class="sidebar-category" onclick="toggleMenu('desenvolvimento')">
+            <i class="fa-solid fa-lightbulb"></i> Desenvolvimento
+            <i class="fas fa-chevron-down"></i>
+        </div>
+        <div class="sidebar-submenu" id="desenvolvimento">
             <a href="{{ url_for('routes.listar_cores') }}"><i class="fa-solid fa-palette"></i>Cores</a>
             <a href="{{ url_for('routes.listar_linhas') }}"><i class="fa-solid fa-layer-group"></i>Linhas</a>
+            <a href="{{ url_for('routes.listar_colecoes') }}"><i class="bi bi-tags"></i> Coleções</a>
         </div>
+
         {% endif %}
 
         <!-- Manutenção -->
@@ -128,8 +147,8 @@
             <i class="fas fa-chevron-down"></i>
         </div>
         <div class="sidebar-submenu" id="manutencao">
-            <a href="{{ url_for('routes.listar_manutencoes') }}"><i class="fa-solid fa-screwdriver-wrench"></i>Ordem de
-                serviço</a>
+            <a href="{{ url_for('routes.listar_manutencoes') }}"><i class="fa-solid fa-screwdriver-wrench"></i>
+                Manutenções</a>
             <a href="{{ url_for('routes.relatorio_manutencoes') }}"><i class="fa-solid fa-clipboard-list"></i>Relatório
                 de Manutenções</a>
             <a href="{{ url_for('routes.relatorio_componentes_manutencao') }}"><i
@@ -198,10 +217,10 @@
         document.addEventListener("DOMContentLoaded", function () {
             const toggleBtn = document.getElementById("toggleSidebar");
             const toggleIcon = document.getElementById("toggleIcon");
-    
+
             toggleBtn.addEventListener("click", function () {
                 document.body.classList.toggle("hide-sidebar");
-    
+
                 // Alternar ícone entre <<< e >>> usando angles
                 if (document.body.classList.contains("hide-sidebar")) {
                     toggleIcon.classList.remove("fa-angles-left");
@@ -213,7 +232,7 @@
             });
         });
     </script>
-    
+
 
     <script>
         window.addEventListener("resize", function () {
@@ -276,7 +295,7 @@
 
     </script>
 
-      
+
 
 </body>
 
