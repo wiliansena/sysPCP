@@ -1,30 +1,27 @@
 {% extends 'base.html' %}
 
 {% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <a href="{{ url_for('routes.listar_matrizes') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Voltar
+    </a>
+</div>
 <h2 class="text-center mb-4">
     <img src="{{ url_for('static', filename='images/estoque.png') }}" alt="Estoque" style="height: 150px;" class="me-2">
     ESTOQUE EM TEMPO REAL
 </h2>
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <a href="{{ url_for('routes.listar_matrizes') }}" class="btn btn-secondary">
-        <i class="fas fa-arrow-left"></i> Voltar
-    </a>
-    <button id="btn-tela-cheia" class="btn btn-outline-dark btn-sm">
-        <i class="fas fa-expand"></i> Tela Cheia
-    </button>
-</div>
+
 
 <div class="row justify-content-center mb-4">
     {% for item in totais_linha %}
-    {% set cor = 'bg-danger' if item.total < 100 else 'bg-primary' %}
-    <div class="col-md-2 text-center">
+    {% set cor = 'bg-danger' if item.total < 100 else 'bg-primary' %} <div class="col-md-2 text-center">
         <div class="fw-bold fs-5 text-dark mb-2">{{ item.nome }}</div>
         <div class="text-white py-4 rounded shadow {{ cor }} border border-dark fs-4 fw-bold">
             {{ "{:,.0f}".format(item.total).replace(",", ".") }}
         </div>
-    </div>
-    {% endfor %}
+</div>
+{% endfor %}
 </div>
 
 <div class="text-center my-4">

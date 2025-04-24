@@ -66,7 +66,7 @@
             <th>Descrição</th>
             <th>Linha</th>
             <th>Imagem</th>
-            <th>Status</th>
+            <th>Tipo</th>
             <th>QTDE</th>
             <th>Ações</th>
         </tr>
@@ -84,7 +84,7 @@
                 Sem imagem
                 {% endif %}
             </td>
-            <td>{{ matriz.status }}</td>
+            <td>{{ matriz.tipo }}</td>
             <td class="{% if matriz.quantidade < 100 %}text-danger fw-bold{% else %}text-success fw-bold{% endif %}">
                 {{ matriz.quantidade }}
             </td>
