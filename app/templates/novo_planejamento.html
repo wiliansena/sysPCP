@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2 class="mb-4">Novo Planejamento de Produção</h2>
+<form method="POST">
+    {{ form.hidden_tag() }}
+
+    <div class="row mb-3">
+        <div class="col-md-3">
+            <label class="form-label"><strong>Remessa:</strong></label>
+            {{ form.remessa_id(class="form-select select2") }}
+        </div>
+        <div class="col-md-3">
+            <label class="form-label"><strong>Referência:</strong></label>
+            {{ form.referencia(class="form-control") }}
+        </div>
+        <div class="col-md-3">
+            <label class="form-label"><strong>Quantidade de Pares:</strong></label>
+            {{ form.quantidade(class="form-control") }}
+        </div>
+        <div class="col-md-3">
+            <label class="form-label"><strong>Setor:</strong></label>
+            {{ form.setor(class="form-select") }}
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-md-3">
+            <label class="form-label"><strong>Linha:</strong></label>
+            {{ form.linha_id(class="form-select select2") }}
+        </div>
+        <div class="col-md-3">
+            <label class="form-label"><strong>Na Esteira:</strong></label>
+            {{ form.esteira_qtd(class="form-control") }}
+        </div>
+        <div class="col-md-3">
+            <label class="form-label d-block"><strong>Desceu na Esteira:</strong></label>
+            <div class="form-check">
+                {{ form.esteira(class="form-check-input") }}
+                {{ form.esteira.label(class="form-check-label") }}
+            </div>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label d-block"><strong>Fechado:</strong></label>
+            <div class="form-check">
+                {{ form.fechado(class="form-check-input") }}
+                {{ form.fechado.label(class="form-check-label") }}
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        {{ form.submit(class="btn btn-success") }}
+        <a href="{{ url_for('routes.listar_planejamentos') }}" class="btn btn-secondary">Cancelar</a>
+    </div>
+</form>
+
+<hr class="my-4">
+
+<h5 class="mb-3">Importar Planejamentos por Remessa</h5>
+<form method="POST" enctype="multipart/form-data" action="{{ url_for('routes.importar_planejamentos') }}">
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <label class="form-label">Arquivo Excel (.xlsx)</label>
+            <input type="file" name="arquivo" accept=".xlsx" class="form-control" required>
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-file-import"></i> Importar
+            </button>
+        </div>
+    </div>
+</form>
+
+<div class="alert alert-info">
+    <strong>Layout da Planilha:</strong><br>
+    A primeira linha deve conter os seguintes cabeçalhos:<br>
+    <code>Código da Remessa, Referência, Quantidade, Setor, Linha, Esteira, Quantidade na Esteira, Fechado</code>
+</div>
+
+<!-- Ativa o select2 -->
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        $('.select2').select2({
+            width: '100%',
+            placeholder: 'Selecione',
+            allowClear: true
+        });
+    });
+</script>
+{% endblock %}

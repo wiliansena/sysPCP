@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Editar Remessa</h2>
+<form method="POST">
+    {{ form.hidden_tag() }}
+
+    <div class="mb-3">
+        {{ form.codigo.label(class="form-label") }}
+        {{ form.codigo(class="form-control") }}
+    </div>
+    <div class="mb-3">
+        <label for="data_fechamento" class="form-label">Data de Fechamento</label>
+        {{ form.data_fechamento(class="form-control", type="date", id="data_fechamento") }}
+    </div>
+    
+    
+
+    <button type="submit" class="btn btn-success">
+        <i class="fas fa-save"></i> {{ form.submit.label.text }}
+    </button>
+    <a href="{{ url_for('routes.listar_remessas') }}" class="btn btn-secondary">Cancelar</a>
+{% endblock %}

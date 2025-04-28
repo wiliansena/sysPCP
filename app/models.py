@@ -4,6 +4,12 @@ from sqlalchemy.orm import relationship
 from app import db
 from decimal import Decimal, ROUND_HALF_UP, ROUND_CEILING
 from datetime import date, datetime, time
+from datetime import datetime
+import pytz
+
+def hora_brasilia():
+    return datetime.now(pytz.timezone('America/Sao_Paulo')).replace(microsecond=0)
+
 
 
 
@@ -1004,11 +1010,6 @@ matriz_cor = db.Table('matriz_cor',
 )
 
 
-
-
-
-
-
 class Funcionario(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100), nullable=False)
@@ -1056,6 +1057,7 @@ class Cor(db.Model):
 class Linha(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(20), nullable=False)
+    grupo = db.Column(db.String(20), nullable=True)
 
 
 class MovimentacaoMatriz(db.Model):
@@ -1083,10 +1085,60 @@ class TamanhoMovimentacao(db.Model):
 
     
     
+class Grade(db.Model):
+    __tablename__ = 'grade'
+    id = db.Column(db.Integer, primary_key=True)
+    descricao = db.Column(db.String(100), nullable=False)
+
+    tamanhos = db.relationship('TamanhoGrade', back_populates='grade', cascade='all, delete-orphan')
+
+class TamanhoGrade(db.Model):
+    __tablename__ = 'tamanho_grade'
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(20), nullable=False)
+    quantidade = db.Column(db.Integer, default=0)
+
+    grade_id = db.Column(db.Integer, db.ForeignKey('grade.id'))
+    grade = db.relationship('Grade', back_populates='tamanhos')
+
     
-    
-    
-    
+class Remessa(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    codigo = db.Column(db.String(20), nullable=False, unique=True)
+    data_criacao = db.Column(db.DateTime, default=hora_brasilia)
+    data_fechamento = db.Column(db.DateTime, nullable=True)
+
+    planejamentos = db.relationship("PlanejamentoProducao", back_populates="remessa", cascade="all, delete-orphan")
+
+    def verificar_fechamento(self):
+        if all(p.fechado for p in self.planejamentos):
+            if not self.data_fechamento:
+                self.data_fechamento = hora_brasilia()
+
+class PlanejamentoProducao(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    referencia = db.Column(db.String(50), nullable=False)
+    quantidade = db.Column(db.Integer, nullable=False)
+    setor = db.Column(db.String(100), nullable=False)
+
+    esteira = db.Column(db.Boolean, default=False)
+    esteira_qtd = db.Column(db.Integer, default=0)
+
+    fechado = db.Column(db.Boolean, default=False)
+    data_fechado = db.Column(db.DateTime)
+
+    data_criacao = db.Column(db.DateTime, default=hora_brasilia)
+
+    linha_id = db.Column(db.Integer, db.ForeignKey("linha.id"))
+    linha = db.relationship("Linha")
+
+    remessa_id = db.Column(db.Integer, db.ForeignKey("remessa.id"))
+    remessa = db.relationship("Remessa", back_populates="planejamentos")
+
+    @property
+    def faltando(self):
+        return max(self.quantidade - self.esteira_qtd, 0)
+
 
 
 

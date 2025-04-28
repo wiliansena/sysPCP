@@ -1,7 +1,7 @@
 from decimal import Decimal
 from typing import Optional
 from flask_wtf import FlaskForm
-from wtforms import DateField, DecimalField, HiddenField, SelectMultipleField, StringField, SubmitField, FloatField, FileField, TextAreaField
+from wtforms import BooleanField, DateField, DateTimeField, DecimalField, HiddenField, SelectMultipleField, StringField, SubmitField, FloatField, FileField, TextAreaField
 from wtforms.validators import DataRequired
 from wtforms import SelectField
 from flask_wtf import FlaskForm
@@ -331,7 +331,8 @@ class TamanhoMatrizForm(FlaskForm):
 class MatrizForm(FlaskForm):
     codigo = StringField('Código', validators=[DataRequired()])
     descricao = StringField('Descrição', validators=[DataRequired()])
-    tipo = SelectField('Tipo', choices=[('Solado', 'Solado'), ('Alca', 'Alca')], validators=[DataRequired()])
+    tipo = SelectField('Tipo', choices=[('Alca', 'Alca'),
+                                        ('Solado', 'Solado')], validators=[DataRequired()])
     status = SelectField('Status', choices=[('Ativa', 'Ativa'), ('Inativa', 'Inativa')], validators=[DataRequired()])
     capacidade = IntegerField('Capacidade', validators=[DataRequired()])
     quantidade = IntegerField('Quantidade Total', validators=[Optional()])
@@ -339,7 +340,7 @@ class MatrizForm(FlaskForm):
     
     # Linha será selecionada via modal e enviada como hidden
     # Cores e tamanhos manipulados via lógica no template
-    tamanhos = FieldList(FormField(TamanhoMatrizForm), min_entries=10)
+    tamanhos = FieldList(FormField(TamanhoMatrizForm), min_entries=8)
 
 
 
@@ -389,6 +390,10 @@ class CorForm(FlaskForm):
 
 class LinhaForm(FlaskForm):
     nome = StringField('Nome', validators=[DataRequired(), Length(max=20)])
+    grupo = SelectField('Grupo', choices=[('GRUPO_REF_01', 'GRUPO_REF_01'),
+                                            ('GRUPO_REF_02', 'GRUPO_REF_02'),
+                                            ('GRUPO_REF_03', 'GRUPO_REF_03')
+                                            ], validators=[DataRequired()])
 
 
 
@@ -411,4 +416,42 @@ class MovimentacaoMatrizForm(FlaskForm):
     cor_id = SelectField('Cor', validate_choice=False, coerce=int)
 
 
-    tamanhos = FieldList(FormField(TamanhoMovimentacaoForm), min_entries=10)
+    tamanhos = FieldList(FormField(TamanhoMovimentacaoForm), min_entries=8)
+
+
+
+
+class TamanhoGradeForm(FlaskForm):
+    nome = StringField('Tamanho', validators=[DataRequired()])
+    quantidade = IntegerField('Quantidade', default=0)
+
+class GradeForm(FlaskForm):
+    descricao = StringField('Descrição da Grade', validators=[DataRequired()])
+    tamanhos = FieldList(FormField(TamanhoGradeForm), min_entries=1)
+    submit = SubmitField('Salvar')
+
+
+class RemessaForm(FlaskForm):
+    codigo = StringField('Código da Remessa', validators=[DataRequired()])
+    data_fechamento = DateField('Data de Fechamento', format='%Y-%m-%d', validators=[Optional()])
+    submit = SubmitField('Salvar')
+
+
+class PlanejamentoProducaoForm(FlaskForm):
+    remessa_id = SelectField('Remessa', coerce=int, validators=[DataRequired()])
+    referencia = StringField('Referência', validators=[DataRequired()])
+    quantidade = IntegerField('Quantidade de Pares', validators=[DataRequired(), NumberRange(min=0)])
+    setor = SelectField('Setor', choices=[
+                                            ('-', '-'),
+                                            ('1', '1'),
+                                            ('2', '2'),
+                                            ('3', '3'),
+                                            ], validators=[DataRequired()])
+
+    linha_id = SelectField('Linha', coerce=int, validators=[DataRequired()])
+
+    esteira = BooleanField('Desceu na Esteira')
+    esteira_qtd = IntegerField('Quantidade na Esteira', validators=[NumberRange(min=0)])
+    fechado = BooleanField('Fechado')
+
+    submit = SubmitField('Salvar')

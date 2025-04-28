@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2 class="mb-4">Editar Planejamento</h2>
+<form method="POST">
+    {{ form.hidden_tag() }}
+
+    <div class="row mb-3">
+        <div class="col-md-3">
+            <label class="form-label"><strong>Remessa:</strong></label>
+            {{ form.remessa_id(class="form-select select2") }}
+        </div>
+        <div class="col-md-3">
+            <label class="form-label"><strong>Referência:</strong></label>
+            {{ form.referencia(class="form-control") }}
+        </div>
+        <div class="col-md-3">
+            <label class="form-label"><strong>Quantidade de Pares:</strong></label>
+            {{ form.quantidade(class="form-control") }}
+        </div>
+        <div class="col-md-3">
+            <label class="form-label"><strong>Setor:</strong></label>
+            {{ form.setor(class="form-select") }}
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-md-3">
+            <label class="form-label"><strong>Linha:</strong></label>
+            {{ form.linha_id(class="form-select select2") }}
+        </div>
+        <div class="col-md-3">
+            <label class="form-label"><strong>Na Esteira:</strong></label>
+            {{ form.esteira_qtd(class="form-control") }}
+        </div>
+        <div class="col-md-3">
+            <label class="form-label d-block"><strong>Desceu na Esteira:</strong></label>
+            <div class="form-check">
+                {{ form.esteira(class="form-check-input") }}
+                {{ form.esteira.label(class="form-check-label") }}
+            </div>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label d-block"><strong>Fechado:</strong></label>
+            <div class="form-check">
+                {{ form.fechado(class="form-check-input") }}
+                {{ form.fechado.label(class="form-check-label") }}
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        {{ form.submit(class="btn btn-success") }}
+        <a href="{{ url_for('routes.listar_planejamentos') }}" class="btn btn-secondary">Cancelar</a>
+    </div>
+</form>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        $('.select2').select2({
+            width: '100%',
+            placeholder: 'Selecione',
+            allowClear: true
+        });
+    });
+</script>
+{% endblock %}

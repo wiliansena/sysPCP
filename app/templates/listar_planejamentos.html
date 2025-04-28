@@ -1,0 +1,219 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Planejamentos de Produção</h2>
+<hr>
+<div class="d-flex flex-wrap gap-2 mb-3">
+    <a href="{{ url_for('routes.listar_remessas') }}" class="btn btn-outline-primary">
+        <i class="fa-solid fa-box"></i> Remessas
+    </a>
+    <a href="{{ url_for('routes.novo_planejamento') }}" class="btn btn-success">
+        <i class="fas fa-plus"></i> Adicionar
+    </a>
+</div>
+
+<form method="GET" class="row mb-4">
+    <div class="col-md-4">
+        <label for="remessa_id" class="form-label">Filtrar por Remessa</label>
+        <select name="remessa_id" id="remessa_id" class="form-select select2" multiple>
+            <option value="todas" {% if 'todas' in request.args.getlist('remessa_id') %}selected{% endif %}>
+                Todas
+            </option>
+            {% for remessa in remessas %}
+            <option value="{{ remessa.id }}" {% if remessa.id|string in request.args.getlist('remessa_id') %}selected{% endif %}>
+                {{ remessa.codigo }}
+            </option>
+            {% endfor %}
+        </select>
+
+    </div>
+
+    <div class="col-md-3">
+        <label for="status" class="form-label">Status</label>
+        <select name="status" id="status" class="form-select">
+            <option value="">Todos</option>
+            <option value="fechado" {% if request.args.get('status')=='fechado' %}selected{% endif %}>Fechado</option>
+            <option value="aberto" {% if request.args.get('status')=='aberto' %}selected{% endif %}>Aberto</option>
+        </select>
+    </div>
+
+    <div class="col-md-2 d-flex align-items-end">
+        <button type="submit" class="btn btn-primary w-100"><i class="fas fa-filter"></i> Filtrar</button>
+    </div>
+    <div class="col-md-2 d-flex align-items-end">
+        <a href="{{ url_for('routes.listar_planejamentos') }}" class="btn btn-secondary w-100"><i
+                class="fas fa-sync-alt"></i></a>
+    </div>
+</form>
+
+
+<hr>
+
+<div class="row mt-3 justify-content-center">
+    <div class="col-md-4">
+        <div class="card text-center fw-bold" style="background-color: #f8be00; border: 2px solid #777777;">
+            <div class="card-body py-3">
+                TOTAL GERAL: {{ total_geral }} pares
+            </div>
+        </div>
+    </div>
+</div>
+
+<hr>
+
+<div class="row mt-4">
+    {% set classe_cor = {
+    'GRUPO_REF_01': 'bg-success text-white',
+    'GRUPO_REF_02': 'bg-primary text-white',
+    'GRUPO_REF_03': 'bg-warning text-dark'
+    } %}
+
+    {% for grupo, dados in grupos.items() %}
+    <div class="col-12 col-md-6 col-lg-4 mb-5">
+        <!-- Total do grupo -->
+        <div class="card text-center fw-bold mb-2 {{ classe_cor[grupo] }}">
+            <div class="card-body py-2">
+                TOTAL:<br> {{ totais[grupo] }} pares
+            </div>
+        </div>
+
+        <!-- Tabela -->
+        <div class="card h-100">
+            <div class="card-header text-center fw-bold {{ classe_cor[grupo] }}">
+                {{ grupo }}
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-bordered table-sm text-center align-middle m-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>REF</th>
+                            <th>SETOR</th>
+                            <th>PRS</th>
+                            <th>FECHADO</th>
+                            <th>AÇÕES</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in dados %}
+                        <tr>
+                            <td>{{ p.referencia }}</td>
+                            <td>
+                                <span class="campo-editavel" data-id="{{ p.id }}" data-campo="setor">{{ p.setor
+                                    }}</span>
+                            </td>
+                            <td>{{ p.quantidade }}</td>
+                            <td>
+                                <span class="campo-editavel" data-id="{{ p.id }}" data-campo="fechado">
+                                    {% if p.fechado %}
+                                    <span class="badge bg-success">Sim</span>
+                                    {% else %}
+                                    <span class="badge bg-warning text-dark">Não</span>
+                                    {% endif %}
+                                </span>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('routes.ver_planejamento', id=p.id) }}" class="btn btn-sm btn-info">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        $('#remessa_id').select2({
+            placeholder: "Selecione remessas",
+            closeOnSelect: false,
+            width: '100%'
+        });
+    });
+    </script>
+    
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll(".campo-editavel").forEach(el => {
+            el.addEventListener("click", function () {
+                if (el.querySelector("select")) return; // Já está em edição
+
+                const campo = el.dataset.campo;
+                const id = el.dataset.id;
+                const valorAtual = el.innerText.trim();
+                const input = document.createElement("select");
+
+                if (campo === "setor") {
+                    ["-","1", "2", "3"].forEach(op => {
+                        const option = new Option(op, op, false, op === valorAtual);
+                        input.appendChild(option);
+                    });
+                } else if (campo === "fechado") {
+                    ["Sim", "Não"].forEach(op => {
+                        const option = new Option(op, op, false, valorAtual.includes(op));
+                        input.appendChild(option);
+                    });
+                }
+
+                el.innerHTML = "";
+                el.appendChild(input);
+                input.focus();
+
+                function salvarValor() {
+                    const novoValor = input.value;
+
+                    // Debug no console
+                    console.log("Enviando:", { id: id, campo: campo, valor: novoValor });
+
+                    fetch("{{ url_for('routes.atualizar_campo_planejamento') }}", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-CSRFToken": "{{ csrf_token() }}"
+                        },
+                        body: JSON.stringify({
+                            id: id,
+                            campo: campo,
+                            valor: novoValor
+                        })
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                if (campo === "fechado") {
+                                    el.innerHTML = novoValor === "Sim"
+                                        ? '<span class="badge bg-success">Sim</span>'
+                                        : '<span class="badge bg-warning text-dark">Não</span>';
+                                } else {
+                                    el.innerHTML = novoValor;
+                                }
+
+                                el.setAttribute("data-id", id);
+                                el.setAttribute("data-campo", campo);
+                            } else {
+                                alert("Erro ao salvar");
+                                el.innerHTML = valorAtual;
+                            }
+                        })
+                        .catch(() => {
+                            alert("Falha na comunicação com o servidor.");
+                            el.innerHTML = valorAtual;
+                        });
+                }
+
+                input.addEventListener("change", salvarValor);
+                input.addEventListener("blur", salvarValor);
+            });
+        });
+    });
+</script>
+
+
+
+
+{% endblock %}

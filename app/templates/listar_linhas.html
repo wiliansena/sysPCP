@@ -19,6 +19,7 @@
         <tr>
             <th>ID</th>
             <th>Nome</th>
+            <th>Grupo</th>
             <th>Ações</th>
         </tr>
     </thead>
@@ -27,6 +28,7 @@
         <tr>
             <td>{{ linha.id }}</td>
             <td>{{ linha.nome }}</td>
+            <td>{{ linha.grupo }}</td>
             <td>
                 <a href="{{ url_for('routes.editar_linha', id=linha.id) }}" class="btn btn-warning btn-sm">
                     <i class="fas fa-edit"></i> Editar</a>

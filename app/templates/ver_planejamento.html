@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Detalhes do Planejamento</h2>
+<hr>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <strong>Remessa:</strong>
+        <div>{{ planejamento.remessa.codigo }}</div>
+    </div>
+    <div class="col-md-3">
+        <strong>Referência:</strong>
+        <div>{{ planejamento.referencia }}</div>
+    </div>
+    <div class="col-md-3">
+        <strong>Setor:</strong>
+        <div>{{ planejamento.setor }}</div>
+    </div>
+    <div class="col-md-3">
+        <strong>Linha:</strong>
+        <div>{{ planejamento.linha.nome }}</div>
+    </div>
+    <div class="col-md-3">
+        <strong>Total de Pares:</strong>
+        <div>{{ planejamento.quantidade }}</div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <strong>Na Esteira:</strong>
+        <div>{{ planejamento.esteira_qtd }}</div>
+    </div>
+    <div class="col-md-3">
+        <strong>Faltando:</strong>
+        <div><strong>{{ planejamento.faltando }}</strong></div>
+    </div>
+    <div class="col-md-3">
+        <strong>Fechado:</strong>
+        <div>
+            {% if planejamento.fechado %}
+                <span class="badge bg-success">Sim</span>
+            {% else %}
+                <span class="badge bg-warning text-dark">Não</span>
+            {% endif %}
+        </div>
+    </div>
+    <div class="col-md-3">
+        <strong>Data de Fechamento:</strong>
+        <div>{{ planejamento.data_fechado.strftime('%d/%m/%Y %H:%M') if planejamento.data_fechado else '-' }}</div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <strong>Data de Criação:</strong>
+        <div>{{ planejamento.data_criacao.strftime('%d/%m/%Y %H:%M') }}</div>
+    </div>
+</div>
+
+<div class="mt-4">
+    <a href="{{ url_for('routes.editar_planejamento', id=planejamento.id) }}" class="btn btn-warning">
+        <i class="fas fa-edit"></i> Editar
+    </a>
+    <form method="POST" action="{{ url_for('routes.excluir_planejamento', id=planejamento.id) }}" style="display:inline-block;">
+        <button type="submit" class="btn btn-danger" onclick="return confirm('Tem certeza que deseja excluir este planejamento?')">
+            <i class="fas fa-trash"></i> Excluir
+        </button>
+    </form>
+    <a href="{{ url_for('routes.listar_planejamentos') }}" class="btn btn-secondary">Voltar</a>
+</div>
+{% endblock %}

@@ -10,6 +10,10 @@
         {{ form.nome.label(class="form-label") }}
         {{ form.nome(class="form-control") }}
         </div>
+        <div class="col-md-4">
+            {{ form.grupo.label(class="form-label") }}
+            {{ form.grupo(class="form-select") }}
+            </div>
     </div>
     <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Salvar</button>
     <a href="{{ url_for('routes.listar_linhas') }}" class="btn btn-secondary">Cancelar</a>

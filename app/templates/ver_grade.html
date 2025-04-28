@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Visualizar Grade</h2>
+<hr>
+<h4><strong>Descrição:</strong> {{ grade.descricao }}</h4>
+<hr>
+<table class="table table-bordered text-center">
+    <thead class="table-primary">
+        <tr>
+            {% for t in tamanhos %}<th>{{ t.nome }}</th>{% endfor %}
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            {% for t in tamanhos %}<td>{{ t.quantidade }}</td>{% endfor %}
+        </tr>
+    </tbody>
+</table>
+<a href="{{ url_for('routes.listar_grades') }}" class="btn btn-secondary">Voltar</a>
+{% endblock %}

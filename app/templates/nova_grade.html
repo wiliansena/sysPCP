@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Nova Grade</h2>
+<form method="POST">
+    {{ form.hidden_tag() }}
+
+    <div class="mb-3">
+        {{ form.descricao.label(class="form-label") }}
+        {{ form.descricao(class="form-control") }}
+    </div>
+
+    <h5>Tamanhos</h5>
+    <div id="campos-tamanhos">
+        {% for campo in form.tamanhos %}
+            <div class="row mb-2 linha-tamanho">
+                <div class="col-md-6">
+                    {{ campo.nome(class="form-control", placeholder="Ex: 25/26") }}
+                </div>
+                <div class="col-md-4">
+                    {{ campo.quantidade(class="form-control", placeholder="Quantidade") }}
+                </div>
+                <div class="col-md-2">
+                    <button type="button" class="btn btn-danger remover-campo">&times;</button>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <button type="button" id="add-tamanho" class="btn btn-primary mb-3">Adicionar Tamanho</button>
+    <br>
+    {{ form.submit(class="btn btn-success") }}
+    <a href="{{ url_for('routes.listar_grades') }}" class="btn btn-secondary">Cancelar</a>
+</form>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const container = document.getElementById("campos-tamanhos");
+        const addBtn = document.getElementById("add-tamanho");
+
+        let index = parseInt("{{ form.tamanhos|length }}");
+
+        addBtn.addEventListener("click", function () {
+            const linha = document.createElement("div");
+            linha.className = "row mb-2 linha-tamanho";
+
+            linha.innerHTML = `
+                <div class="col-md-6">
+                    <input type="text" name="tamanhos-${index}-nome" class="form-control" placeholder="Ex: 25/26">
+                </div>
+                <div class="col-md-4">
+                    <input type="number" name="tamanhos-${index}-quantidade" class="form-control" placeholder="Quantidade">
+                </div>
+                <div class="col-md-2">
+                    <button type="button" class="btn btn-danger remover-campo">&times;</button>
+                </div>
+            `;
+
+            container.appendChild(linha);
+            index++;
+        });
+
+        container.addEventListener("click", function (e) {
+            if (e.target.classList.contains("remover-campo")) {
+                e.target.closest(".linha-tamanho").remove();
+            }
+        });
+    });
+</script>
+<script>
+    function aplicarMascaraTamanhos() {
+      const inputs = document.querySelectorAll("input[name*='nome']");
+      inputs.forEach(input => {
+        input.removeEventListener("input", formatar);
+        input.addEventListener("input", formatar);
+      });
+    }
+  
+    function formatar(e) {
+      let valor = this.value.replace(/\D/g, '');
+      if (valor.length > 2) {
+        valor = valor.slice(0, 2) + '/' + valor.slice(2, 4);
+      }
+      this.value = valor;
+    }
+  
+    document.addEventListener("DOMContentLoaded", function () {
+      aplicarMascaraTamanhos();
+  
+      // Atualiza os campos quando um novo é adicionado
+      document.getElementById("add-tamanho").addEventListener("click", function () {
+        setTimeout(() => {
+          aplicarMascaraTamanhos();
+        }, 50); // aguarda o campo ser inserido no DOM
+      });
+    });
+  </script>
+  
+{% endblock %}

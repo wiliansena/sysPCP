@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Grades Cadastradas</h2>
+<a href="{{ url_for('routes.nova_grade') }}" class="btn btn-success mb-3">
+    <i class="fas fa-plus"></i> Nova Grade
+</a>
+<table class="table table-bordered">
+    <thead class="table-light">
+        <tr>
+            <th>ID</th>
+            <th>Descrição</th>
+            <th>Total de Tamanhos</th>
+            <th>Ações</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for grade in grades %}
+        <tr>
+            <td>{{ grade.id }}</td>
+            <td>{{ grade.descricao }}</td>
+            <td>{{ grade.tamanhos|length }}</td>
+            <td>
+                <a href="{{ url_for('routes.ver_grade', id=grade.id) }}" class="btn btn-info btn-sm"><i
+                    class="bi bi-eye"></i> Ver
+                </a>
+                <a href="{{ url_for('routes.editar_grade', id=grade.id) }}" class="btn btn-warning btn-sm">
+                    <i class="fas fa-edit"></i> Editar
+                </a>
+                <form action="{{ url_for('routes.excluir_grade', id=grade.id) }}" method="POST" style="display:inline;">
+                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Tem certeza que deseja excluir esta grade?')">
+                        <i class="fas fa-trash"></i> Excluir
+                    </button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

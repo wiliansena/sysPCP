@@ -123,6 +123,9 @@
 
             <a href="{{ url_for('routes.listar_maquinas') }}"><i class="fa-solid fa-gears"></i> Máquinas</a>
             <a href="{{ url_for('routes.listar_matrizes') }}"><i class="fas fa-cube"></i> Matrizes</a>
+            <a href="{{ url_for('routes.listar_planejamentos') }}">
+                <i class="fa-solid fa-sitemap"></i>  Planejamento de Produção</a>
+            <a href="{{ url_for('routes.listar_remessas') }}"><i class="fa-solid fa-box"></i> Remessas</a>
         </div>
         {% endif %}
 
@@ -136,6 +139,8 @@
             <a href="{{ url_for('routes.listar_cores') }}"><i class="fa-solid fa-palette"></i>Cores</a>
             <a href="{{ url_for('routes.listar_linhas') }}"><i class="fa-solid fa-layer-group"></i>Linhas</a>
             <a href="{{ url_for('routes.listar_colecoes') }}"><i class="bi bi-tags"></i> Coleções</a>
+            <a href="{{ url_for('routes.listar_grades') }}"><i class="fa-solid fa-ruler-horizontal"></i>
+                Grades</a>
         </div>
 
         {% endif %}
@@ -210,7 +215,6 @@
     <script src="{{ url_for('static', filename='js/formatacao_numeros.js') }}"></script>
     <script src="{{ url_for('static', filename='js/zoom.js') }}"></script>
     <script src="{{ url_for('static', filename='js/marcar_botoes_selecionados.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/tela_cheia.js') }}"></script>
 
     <!--SCRIPT PARA ALTERAR A DIREÇÃO DO BOTÃO DE ESCONDER E APARECER O MENU LATERAL-->
     <script>

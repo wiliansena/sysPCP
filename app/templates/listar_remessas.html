@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Remessas</h2>
+<hr>
+
+<div class="d-flex align-items-center gap-2 mt-4">
+    <a href="{{ url_for('routes.listar_planejamentos') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Voltar
+    </a>
+    <a href="{{ url_for('routes.nova_remessa') }}" class="btn btn-success">
+        <i class="fas fa-plus"></i> Adicionar
+    </a>
+</div>
+
+<hr>
+
+<table class="table table-bordered table-striped">
+    <thead class="table-primary">
+        <tr>
+            <th>Código</th>
+            <th>Data de Criação</th>
+            <th>Data Fechamento</th>
+            <th>Ações</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for r in remessas %}
+        <tr>
+            <td>{{ r.codigo }}</td>
+            <td>{{ r.data_criacao.strftime('%d/%m/%Y %H:%M') }}</td>
+            <td>{{ r.data_fechamento.strftime('%d/%m/%Y') if r.data_fechamento else 'Aberta' }}</td>
+            <td>
+                <a href="{{ url_for('routes.editar_remessa', id=r.id) }}" class="btn btn-sm btn-warning">
+                    <i class="fas fa-edit"></i> Editar
+                </a>
+
+                <!-- Botão que abre o Modal -->
+                <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#confirmarExcluirModal{{ r.id }}">
+                    <i class="fas fa-trash"></i> Excluir
+                </button>
+
+                <!-- Modal de Confirmação -->
+                <div class="modal fade" id="confirmarExcluirModal{{ r.id }}" tabindex="-1" aria-labelledby="modalLabel{{ r.id }}" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <form method="POST" action="{{ url_for('routes.excluir_remessa', id=r.id) }}" onsubmit="return validarExcluir(this);">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="modalLabel{{ r.id }}">Confirmar Exclusão</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p class="text-danger fw-bold">
+                                        Esta ação irá excluir a remessa <strong>{{ r.codigo }}</strong> e 
+                                        <strong>todos os planejamentos</strong> vinculados a ela.
+                                    </p>
+                                    <p>Para confirmar, digite <strong>excluir</strong> no campo abaixo:</p>
+                                    <input type="text" class="form-control" placeholder="Digite 'excluir'" required>
+                                    <input type="hidden" name="confirmacao">
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                    <button type="submit" class="btn btn-danger">Confirmar Exclusão</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <!-- Fim do Modal -->
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<!-- Script para validar o texto digitado -->
+<script>
+function validarExcluir(formulario) {
+    const inputConfirmar = formulario.querySelector('input[type="text"]');
+    const valor = inputConfirmar.value.trim().toLowerCase();
+    if (valor === 'excluir') {
+        formulario.querySelector('input[type="hidden"]').value = 'excluir';
+        return true;
+    } else {
+        alert("Digite corretamente 'excluir' para confirmar.");
+        return false;
+    }
+}
+</script>
+
+{% endblock %}

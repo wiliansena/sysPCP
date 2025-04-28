@@ -1,9 +1,10 @@
 from sqlite3 import IntegrityError
 from flask import Blueprint, jsonify, render_template, redirect, url_for, flash, request
 from flask_login import current_user, login_required
+import pytz
 from app import db, csrf
-from app.models import Cor, FormulacaoSolado, FormulacaoSoladoFriso, Funcionario, Linha, LogAcao, Manutencao, ManutencaoComponente, ManutencaoMaquina, Maquina, MargemPorPedido, MargemPorPedidoReferencia, Matriz, MovimentacaoMatriz, Permissao, Referencia, Componente, CustoOperacional, ReferenciaAlca, ReferenciaComponentes, ReferenciaCustoOperacional, ReferenciaEmbalagem1, ReferenciaEmbalagem2, ReferenciaEmbalagem3, ReferenciaMaoDeObra, ReferenciaSolado, Salario, MaoDeObra, Margem, TamanhoMatriz, TamanhoMovimentacao, TrocaHorario, TrocaMatriz, Usuario
-from app.forms import CorForm, FuncionarioForm, LinhaForm, ManutencaoForm, MaquinaForm, MargemForm, MargemPorPedidoForm, MargemPorPedidoReferenciaForm, MatrizForm, MovimentacaoMatrizForm, ReferenciaForm, ComponenteForm, CustoOperacionalForm, SalarioForm, MaoDeObraForm, TrocaMatrizForm, UsuarioForm
+from app.models import Cor, FormulacaoSolado, FormulacaoSoladoFriso, Funcionario, Grade, Linha, LogAcao, Manutencao, ManutencaoComponente, ManutencaoMaquina, Maquina, MargemPorPedido, MargemPorPedidoReferencia, Matriz, MovimentacaoMatriz, Permissao, PlanejamentoProducao, Referencia, Componente, CustoOperacional, ReferenciaAlca, ReferenciaComponentes, ReferenciaCustoOperacional, ReferenciaEmbalagem1, ReferenciaEmbalagem2, ReferenciaEmbalagem3, ReferenciaMaoDeObra, ReferenciaSolado, Remessa, Salario, MaoDeObra, Margem, TamanhoGrade, TamanhoMatriz, TamanhoMovimentacao, TrocaHorario, TrocaMatriz, Usuario, hora_brasilia
+from app.forms import CorForm, FuncionarioForm, GradeForm, LinhaForm, ManutencaoForm, MaquinaForm, MargemForm, MargemPorPedidoForm, MargemPorPedidoReferenciaForm, MatrizForm, MovimentacaoMatrizForm, PlanejamentoProducaoForm, ReferenciaForm, ComponenteForm, CustoOperacionalForm, RemessaForm, SalarioForm, MaoDeObraForm, TrocaMatrizForm, UsuarioForm
 import os
 from flask import render_template, redirect, url_for, flash, request
 from app.models import Solado, Tamanho, Componente, FormulacaoSolado, Alca, TamanhoAlca, FormulacaoAlca, Colecao
@@ -25,7 +26,6 @@ from app.utils import allowed_file, requer_permissao
 from flask import g
 import random, string
 from sqlalchemy import case
-
 
 
 
@@ -2969,15 +2969,25 @@ def editar_matriz(id):
         cores_ids = request.form.getlist("cores")
         matriz.cores = Cor.query.filter(Cor.id.in_(cores_ids)).all()
 
-        # Tamanhos
+        # 🔹 Tamanhos - agora organizados!
         matriz.tamanhos = []  # limpa
+
+        tamanhos_preenchidos = []
+        tamanhos_vazios = []
+
         for campo in form.tamanhos:
             nome = campo.nome.data or "--"
             qtd = campo.quantidade.data or 0
-            matriz.tamanhos.append(TamanhoMatriz(nome=nome, quantidade=qtd))
+            if nome != "--":
+                tamanhos_preenchidos.append(TamanhoMatriz(nome=nome, quantidade=qtd))
+            else:
+                tamanhos_vazios.append(TamanhoMatriz(nome=nome, quantidade=qtd))
 
+        # 🔹 Primeiro salva os preenchidos, depois os vazios
+        matriz.tamanhos = tamanhos_preenchidos + tamanhos_vazios
+
+        # Atualiza quantidade total
         matriz.quantidade = matriz.calcular_total_grade()
-
 
         # Upload da imagem
         imagem = form.imagem.data
@@ -2986,8 +2996,8 @@ def editar_matriz(id):
             path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
             imagem.save(path)
             matriz.imagem = filename
-        
-                # 🔹 Salva o log
+
+        # 🔹 Salva o log
         log = LogAcao(
             usuario_id=current_user.id,
             usuario_nome=current_user.nome,
@@ -3000,6 +3010,7 @@ def editar_matriz(id):
         return redirect(url_for('routes.listar_matrizes'))
 
     return render_template('editar_matriz.html', form=form, matriz=matriz, linhas=linhas, cores=cores)
+
 
 
 @bp.route("/relatorio/matriz_tempo_real")
@@ -3060,11 +3071,36 @@ def zerar_matriz(id):
 @login_required
 @requer_permissao('controleproducao', 'excluir')
 def excluir_matriz(id):
+    from app.models import Matriz, MovimentacaoMatriz, TrocaHorario
+    from flask import request, flash, redirect, url_for
+
     matriz = Matriz.query.get_or_404(id)
+
+    confirmacao = request.form.get('confirmacao', '').strip().lower()
+    if confirmacao != 'excluir':
+        flash('Confirmação inválida. Digite "excluir" para confirmar.', 'danger')
+        return redirect(url_for('routes.listar_matrizes'))
+
+    # 🔹 Verificar se tem movimentações
+    movimentacoes_existentes = MovimentacaoMatriz.query.filter_by(matriz_id=matriz.id).first()
+
+    # 🔹 Verificar se tem trocas
+    trocas_existentes = TrocaHorario.query.filter_by(matriz_id=matriz.id).first()
+
+    if movimentacoes_existentes:
+        flash('Não é possível excluir a matriz. Existem movimentações registradas. Utilize a opção "Zerar Matriz" primeiro.', 'danger')
+        return redirect(url_for('routes.listar_matrizes'))
+
+    if trocas_existentes:
+        flash('Não é possível excluir a matriz. Existem trocas registradas para esta matriz.', 'danger')
+        return redirect(url_for('routes.listar_matrizes'))
+
+    # 🔹 Se não tiver movimentações nem trocas, pode excluir
     db.session.delete(matriz)
     db.session.commit()
-    flash("Matriz excluída com sucesso!", "success")
+    flash('Matriz excluída com sucesso!', 'success')
     return redirect(url_for('routes.listar_matrizes'))
+
 
 
 
@@ -3750,7 +3786,8 @@ def nova_linha():
     form = LinhaForm()
     if form.validate_on_submit():
         nova_linha = Linha(
-            nome=form.nome.data
+            nome=form.nome.data,
+            grupo=form.grupo.data
         )
         db.session.add(nova_linha)
         db.session.commit()
@@ -3769,6 +3806,7 @@ def editar_linha(id):
 
     if form.validate_on_submit():
         linha.nome = form.nome.data
+        linha.grupo = form.grupo.data
 
         db.session.commit()
         flash("Linha atualizada!", "success")
@@ -3787,3 +3825,421 @@ def excluir_linha(id):
 
     flash("Linha removida!", "success")
     return redirect(url_for('routes.listar_linhas'))
+
+
+
+@bp.route('/grades')
+@login_required
+def listar_grades():
+    grades = Grade.query.order_by(Grade.descricao).all()
+    return render_template('listar_grades.html', grades=grades)
+
+@bp.route('/grade/ver/<int:id>')
+@login_required
+def ver_grade(id):
+    grade = Grade.query.get_or_404(id)
+    tamanhos_ordenados = sorted(grade.tamanhos, key=lambda t: t.nome)
+    return render_template('ver_grade.html', grade=grade, tamanhos=tamanhos_ordenados)
+
+
+# routes.py
+@bp.route('/grade/nova', methods=['GET', 'POST'])
+@login_required
+def nova_grade():
+    form = GradeForm()
+
+    if form.validate_on_submit():
+        nova_grade = Grade(descricao=form.descricao.data)
+
+        for campo in form.tamanhos:
+            tamanho = TamanhoGrade(
+                nome=campo.nome.data,
+                quantidade=campo.quantidade.data or 0
+            )
+            nova_grade.tamanhos.append(tamanho)
+
+        db.session.add(nova_grade)
+        db.session.commit()
+
+        flash('Grade salva com sucesso!', 'success')
+        return redirect(url_for('routes.listar_grades'))
+
+    return render_template('nova_grade.html', form=form)
+
+
+
+
+@bp.route('/grade/editar/<int:id>', methods=['GET', 'POST'])
+@login_required
+def editar_grade(id):
+    grade = Grade.query.get_or_404(id)
+    form = GradeForm(obj=grade)
+
+    if request.method == 'GET':
+        for i in range(len(form.tamanhos.entries)):
+            if i < len(grade.tamanhos):
+                form.tamanhos[i].nome.data = grade.tamanhos[i].nome
+                form.tamanhos[i].quantidade.data = grade.tamanhos[i].quantidade
+
+    if form.validate_on_submit():
+        grade.descricao = form.descricao.data
+        grade.tamanhos = []
+        for campo in form.tamanhos:
+            tamanho = TamanhoGrade(
+                nome=campo.nome.data,
+                quantidade=campo.quantidade.data or 0
+            )
+            grade.tamanhos.append(tamanho)
+
+        db.session.commit()
+        flash('Grade atualizada com sucesso!', 'success')
+        return redirect(url_for('routes.listar_grades'))
+
+    return render_template('editar_grade.html', form=form)
+
+
+@bp.route('/grade/excluir/<int:id>', methods=['POST'])
+@login_required
+def excluir_grade(id):
+    grade = Grade.query.get_or_404(id)
+    db.session.delete(grade)
+    db.session.commit()
+    flash('Grade excluída com sucesso!', 'success')
+    return redirect(url_for('routes.listar_grades'))
+
+
+
+
+#### PLANEJAMENTO DE PRODUÇÃO ######
+
+@bp.route('/remessas')
+@login_required
+def listar_remessas():
+    remessas = Remessa.query.order_by(Remessa.data_criacao.desc()).all()
+    return render_template('listar_remessas.html', remessas=remessas)
+
+
+@bp.route('/remessa/nova', methods=['GET', 'POST'])
+@login_required
+def nova_remessa():
+    form = RemessaForm()
+    if form.validate_on_submit():
+        remessa = Remessa(codigo=form.codigo.data)
+        db.session.add(remessa)
+        db.session.commit()
+        flash('Remessa criada com sucesso!', 'success')
+        return redirect(url_for('routes.listar_remessas'))
+    return render_template('nova_remessa.html', form=form)
+
+@bp.route('/remessa/editar/<int:id>', methods=['GET', 'POST'])
+@login_required
+@requer_permissao('controleproducao', 'editar')
+def editar_remessa(id):
+    remessa = Remessa.query.get_or_404(id)
+    form = RemessaForm(obj=remessa)
+
+    if form.validate_on_submit():
+        remessa.codigo = form.codigo.data
+
+        # Se o usuário tentou preencher a data de fechamento
+        if form.data_fechamento.data:
+            # 🔹 Buscar todos os planejamentos ligados a essa remessa
+            planejamentos = PlanejamentoProducao.query.filter_by(remessa_id=remessa.id).all()
+
+            # 🔹 Verificar quais planejamentos ainda estão abertos
+            planejamentos_abertos = [p for p in planejamentos if not p.fechado]
+
+            if planejamentos_abertos:
+                # Ainda tem planejamentos abertos - Não permite fechar
+                refs_abertas = ', '.join(p.referencia for p in planejamentos_abertos)
+                flash(f'Não é possível fechar a remessa. Existem planejamentos abertos: {refs_abertas}', 'danger')
+                return redirect(url_for('routes.editar_remessa', id=remessa.id))
+            else:
+                # 🔹 Todos fechados, pode salvar a data de fechamento
+                remessa.data_fechamento = form.data_fechamento.data
+
+        else:
+            # Se não preencher data, mantém vazio
+            remessa.data_fechamento = None
+
+        db.session.commit()
+        flash('Remessa atualizada com sucesso!', 'success')
+        return redirect(url_for('routes.listar_remessas'))
+
+    return render_template('editar_remessa.html', form=form, remessa=remessa)
+
+
+@bp.route('/remessa/excluir/<int:id>', methods=['POST'])
+@login_required
+@requer_permissao('controleproducao', 'excluir')
+def excluir_remessa(id):
+    remessa = Remessa.query.get_or_404(id)
+
+    confirmacao = request.form.get('confirmacao', '').strip().lower()
+    if confirmacao != 'excluir':
+        flash('Confirmação inválida. Digite "excluir" para confirmar a exclusão.', 'danger')
+        return redirect(url_for('routes.listar_remessas'))
+
+    # Excluir todos os planejamentos vinculados
+    planejamentos = PlanejamentoProducao.query.filter_by(remessa_id=id).all()
+    for planejamento in planejamentos:
+        db.session.delete(planejamento)
+
+    # Excluir a remessa
+    db.session.delete(remessa)
+
+    # 🔹 Logar ação
+    log = LogAcao(
+        usuario_id=current_user.id,
+        usuario_nome=current_user.nome,
+        acao=f"Excluiu a Remessa: {remessa.codigo}"
+    )
+    db.session.add(log)
+
+    db.session.commit()
+    flash('Remessa e seus planejamentos foram excluídos com sucesso.', 'success')
+    return redirect(url_for('routes.listar_remessas'))
+
+
+
+
+
+
+@bp.route('/planejamentos')
+@login_required
+@requer_permissao('controleproducao', 'ver')
+def listar_planejamentos():
+    remessa_ids = request.args.getlist('remessa_id')  # agora não força int logo aqui
+    status = request.args.get('status')  # ← continua igual
+
+    planejamentos = []
+    grupos = {
+        'GRUPO_REF_01': [],
+        'GRUPO_REF_02': [],
+        'GRUPO_REF_03': []
+    }
+    total_por_grupo = {
+        'GRUPO_REF_01': 0,
+        'GRUPO_REF_02': 0,
+        'GRUPO_REF_03': 0
+    }
+
+    if remessa_ids:  # Só busca se o usuário filtrou
+        planejamentos_query = PlanejamentoProducao.query.order_by(PlanejamentoProducao.id.asc())
+
+        # 🔹 Se a pessoa escolher "todas", ignora filtro de remessa
+        if 'todas' not in remessa_ids:
+            planejamentos_query = planejamentos_query.filter(PlanejamentoProducao.remessa_id.in_([int(rid) for rid in remessa_ids]))
+
+        # 🔹 Filtro por status
+        if status == 'fechado':
+            planejamentos_query = planejamentos_query.filter_by(fechado=True)
+        elif status == 'aberto':
+            planejamentos_query = planejamentos_query.filter_by(fechado=False)
+
+        planejamentos = planejamentos_query.all()
+
+        # 🔹 Organizar em grupos
+        for p in planejamentos:
+            grupo = p.linha.grupo if p.linha and p.linha.grupo in grupos else 'GRUPO_REF_01'
+            grupos[grupo].append(p)
+            total_por_grupo[grupo] += p.quantidade
+
+    total_geral = sum(total_por_grupo.values())
+    remessas = Remessa.query.order_by(Remessa.codigo).all()
+
+    return render_template(
+        'listar_planejamentos.html',
+        grupos=grupos,
+        totais=total_por_grupo,
+        total_geral=total_geral,
+        remessas=remessas
+    )
+
+
+
+
+@bp.route('/planejamento/ver/<int:id>')
+@login_required
+def ver_planejamento(id):
+    planejamento = PlanejamentoProducao.query.get_or_404(id)
+    return render_template('ver_planejamento.html', planejamento=planejamento)
+
+
+@bp.route('/planejamento/novo', methods=['GET', 'POST'])
+@login_required
+def novo_planejamento():
+    form = PlanejamentoProducaoForm()
+    form.remessa_id.choices = [(r.id, r.codigo) for r in Remessa.query.order_by(Remessa.codigo).all()]
+    form.linha_id.choices = [(l.id, l.nome) for l in Linha.query.order_by(Linha.nome).all()]
+
+    if form.validate_on_submit():
+        planejamento = PlanejamentoProducao(
+            remessa_id = form.remessa_id.data,
+            referencia=form.referencia.data,
+            quantidade=form.quantidade.data,
+            setor=form.setor.data,
+            linha_id=form.linha_id.data,
+            esteira=form.esteira.data,
+            esteira_qtd=form.esteira_qtd.data or 0,
+            fechado=form.fechado.data
+        )
+
+        if form.fechado.data:
+            planejamento.data_fechado = datetime.utcnow().replace(microsecond=0)
+
+        db.session.add(planejamento)
+        db.session.commit()
+
+        flash('Planejamento cadastrado com sucesso!', 'success')
+        return redirect(url_for('routes.listar_planejamentos'))
+
+    return render_template('novo_planejamento.html', form=form)
+
+@bp.route('/planejamento/editar/<int:id>', methods=['GET', 'POST'])
+@login_required
+def editar_planejamento(id):
+    planejamento = PlanejamentoProducao.query.get_or_404(id)
+    form = PlanejamentoProducaoForm(obj=planejamento)
+
+    # Choices para selects
+    form.remessa_id.choices = [(r.id, r.codigo) for r in Remessa.query.order_by(Remessa.codigo).all()]
+    form.linha_id.choices = [(l.id, l.nome) for l in Linha.query.order_by(Linha.nome).all()]
+
+    # Função para hora de Brasília
+    from datetime import datetime
+    import pytz
+    def hora_brasilia():
+        return datetime.now(pytz.timezone('America/Sao_Paulo')).replace(microsecond=0)
+
+    if form.validate_on_submit():
+        planejamento.referencia = form.referencia.data
+        planejamento.quantidade = form.quantidade.data
+        planejamento.setor = form.setor.data
+        planejamento.linha_id = form.linha_id.data
+        planejamento.remessa_id = form.remessa_id.data
+        planejamento.esteira = form.esteira.data
+        planejamento.esteira_qtd = form.esteira_qtd.data or 0
+        planejamento.fechado = form.fechado.data
+
+        # Atualiza ou limpa a data de fechamento
+        if planejamento.fechado:
+            if not planejamento.data_fechado:
+                planejamento.data_fechado = hora_brasilia()
+        else:
+            planejamento.data_fechado = None
+
+        db.session.commit()
+        flash('Planejamento atualizado com sucesso!', 'success')
+        return redirect(url_for('routes.listar_planejamentos'))
+
+    return render_template('editar_planejamento.html', form=form, planejamento=planejamento)
+
+
+@bp.route('/planejamento/atualizar_campo', methods=['POST'])
+@login_required
+def atualizar_campo_planejamento():
+    from flask import request, jsonify
+    from app.models import PlanejamentoProducao  # Import correto!
+    from datetime import datetime
+
+    data = request.get_json()
+
+    if not data:
+        return jsonify({'success': False, 'erro': 'Requisição sem JSON válido'})
+
+    planejamento_id = data.get('id')
+    campo = data.get('campo')
+    valor = data.get('valor')
+
+    planejamento = PlanejamentoProducao.query.get_or_404(planejamento_id)
+
+    if campo == 'setor':
+        planejamento.setor = valor
+
+    elif campo == 'fechado':
+        planejamento.fechado = valor.lower() == 'sim'
+        if planejamento.fechado:
+            planejamento.data_fechado = datetime.now().replace(microsecond=0)
+        else:
+            planejamento.data_fechado = None
+
+    db.session.commit()
+    return jsonify({'success': True})
+
+
+
+@bp.route('/planejamento/excluir/<int:id>', methods=['POST'])
+@login_required
+def excluir_planejamento(id):
+    planejamento = PlanejamentoProducao.query.get_or_404(id)
+    db.session.delete(planejamento)
+    db.session.commit()
+    flash('Planejamento excluído com sucesso!', 'success')
+    return redirect(url_for('routes.listar_planejamentos'))
+
+
+@bp.route('/planejamento/importar', methods=['POST'])
+@login_required
+def importar_planejamentos():
+    arquivo = request.files.get('arquivo')
+    if not arquivo:
+        flash('Nenhum arquivo enviado.', 'danger')
+        return redirect(url_for('routes.novo_planejamento'))
+
+    try:
+        df = pd.read_excel(arquivo)
+    except Exception as e:
+        flash(f'Erro ao ler a planilha: {str(e)}', 'danger')
+        return redirect(url_for('routes.novo_planejamento'))
+
+    registros_criados = 0
+
+    for _, row in df.iterrows():
+        try:
+            codigo_remessa = str(row['Código da Remessa']).strip()
+            referencia = str(row['Referência']).strip()
+            quantidade = int(row['Quantidade'])
+            linha_nome = str(row['Linha']).strip()
+
+            # Definindo valores padrão
+            setor = "-"
+            esteira = False
+            esteira_qtd = 0
+            fechado = False
+            data_fechado = None
+
+            remessa = Remessa.query.filter_by(codigo=codigo_remessa).first()
+            if not remessa:
+                remessa = Remessa(codigo=codigo_remessa)
+                db.session.add(remessa)
+                db.session.flush()
+
+            linha = Linha.query.filter_by(nome=linha_nome).first()
+            if not linha:
+                flash(f'Linha "{linha_nome}" não encontrada.', 'danger')
+                continue
+
+            planejamento = PlanejamentoProducao(
+                remessa_id=remessa.id,
+                referencia=referencia,
+                quantidade=quantidade,
+                setor=setor,
+                linha_id=linha.id,
+                esteira=esteira,
+                esteira_qtd=esteira_qtd,
+                fechado=fechado,
+                data_fechado=data_fechado
+            )
+
+            db.session.add(planejamento)
+            registros_criados += 1
+
+        except Exception as e:
+            flash(f'Erro ao importar linha: {str(e)}', 'danger')
+            continue
+
+    db.session.commit()
+    flash(f'{registros_criados} planejamentos importados com sucesso!', 'success')
+    return redirect(url_for('routes.listar_planejamentos'))
+

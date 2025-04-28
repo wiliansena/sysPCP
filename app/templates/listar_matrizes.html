@@ -93,12 +93,42 @@
                         class="bi bi-eye"></i>Ver</a>
                 <a href="{{ url_for('routes.editar_matriz', id=matriz.id) }}" class="btn btn-editar btn-sm"><i
                         class="fas fa-edit"></i>Editar</a>
-                <form action="{{ url_for('routes.excluir_matriz', id=matriz.id) }}" method="POST"
-                    style="display:inline;">
-                    <button type="submit" class="btn btn-danger btn-sm"
-                        onclick="return confirm('Tem certeza que deseja excluir este solado?')">
-                        <i class="fas fa-trash-alt"></i> Excluir</button>
-                </form>
+                <!-- Botão que abre o Modal -->
+                <button class="btn btn-sm btn-danger" data-bs-toggle="modal"
+                    data-bs-target="#confirmarExcluirModal{{ matriz.id }}">
+                    <i class="fas fa-trash"></i> Excluir
+                </button>
+
+                <!-- Modal de Confirmação -->
+                <div class="modal fade" id="confirmarExcluirModal{{ matriz.id }}" tabindex="-1"
+                    aria-labelledby="modalLabel{{ matriz.id }}" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <form method="POST" action="{{ url_for('routes.excluir_matriz', id=matriz.id) }}"
+                                onsubmit="return validarExcluir(this);">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="modalLabel{{ matriz.id }}">Confirmar Exclusão</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                        aria-label="Fechar"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p class="text-danger fw-bold">
+                                        Esta ação irá excluir a matriz <strong>{{ matriz.codigo }}</strong> do sistema.
+                                    </p>
+                                    <p>Para confirmar, digite <strong>excluir</strong> no campo abaixo:</p>
+                                    <input type="text" class="form-control" placeholder="Digite 'excluir'" required>
+                                    <input type="hidden" name="confirmacao">
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary"
+                                        data-bs-dismiss="modal">Cancelar</button>
+                                    <button type="submit" class="btn btn-danger">Confirmar Exclusão</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
             </td>
         </tr>
         {% endfor %}
@@ -122,6 +152,20 @@
             });
         }
     });
+</script>
+
+<script>
+    function validarExcluir(formulario) {
+        const inputConfirmar = formulario.querySelector('input[type="text"]');
+        const valor = inputConfirmar.value.trim().toLowerCase();
+        if (valor === 'excluir') {
+            formulario.querySelector('input[type="hidden"]').value = 'excluir';
+            return true;
+        } else {
+            alert("Digite corretamente 'excluir' para confirmar.");
+            return false;
+        }
+    }
 </script>
 
 {% endblock %}

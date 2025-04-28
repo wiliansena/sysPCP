@@ -9,8 +9,12 @@
             {{ form.nome.label(class="form-label") }}
             {{ form.nome(class="form-control") }}
         </div>
+        <div class="col-md-4">
+            {{ form.grupo.label(class="form-label") }}
+            {{ form.grupo(class="form-control") }}
+        </div>
     </div>
     <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Atualizar</button>
-    <a href="{{ url_for('routes.listar_cores') }}" class="btn btn-secondary">Cancelar</a>
+    <a href="{{ url_for('routes.listar_linhas') }}" class="btn btn-secondary">Cancelar</a>
 </form>
 {% endblock %}
