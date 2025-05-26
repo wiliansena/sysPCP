@@ -124,8 +124,7 @@
             <a href="{{ url_for('routes.listar_maquinas') }}"><i class="fa-solid fa-gears"></i> Máquinas</a>
             <a href="{{ url_for('routes.listar_matrizes') }}"><i class="fas fa-cube"></i> Matrizes</a>
             <a href="{{ url_for('routes.listar_planejamentos') }}">
-                <i class="fa-solid fa-sitemap"></i>  Planejamento de Produção</a>
-            <a href="{{ url_for('routes.listar_remessas') }}"><i class="fa-solid fa-box"></i> Remessas</a>
+                <i class="fa-solid fa-sitemap"></i> Planejamento de Produção</a>
         </div>
         {% endif %}
 
@@ -298,6 +297,20 @@
         });
 
     </script>
+
+    <!-- Ativa o select2
+     
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        $('.select2').select2({
+            width: '100%',
+            placeholder: 'Selecione',
+            allowClear: true
+        });
+    });
+</script>
+    -->
+
 
 
 

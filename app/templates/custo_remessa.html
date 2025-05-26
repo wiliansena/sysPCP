@@ -4,15 +4,23 @@
 <div class="container mt-4">
     <h2>Margens por Remessa</h2>
     <form method="POST">
-        <div class="d-flex align-items-center gap-2"> <!-- Flexbox para alinhar -->
-            <input type="text" id="remessa" name="remessa" class="form-control form-control-sm" style="width: 200px;"
-                placeholder="Código da Remessa">
+        <div class="d-flex align-items-center gap-2">
+            <select name="remessa" class="form-select select2" style="width: 300px;">
+                <option value="">Selecione</option>
+                {% for rem in remessas %}
+                <option value="{{ rem }}" {% if rem==remessa_selecionada %}selected{% endif %}>
+                    {{ rem }}
+                </option>
+                {% endfor %}
+            </select>
+
             <button type="submit" class="btn btn-primary btn-sm">Buscar</button>
             <a href="{{ url_for('routes.custo_remessa') }}" class="btn btn-secondary btn-sm">
-                <i class="fas fa-sync-alt"></i> <!-- Ícone de atualização -->
+                <i class="fas fa-sync-alt"></i>
             </a>
         </div>
     </form>
+
 
     {% if margem_pedidos %}
     <hr>
@@ -72,4 +80,13 @@
         <i class="fa fa-print"></i> Imprimir
     </button>
 </div>
+<script>
+    $(document).ready(function () {
+        $('.select2').select2({
+            placeholder: "Selecione",
+            width: 'resolve'  // usa o valor definido no style (ex: 300px)
+        });
+    });
+</script>
+
 {% endblock %}

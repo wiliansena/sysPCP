@@ -663,6 +663,15 @@ class Margem(db.Model):
             (self.preco_venda * (self.tributos_porcentagem / 100)) +
             (self.preco_venda * (self.outros_porcentagem / 100))
         )
+
+        self.total_despesas_porcentagem_decimal = (
+            (self.comissao_porcentagem + self.financeiro_porcentagem
+              + self.duvidosos_porcentagem + self.frete_porcentagem + 
+               self.tributos_porcentagem + self.outros_porcentagem
+              )/100
+
+        )
+        print(f"[DEBUG] Despesas Porcentagem Decimal: {self.total_despesas_porcentagem_decimal}")
         
         self.despesas_venda = self.total_despesas_valor + self.total_despesas_porcentagem
 
@@ -685,7 +694,8 @@ class Margem(db.Model):
             # Cálculo dos preços sugeridos
             for margem in [5, 7, 10, 12, 15, 20]:
                 percentual = Decimal(margem) / 100
-                divisor = Decimal(1) - percentual - (self.total_despesas_porcentagem / self.preco_venda)
+                divisor = Decimal(1) - Decimal(percentual + self.total_despesas_porcentagem_decimal)
+                print(f"[DEBUG] Divisor: {divisor}")
                 preco_sugerido = (self.preco_embalagem_escolhida + self.total_despesas_valor) / divisor if divisor > 0 else Decimal(0)
                 
                 setattr(self, f'preco_sugerido_{margem}', round(preco_sugerido, 2))
@@ -694,12 +704,12 @@ class Margem(db.Model):
     def calcular_lucros_sugeridos(self):
         """ Calcula o lucro baseado nos preços sugeridos armazenados no banco."""
         return {
-            5: round(self.preco_sugerido_5 - self.custo_total, 2),
-            7: round(self.preco_sugerido_7 - self.custo_total, 2),
-            10: round(self.preco_sugerido_10 - self.custo_total, 2),
-            12: round(self.preco_sugerido_12 - self.custo_total, 2),
-            15: round(self.preco_sugerido_15 - self.custo_total, 2),
-            20: round(self.preco_sugerido_20 - self.custo_total, 2)
+            5: round(self.preco_sugerido_5 * Decimal(0.05), 2),
+            7: round(self.preco_sugerido_7 * Decimal(0.07), 2),
+            10: round(self.preco_sugerido_10 * Decimal(0.10), 2),
+            12: round(self.preco_sugerido_12 * Decimal(0.12), 2),
+            15: round(self.preco_sugerido_15 * Decimal(0.15), 2),
+            20: round(self.preco_sugerido_20 * Decimal(0.20), 2)
         }
 
 

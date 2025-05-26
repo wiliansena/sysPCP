@@ -3,9 +3,10 @@
 {% block content %}
 
 <div class="card mt-4 shadow-sm">
-    <div class="card-body py-3">
+    <div class="alert alert-info">
       <h6 class="card-title mb-3">📥 Importar Componentes (.xlsx)</h6>
       <p class="text-muted mb-3">Apenas arquivos <strong>.xlsx</strong> (Excel) são permitidos.</p>
+      <p class="text-muted mb-3">Colunas: <code>|codigo |descricao |tipo |unidade_medida| preco|</code></p>
       <form method="POST" action="{{ url_for('routes.importar_componentes') }}" enctype="multipart/form-data">
         <div class="row g-2 align-items-center">
           <div class="col-auto">

@@ -4,7 +4,7 @@ from flask_login import current_user, login_required
 import pytz
 from app import db, csrf
 from app.models import Cor, FormulacaoSolado, FormulacaoSoladoFriso, Funcionario, Grade, Linha, LogAcao, Manutencao, ManutencaoComponente, ManutencaoMaquina, Maquina, MargemPorPedido, MargemPorPedidoReferencia, Matriz, MovimentacaoMatriz, Permissao, PlanejamentoProducao, Referencia, Componente, CustoOperacional, ReferenciaAlca, ReferenciaComponentes, ReferenciaCustoOperacional, ReferenciaEmbalagem1, ReferenciaEmbalagem2, ReferenciaEmbalagem3, ReferenciaMaoDeObra, ReferenciaSolado, Remessa, Salario, MaoDeObra, Margem, TamanhoGrade, TamanhoMatriz, TamanhoMovimentacao, TrocaHorario, TrocaMatriz, Usuario, hora_brasilia
-from app.forms import CorForm, FuncionarioForm, GradeForm, LinhaForm, ManutencaoForm, MaquinaForm, MargemForm, MargemPorPedidoForm, MargemPorPedidoReferenciaForm, MatrizForm, MovimentacaoMatrizForm, PlanejamentoProducaoForm, ReferenciaForm, ComponenteForm, CustoOperacionalForm, RemessaForm, SalarioForm, MaoDeObraForm, TrocaMatrizForm, UsuarioForm
+from app.forms import CorForm, DeleteForm, FuncionarioForm, GradeForm, LinhaForm, ManutencaoForm, MaquinaForm, MargemForm, MargemPorPedidoForm, MargemPorPedidoReferenciaForm, MatrizForm, MovimentacaoMatrizForm, PlanejamentoProducaoForm, ReferenciaForm, ComponenteForm, CustoOperacionalForm, RemessaForm, SalarioForm, MaoDeObraForm, TrocaMatrizForm, UsuarioForm
 import os
 from flask import render_template, redirect, url_for, flash, request
 from app.models import Solado, Tamanho, Componente, FormulacaoSolado, Alca, TamanhoAlca, FormulacaoAlca, Colecao
@@ -13,9 +13,6 @@ from flask import Blueprint
 import os
 from werkzeug.utils import secure_filename  # 🔹 Para salvar o nome do arquivo corretamente
 from flask import current_app  # 🔹 Para acessar a configuração da aplicação
-from flask_wtf import FlaskForm
-from wtforms import HiddenField
-from flask.views import MethodView
 from decimal import Decimal, ROUND_HALF_UP  # Importa Decimal para cálculos precisos
 from sqlalchemy.exc import SQLAlchemyError
 import pandas as pd
@@ -26,7 +23,9 @@ from app.utils import allowed_file, requer_permissao
 from flask import g
 import random, string
 from sqlalchemy import case
-
+from flask import render_template, make_response
+from weasyprint import HTML
+from io import BytesIO
 
 
 
@@ -36,11 +35,6 @@ UPLOAD_FOLDER = 'app/static/uploads'
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
-class DeleteForm(FlaskForm):
-    csrf_token = HiddenField()
-
-
-
 
 @bp.before_request
 def carregar_permissoes():
@@ -49,6 +43,7 @@ def carregar_permissoes():
         g.permissoes = current_user.todas_permissoes
     else:
         g.permissoes = set()  # Usuário sem permissões
+
 
     
 @bp.route('/usuarios')
@@ -193,19 +188,31 @@ def home_mobile():
 @requer_permissao('custoproducao', 'ver')
 def listar_referencias():
     filtro = request.args.get('filtro', '')
+    pagina = request.args.get('page', 1, type=int)
+    por_pagina = 10
+
+    query = Referencia.query
 
     if filtro:
-        referencias = Referencia.query.filter(Referencia.codigo_referencia.ilike(f"%{filtro}%")).all()
-    else:
-        referencias = Referencia.query.order_by(Referencia.id.desc()).all()
+        query = query.filter(Referencia.codigo_referencia.ilike(f"%{filtro}%"))
 
-    # 🔹 Garante que os cálculos sejam atualizados antes de exibir
-    for referencia in referencias:
-        referencia.calcular_totais()
-        db.session.add(referencia)  # 🔹 Adiciona a referência para ser salva
-    db.session.commit()  # 🔹 Salva as alterações no banco
+    query = query.order_by(Referencia.id.desc())
 
-    return render_template('referencias.html', referencias=referencias)
+    paginadas = query.paginate(page=pagina, per_page=por_pagina, error_out=False)
+
+    # 🔹 Atualiza os totais apenas das exibidas
+    for ref in paginadas.items:
+        ref.calcular_totais()
+        db.session.add(ref)
+    db.session.commit()
+
+    return render_template(
+        'referencias.html',
+        referencias=paginadas.items,
+        paginacao=paginadas,
+        filtro=filtro
+    )
+
 
 
 
@@ -1173,13 +1180,17 @@ UPLOAD_FOLDER = 'app/static/uploads'
 @requer_permissao('custoproducao', 'ver')
 def listar_solados():
     filtro = request.args.get('filtro', '')
+    page = request.args.get('page', 1, type=int)
+
+    query = Solado.query
 
     if filtro:
-        solados = Solado.query.filter(Solado.referencia.ilike(f"%{filtro}%")).all()
-    else:
-        solados = Solado.query.order_by(Solado.id.desc()).all()
+        query = query.filter(Solado.referencia.ilike(f"%{filtro}%"))
+
+    solados = query.order_by(Solado.id.desc()).paginate(page=page, per_page=5)
 
     return render_template('solados.html', solados=solados)
+
 
 
 
@@ -2211,14 +2222,17 @@ def custo_remessa():
         "margem_media": Decimal(0),
     }
 
-    if request.method == "POST":
-        codigo_remessa = request.form.get("remessa").strip()
+    remessa_selecionada = None
+    remessas_disponiveis = db.session.query(MargemPorPedido.remessa).distinct().order_by(MargemPorPedido.remessa).all()
+    remessas = [r[0] for r in remessas_disponiveis]
 
-        if codigo_remessa:
-            margem_pedidos = MargemPorPedido.query.filter_by(remessa=codigo_remessa).all()
+    if request.method == "POST":
+        remessa_selecionada = request.form.get("remessa", "").strip()
+
+        if remessa_selecionada:
+            margem_pedidos = MargemPorPedido.query.filter_by(remessa=remessa_selecionada).all()
 
             if margem_pedidos:
-                # 🔹 Calculando os totais de todas as margens filtradas
                 total_venda = sum(m.total_preco_venda for m in margem_pedidos)
                 total_custo = sum(m.total_custo for m in margem_pedidos)
                 lucro_total = sum(m.lucro_total for m in margem_pedidos)
@@ -2234,7 +2248,14 @@ def custo_remessa():
             else:
                 flash("Nenhuma margem por pedido encontrada para essa remessa.", "warning")
 
-    return render_template("custo_remessa.html", margem_pedidos=margem_pedidos, totais=totais)
+    return render_template(
+        "custo_remessa.html",
+        margem_pedidos=margem_pedidos,
+        totais=totais,
+        remessas=remessas,
+        remessa_selecionada=remessa_selecionada
+    )
+
 
 
 
@@ -3142,7 +3163,7 @@ def nova_movimentacao_matriz():
     form = MovimentacaoMatrizForm()
     matriz_id = request.args.get("matriz_id") or request.form.get("matriz_id")
 
-    matrizes = Matriz.query.order_by(Matriz.codigo).all()
+    matrizes = Matriz.query.order_by(Matriz.id.desc()).all()
     cores = Cor.query.order_by(Cor.nome).all()
     matriz = Matriz.query.get(matriz_id) if matriz_id else None
 
@@ -3245,7 +3266,8 @@ def listar_movimentacoes_matriz():
             pass
 
     movimentacoes = query.order_by(MovimentacaoMatriz.data.desc()).all()
-    matrizes = Matriz.query.order_by(Matriz.codigo).all()
+    matrizes = Matriz.query.order_by(Matriz.id.desc()).all()
+
 
     return render_template('listar_movimentacoes_matriz.html', movimentacoes=movimentacoes, matrizes=matrizes)
 
@@ -3916,7 +3938,8 @@ def excluir_grade(id):
 @login_required
 def listar_remessas():
     remessas = Remessa.query.order_by(Remessa.data_criacao.desc()).all()
-    return render_template('listar_remessas.html', remessas=remessas)
+    delete_form = DeleteForm()
+    return render_template('listar_remessas.html', remessas=remessas, delete_form=delete_form)
 
 
 @bp.route('/remessa/nova', methods=['GET', 'POST'])
@@ -3973,22 +3996,26 @@ def editar_remessa(id):
 @login_required
 @requer_permissao('controleproducao', 'excluir')
 def excluir_remessa(id):
-    remessa = Remessa.query.get_or_404(id)
+    form = DeleteForm()
+    
+    if not form.validate_on_submit():
+        flash('Erro de segurança: CSRF token inválido ou ausente.', 'danger')
+        return redirect(url_for('routes.listar_remessas'))
 
     confirmacao = request.form.get('confirmacao', '').strip().lower()
     if confirmacao != 'excluir':
         flash('Confirmação inválida. Digite "excluir" para confirmar a exclusão.', 'danger')
         return redirect(url_for('routes.listar_remessas'))
 
-    # Excluir todos os planejamentos vinculados
+    # Só agora acessamos a remessa, com CSRF já validado
+    remessa = Remessa.query.get_or_404(id)
+
     planejamentos = PlanejamentoProducao.query.filter_by(remessa_id=id).all()
     for planejamento in planejamentos:
         db.session.delete(planejamento)
 
-    # Excluir a remessa
     db.session.delete(remessa)
 
-    # 🔹 Logar ação
     log = LogAcao(
         usuario_id=current_user.id,
         usuario_nome=current_user.nome,
@@ -3997,6 +4024,7 @@ def excluir_remessa(id):
     db.session.add(log)
 
     db.session.commit()
+
     flash('Remessa e seus planejamentos foram excluídos com sucesso.', 'success')
     return redirect(url_for('routes.listar_remessas'))
 
@@ -4057,6 +4085,111 @@ def listar_planejamentos():
     )
 
 
+@bp.route('/relatorio_planejamentos_pdf')
+@login_required
+def relatorio_planejamentos_pdf():
+    remessa_ids = request.args.getlist('remessa_id')
+    status = request.args.get('status')
+
+    planejamentos_query = PlanejamentoProducao.query.order_by(PlanejamentoProducao.id.asc())
+    if 'todas' not in remessa_ids:
+        planejamentos_query = planejamentos_query.filter(PlanejamentoProducao.remessa_id.in_([int(rid) for rid in remessa_ids]))
+    if status == 'fechado':
+        planejamentos_query = planejamentos_query.filter_by(fechado=True)
+    elif status == 'aberto':
+        planejamentos_query = planejamentos_query.filter_by(fechado=False)
+
+    planejamentos = planejamentos_query.all()
+
+    grupos = {'GRUPO_REF_01': [], 'GRUPO_REF_02': [], 'GRUPO_REF_03': []}
+    totais = {'GRUPO_REF_01': 0, 'GRUPO_REF_02': 0, 'GRUPO_REF_03': 0}
+
+    for p in planejamentos:
+        grupo = p.linha.grupo if p.linha and p.linha.grupo in grupos else 'GRUPO_REF_01'
+        grupos[grupo].append(p)
+        totais[grupo] += p.quantidade
+
+    total_geral = sum(totais.values())
+    remessas = Remessa.query.order_by(Remessa.codigo).all()
+
+    # 🔹 Criar lista de linhas unificadas (mesmo número de linhas por grupo)
+    max_linhas = max(len(grupos['GRUPO_REF_01']), len(grupos['GRUPO_REF_02']), len(grupos['GRUPO_REF_03']))
+    linhas_unificadas = []
+
+    for i in range(max_linhas):
+        linha = {
+            'GRUPO_REF_01': grupos['GRUPO_REF_01'][i] if i < len(grupos['GRUPO_REF_01']) else None,
+            'GRUPO_REF_02': grupos['GRUPO_REF_02'][i] if i < len(grupos['GRUPO_REF_02']) else None,
+            'GRUPO_REF_03': grupos['GRUPO_REF_03'][i] if i < len(grupos['GRUPO_REF_03']) else None,
+        }
+        linhas_unificadas.append(linha)
+
+    html_content = render_template(
+        'relatorio_planejamentos_pdf.html',
+        linhas=linhas_unificadas,
+        totais=totais,
+        total_geral=total_geral,
+        remessas=remessas,
+        request=request
+    )
+
+    pdf = HTML(string=html_content).write_pdf()
+    response = make_response(pdf)
+    response.headers['Content-Type'] = 'application/pdf'
+    response.headers['Content-Disposition'] = 'inline; filename=relatorio_planejamento.pdf'
+    return response
+
+
+@bp.route('/relatorio_planejamentos')
+@login_required
+@requer_permissao('controleproducao', 'ver')
+def relatorio_planejamentos():
+    remessa_ids = request.args.getlist('remessa_id')
+    status = request.args.get('status')
+
+    grupos = {
+        'GRUPO_REF_01': [],
+        'GRUPO_REF_02': [],
+        'GRUPO_REF_03': []
+    }
+    total_por_grupo = {
+        'GRUPO_REF_01': 0,
+        'GRUPO_REF_02': 0,
+        'GRUPO_REF_03': 0
+    }
+
+    if remessa_ids:
+        planejamentos_query = PlanejamentoProducao.query.order_by(PlanejamentoProducao.id.asc())
+
+        if 'todas' not in remessa_ids:
+            planejamentos_query = planejamentos_query.filter(
+                PlanejamentoProducao.remessa_id.in_([int(rid) for rid in remessa_ids])
+            )
+
+        if status == 'fechado':
+            planejamentos_query = planejamentos_query.filter_by(fechado=True)
+        elif status == 'aberto':
+            planejamentos_query = planejamentos_query.filter_by(fechado=False)
+
+        planejamentos = planejamentos_query.all()
+
+        for p in planejamentos:
+            grupo = p.linha.grupo if p.linha and p.linha.grupo in grupos else 'GRUPO_REF_01'
+            grupos[grupo].append(p)
+            total_por_grupo[grupo] += p.quantidade
+
+    total_geral = sum(total_por_grupo.values())
+
+    remessas = Remessa.query.order_by(Remessa.codigo).all()
+
+    return render_template(
+        'relatorio_planejamentos.html',
+        grupos=grupos,
+        totais=total_por_grupo,
+        total_geral=total_geral,
+        remessas=remessas,
+        request=request  # necessário para mostrar filtros usados
+    )
 
 
 @bp.route('/planejamento/ver/<int:id>')
@@ -4163,6 +4296,10 @@ def atualizar_campo_planejamento():
             planejamento.data_fechado = datetime.now().replace(microsecond=0)
         else:
             planejamento.data_fechado = None
+
+    elif campo == 'esteira':
+        planejamento.esteira = bool(valor)  # ✅ apenas isso
+
 
     db.session.commit()
     return jsonify({'success': True})

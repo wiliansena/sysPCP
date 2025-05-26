@@ -58,6 +58,7 @@
                     </a>
                     <form action="{{ url_for('routes.excluir_margem_pedido', id=margem.id) }}" method="POST"
                         onsubmit="return confirm('Tem certeza que deseja excluir esta margem por pedido?');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="btn btn-danger"><i class="fas fa-trash-alt"></i> Excluir</button>
                     </form>
 

@@ -18,6 +18,7 @@
 
 <form method="POST">
     <table class="table table-bordered" id="tabela-manutencoes">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <thead>
             <tr>
                 <th>ID</th>

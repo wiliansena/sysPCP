@@ -14,7 +14,12 @@
 </div>
 
 <hr>
-
+<!-- Campo de Pesquisa -->
+<div class="row mb-3">
+    <div class="col-md-4">
+        <input type="text" id="filtroTabelaRemessas" class="form-control" placeholder="Buscar por código...">
+    </div>
+</div>
 <table class="table table-bordered table-striped">
     <thead class="table-primary">
         <tr>
@@ -36,33 +41,37 @@
                 </a>
 
                 <!-- Botão que abre o Modal -->
-                <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#confirmarExcluirModal{{ r.id }}">
+                <button class="btn btn-sm btn-danger" data-bs-toggle="modal"
+                    data-bs-target="#confirmarExcluirModal{{ r.id }}">
                     <i class="fas fa-trash"></i> Excluir
                 </button>
 
                 <!-- Modal de Confirmação -->
-                <div class="modal fade" id="confirmarExcluirModal{{ r.id }}" tabindex="-1" aria-labelledby="modalLabel{{ r.id }}" aria-hidden="true">
+                <div class="modal fade" id="confirmarExcluirModal{{ r.id }}" tabindex="-1"
+                    aria-labelledby="modalLabel{{ r.id }}" aria-hidden="true">
                     <div class="modal-dialog modal-dialog-centered">
                         <div class="modal-content">
-                            <form method="POST" action="{{ url_for('routes.excluir_remessa', id=r.id) }}" onsubmit="return validarExcluir(this);">
+                            <form method="POST" action="{{ url_for('routes.excluir_remessa', id=r.id) }}"
+                                onsubmit="return validarExcluir(this);">
+                                {{ delete_form.csrf_token }}
                                 <div class="modal-header">
-                                    <h5 class="modal-title" id="modalLabel{{ r.id }}">Confirmar Exclusão</h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                                    <h5 class="modal-title">Confirmar Exclusão</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                 </div>
                                 <div class="modal-body">
-                                    <p class="text-danger fw-bold">
-                                        Esta ação irá excluir a remessa <strong>{{ r.codigo }}</strong> e 
-                                        <strong>todos os planejamentos</strong> vinculados a ela.
-                                    </p>
-                                    <p>Para confirmar, digite <strong>excluir</strong> no campo abaixo:</p>
+                                    <p class="text-danger fw-bold">Esta ação irá excluir a remessa <strong>{{ r.codigo
+                                            }}</strong> e seus planejamentos vinculados.</p>
+                                    <p>Digite <strong>excluir</strong> abaixo para confirmar:</p>
                                     <input type="text" class="form-control" placeholder="Digite 'excluir'" required>
                                     <input type="hidden" name="confirmacao">
                                 </div>
                                 <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                    <button type="button" class="btn btn-secondary"
+                                        data-bs-dismiss="modal">Cancelar</button>
                                     <button type="submit" class="btn btn-danger">Confirmar Exclusão</button>
                                 </div>
                             </form>
+
                         </div>
                     </div>
                 </div>
@@ -72,20 +81,40 @@
         {% endfor %}
     </tbody>
 </table>
+<!--SCRIPT DE BUSCA PELO NOME DA TABELA-->
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const filtro = document.getElementById("filtroTabelaRemessas");
+        const linhas = document.querySelectorAll("table tbody tr");
+
+        if (filtro) {
+            filtro.addEventListener("keyup", function () {
+                const texto = this.value.toLowerCase();
+
+                linhas.forEach(row => {
+                    const visivel = Array.from(row.children).some(td =>
+                        td.textContent.toLowerCase().includes(texto)
+                    );
+                    row.style.display = visivel ? '' : 'none';
+                });
+            });
+        }
+    });
+</script>
 
 <!-- Script para validar o texto digitado -->
 <script>
-function validarExcluir(formulario) {
-    const inputConfirmar = formulario.querySelector('input[type="text"]');
-    const valor = inputConfirmar.value.trim().toLowerCase();
-    if (valor === 'excluir') {
-        formulario.querySelector('input[type="hidden"]').value = 'excluir';
-        return true;
-    } else {
-        alert("Digite corretamente 'excluir' para confirmar.");
-        return false;
+    function validarExcluir(formulario) {
+        const inputConfirmar = formulario.querySelector('input[type="text"]');
+        const valor = inputConfirmar.value.trim().toLowerCase();
+        if (valor === 'excluir') {
+            formulario.querySelector('input[name="confirmacao"]').value = 'excluir';
+            return true;
+        } else {
+            alert("Digite corretamente 'excluir' para confirmar.");
+            return false;
+        }
     }
-}
 </script>
 
 {% endblock %}

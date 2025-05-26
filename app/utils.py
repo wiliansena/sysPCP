@@ -4,6 +4,8 @@ from flask import current_app
 from functools import wraps
 from flask import redirect, url_for, flash, request
 from flask_login import current_user
+from flask import request
+
 
 def requer_permissao(categoria, acao):
     def decorator(f):
@@ -20,8 +22,6 @@ def requer_permissao(categoria, acao):
             return f(*args, **kwargs)
         return wrapped
     return decorator
-
-
 
 
 

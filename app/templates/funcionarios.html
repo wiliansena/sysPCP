@@ -27,6 +27,7 @@
                     </a>
                     <form method="POST" action="{{ url_for('routes.excluir_funcionario', id=funcionario.id) }}"
                         style="display:inline;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="btn btn-danger btn-sm"
                             onclick="return confirm('Tem certeza que deseja excluir este funcionário?');">
                             <i class="fas fa-trash-alt"></i> Excluir

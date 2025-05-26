@@ -31,6 +31,7 @@
                 <a href="{{ url_for('routes.editar_cor', id=cor.id) }}" class="btn btn-warning btn-sm">
                     <i class="fas fa-edit"></i> Editar</a>
                 <form action="{{ url_for('routes.excluir_cor', id=cor.id) }}" method="post" style="display:inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-danger btn-sm"
                         onclick="return confirm('Tem certeza que deseja excluir?')">
                         <i class="fas fa-trash-alt"></i> Excluir</button>

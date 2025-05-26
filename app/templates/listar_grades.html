@@ -27,6 +27,7 @@
                     <i class="fas fa-edit"></i> Editar
                 </a>
                 <form action="{{ url_for('routes.excluir_grade', id=grade.id) }}" method="POST" style="display:inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Tem certeza que deseja excluir esta grade?')">
                         <i class="fas fa-trash"></i> Excluir
                     </button>

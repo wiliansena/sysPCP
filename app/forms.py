@@ -13,6 +13,11 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField, SelectField
 from wtforms.validators import DataRequired, Length, EqualTo
 
+from flask_wtf import FlaskForm
+
+class DeleteForm(FlaskForm):
+    """Formulário reutilizável apenas para validar CSRF em exclusões."""
+    pass
 
 
 class UsuarioForm(FlaskForm):

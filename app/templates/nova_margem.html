@@ -63,28 +63,41 @@
                 </div>
             </div>
 
+
+
             <!-- 🔹 Despesas de Venda -->
             <div class="card mt-3">
                 <div class="card-body">
                     <h5 class="card-title">Despesas de Venda</h5>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="usar_padrao"
+                            onclick="preencherValoresPadrao()">
+                        <label class="form-check-label" for="usar_padrao"><strong>Usar valores padrão</strong></label>
+                    </div>
                     <ul class="list-group">
                         <li class="list-group-item"><strong>Comissão </strong><strong>% </strong>{{
-                            form.comissao_porcentagem(class="form-control") }}<strong> R$ </strong>{{
+                            form.comissao_porcentagem(class="form-control", id="comissao_porcentagem") }}<strong> R$
+                            </strong>{{
                             form.comissao_valor(class="form-control") }}</li>
                         <li class="list-group-item"><strong>Financeiro </strong><strong>% </strong>{{
-                            form.financeiro_porcentagem(class="form-control") }}<strong> R$ </strong>{{
+                            form.financeiro_porcentagem(class="form-control", id="financeiro_porcentagem") }}<strong> R$
+                            </strong>{{
                             form.financeiro_valor(class="form-control") }}</li>
                         <li class="list-group-item"><strong>Duvidosos </strong><strong>% </strong>{{
-                            form.duvidosos_porcentagem(class="form-control") }}<strong> R$ </strong>{{
+                            form.duvidosos_porcentagem(class="form-control", id="duvidosos_porcentagem") }}<strong> R$
+                            </strong>{{
                             form.duvidosos_valor(class="form-control") }}</li>
                         <li class="list-group-item"><strong>Frete&nbsp;&nbsp;&nbsp;</strong><strong>% </strong>{{
-                            form.frete_porcentagem(class="form-control") }}<strong> R$ </strong>{{
+                            form.frete_porcentagem(class="form-control", id="frete_porcentagem") }}<strong> R$
+                            </strong>{{
                             form.frete_valor(class="form-control") }}</li>
                         <li class="list-group-item"><strong>Tributo</strong><strong>% </strong>{{
-                            form.tributos_porcentagem(class="form-control") }}<strong> R$ </strong>{{
+                            form.tributos_porcentagem(class="form-control", id="tributos_porcentagem") }}<strong> R$
+                            </strong>{{
                             form.tributos_valor(class="form-control") }}</li>
                         <li class="list-group-item"><strong>Outros</strong><strong>% </strong>{{
-                            form.outros_porcentagem(class="form-control") }}<strong> R$ </strong>{{
+                            form.outros_porcentagem(class="form-control", id="outros_porcentagem") }}<strong> R$
+                            </strong>{{
                             form.outros_valor(class="form-control") }}</li>
                     </ul>
                 </div>
@@ -147,6 +160,31 @@
             </div>
         </div>
     </div>
+
+    <!--SCRIPT PARA PREENCHER DESPESAS DE VENDA AUTOMATICAMENTE COM VALOR PADRAO-->
+    <script>
+        function preencherValoresPadrao() {
+            const checkbox = document.getElementById('usar_padrao');
+            const campos = {
+                comissao_porcentagem: 8,
+                financeiro_porcentagem: 5,
+                duvidosos_porcentagem: 1.5,
+                frete_porcentagem: 7,
+                tributos_porcentagem: 10.68,
+                outros_porcentagem: 0.00
+            };
+
+            for (const campo in campos) {
+                const input = document.getElementById(campo);
+                if (input) {
+                    input.value = checkbox.checked ? campos[campo] : 0.00;
+                }
+            }
+        }
+    </script>
+
+
+
 
     <!-- 🔹 Script para Selecionar Referência -->
     <script>

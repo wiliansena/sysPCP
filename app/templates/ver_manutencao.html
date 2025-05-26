@@ -77,6 +77,7 @@
     </button>
 
     <form action="{{ url_for('routes.excluir_manutencao', id=manutencao.id) }}" method="POST" onsubmit="return confirm('Deseja realmente excluir esta manutenção?')">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit" class="btn btn-danger">
             <i class="fas fa-trash"></i> Excluir
         </button>

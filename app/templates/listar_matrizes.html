@@ -106,6 +106,7 @@
                         <div class="modal-content">
                             <form method="POST" action="{{ url_for('routes.excluir_matriz', id=matriz.id) }}"
                                 onsubmit="return validarExcluir(this);">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <div class="modal-header">
                                     <h5 class="modal-title" id="modalLabel{{ matriz.id }}">Confirmar Exclusão</h5>
                                     <button type="button" class="btn-close" data-bs-dismiss="modal"

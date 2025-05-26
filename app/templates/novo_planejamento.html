@@ -59,6 +59,7 @@
 
 <h5 class="mb-3">Importar Planejamentos por Remessa</h5>
 <form method="POST" enctype="multipart/form-data" action="{{ url_for('routes.importar_planejamentos') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="row mb-3">
         <div class="col-md-6">
             <label class="form-label">Arquivo Excel (.xlsx)</label>
@@ -75,7 +76,7 @@
 <div class="alert alert-info">
     <strong>Layout da Planilha:</strong><br>
     A primeira linha deve conter os seguintes cabeçalhos:<br>
-    <code>Código da Remessa, Referência, Quantidade, Setor, Linha, Esteira, Quantidade na Esteira, Fechado</code>
+    <code>|Código da Remessa |Linha | Referência| Quantidade </code>
 </div>
 
 <!-- Ativa o select2 -->

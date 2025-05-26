@@ -292,7 +292,8 @@
 </table>
 
 <a href="{{ url_for('routes.listar_referencias') }}" class="btn btn-secondary">Sair</a>
-<a href="{{ url_for('routes.editar_referencia', id=referencia.id) }}" class="btn btn-warning btn-sm">Editar</a>
+<a href="{{ url_for('routes.editar_referencia', id=referencia.id) }}" class="btn btn-warning">
+    <i class="fas fa-edit"></i>Editar</a>
 <button class="btn btn-primary" onclick="window.print()">
     <i class="fa fa-print"></i> Imprimir
 </button>
