@@ -1,3 +1,4 @@
+import io
 from sqlite3 import IntegrityError
 from flask import Blueprint, jsonify, render_template, redirect, url_for, flash, request
 from flask_login import current_user, login_required
@@ -214,6 +215,38 @@ def listar_referencias():
     )
 
 
+
+from app.models import Referencia, Colecao
+
+@bp.route("/referencias/exportar")
+@login_required
+def exportar_referencias_excel():
+    referencias = (
+        db.session.query(
+            Referencia.codigo_referencia,
+            Referencia.descricao,
+            Referencia.linha,
+            Colecao.codigo.label("colecao")
+        )
+        .join(Colecao, Referencia.colecao_id == Colecao.id)
+        .all()
+    )
+
+    # Criar DataFrame
+    df = pd.DataFrame(referencias, columns=["Código", "Descrição", "Linha", "Coleção"])
+
+    # Exportar para Excel em memória
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, index=False, sheet_name='Referências')
+    output.seek(0)
+
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name="referencias.xlsx",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
 
 
 
@@ -1191,6 +1224,28 @@ def listar_solados():
 
     return render_template('solados.html', solados=solados)
 
+@bp.route("/solados/exportar")
+@login_required
+def exportar_solados_excel():
+    solados = Solado.query.with_entities(
+        Solado.referencia, Solado.descricao, Solado.imagem
+        ).all()
+
+    # Criar DataFrame com os dados
+    df = pd.DataFrame(solados, columns=["Referencia","Descrição","Imagem"])
+
+    # Criar buffer de memória
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, index=False, sheet_name='Solados')
+    output.seek(0)
+
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name="solados.xlsx",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
 
 
 
@@ -1537,6 +1592,29 @@ def listar_alcas():
 
     return render_template('alcas.html', alcas=alcas)
 
+
+@bp.route("/alcas/exportar")
+@login_required
+def exportar_alcas_excel():
+    alcas = Alca.query.with_entities(
+        Alca.referencia, Alca.descricao, Alca.imagem
+        ).all()
+
+    # Criar DataFrame com os dados
+    df = pd.DataFrame(alcas, columns=["Referencia","Descrição","Imagem"])
+
+    # Criar buffer de memória
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, index=False, sheet_name='alcas')
+    output.seek(0)
+
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name="alcas.xlsx",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
 
 @bp.route('/alca/nova', methods=['GET', 'POST'])
 @login_required
