@@ -13,6 +13,8 @@
             <p><strong>Cliente:</strong> {{ margem.cliente }}</p>
             <p><strong>Embalagem:</strong> {{ margem.embalagem_escolhida }}</p>
             <p><strong>Preço de Venda:</strong> R$ {{ "%.2f"|format(margem.preco_venda) }}</p>
+			<p><strong>Dolar:</strong> $ {{ "%.2f"|format(margem.dolar) }}</p>
+			<p><strong>Preço de Venda Dolar($):</strong> $ {{ "%.2f"|format(margem.preco_venda_dolar) }}</p>
 
             <!-- 🔹 Imagem da Referência -->
             <div class="text-center">

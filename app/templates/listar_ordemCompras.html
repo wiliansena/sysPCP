@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<h2>Solicitações de Compras</h2>
+<hr>
+<a href="{{ url_for('routes.nova_ordemCompra') }}" class="btn btn-success mb-3">Adicionar</a>
+
+<!-- Filtros -->
+<div class="row mb-3">
+    <div class="col-md-2">
+        <select id="filtroStatus" class="form-select">
+            <option value="">Status</option>
+            {% for valor, label in form.status.choices %}
+            <option value="{{ valor }}">{{ label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-2">
+        <select id="filtroSetor" class="form-select">
+            <option value="">Setor</option>
+            {% for valor, label in form.setor.choices %}
+            <option value="{{ valor }}">{{ label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-2">
+        <select id="filtroPrioridade" class="form-select">
+            <option value="">Prioridade</option>
+            {% for valor, label in form.prioridade.choices %}
+            <option value="{{ valor }}">{{ label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-3">
+        <input type="text" id="filtroSolicitante" class="form-control" placeholder="Solicitante">
+    </div>
+    <div class="col-md-3">
+        <input type="text" id="filtroResponsavel" class="form-control" placeholder="Responsável">
+    </div>
+</div>
+
+<a href="{{ url_for('routes.exportar_ordemCompras_excel') }}" class="btn btn-outline-success mb-3 ms-2">
+    <i class="fas fa-file-excel"></i> Exportar Excel
+</a>
+<!-- Tabela -->
+<div class="table-responsive">
+    <table class="table table-bordered table-hover align-middle" id="tabelaOc">
+        <thead class="table-light sticky-top">
+            <tr>
+                <th>Código</th>
+                <th>Título</th>
+                <th>Status</th>
+                <th>Solicitante</th>
+                <th>Setor</th>
+                <th>Prioridade</th>
+                <th>Início</th>
+                <th>Fim</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for oc in ordemcompras %}
+            <tr>
+                <td>{{ oc.id }}</td>
+                <td>{{ oc.titulo }}</td>
+                <td class="status">
+                    <span class="badge
+                            {% if oc.status == 'Aberto' %} bg-primary
+                            {% elif oc.status == 'Verificando' %} bg-warning text-dark
+                            {% elif oc.status == 'Finalizado' %} bg-success
+                            {% elif oc.status == 'Aprovado' %} bg-info
+                            {% elif oc.status == 'Comprado' %} bg-secondary
+                            {% elif oc.status == 'Recebido' %} bg-dark
+                            {% elif oc.status == 'Cancelado' %} bg-danger
+                            {% endif %}">
+                        {{ oc.status }}
+                    </span>
+                </td>
+                <td class="solicitante">{{ oc.solicitante.nome if oc.solicitante else '' }}</td>
+                <td class="setor">{{ oc.setor }}</td>
+                <td class="prioridade">
+                    <span class="badge
+                            {% if oc.prioridade == 'Baixa' %} bg-secondary
+                            {% elif oc.prioridade == 'Normal' %} bg-info
+                            {% elif oc.prioridade == 'Alta' %} bg-warning text-dark
+                            {% elif oc.prioridade == 'Urgente' %} bg-danger
+                            {% endif %}">
+                        {{ oc.prioridade }}
+                    </span>
+                </td>
+                <td>{{ oc.data_inicio.strftime('%d/%m/%Y %H:%M') }}</td>
+                <td>{{ oc.data_fim.strftime('%d/%m/%Y %H:%M') if oc.data_fim else '-' }}</td>
+                <td>
+                    <a href="{{ url_for('routes.ver_ordemCompra', id=oc.id) }}"
+                        class="btn btn-sm btn-info w-100 mb-1">
+                        <i class="fas fa-eye"></i>Ver</a>
+                    <a href="{{ url_for('routes.editar_ordemCompra', id=oc.id) }}"
+                        class="btn btn-sm btn-warning w-100 mb-1">
+                        <i class="fas fa-edit"></i> Editar</a>
+                    <form action="{{ url_for('routes.excluir_ordemCompra', id=oc.id) }}" method="post">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-danger btn-sm w-100"
+                            onclick="return confirm('Tem certeza que deseja excluir?')">
+                            <i class="fas fa-trash-alt"></i> Excluir</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+    function aplicarFiltros() {
+        const statusFiltro = document.getElementById("filtroStatus").value.toLowerCase();
+        const setorFiltro = document.getElementById("filtroSetor").value.toLowerCase();
+        const prioridadeFiltro = document.getElementById("filtroPrioridade").value.toLowerCase();
+        const solicitanteFiltro = document.getElementById("filtroSolicitante").value.toLowerCase();
+        const responsavelFiltro = document.getElementById("filtroResponsavel").value.toLowerCase();
+
+        const linhas = document.querySelectorAll("#tabelaOc tbody tr");
+
+        linhas.forEach(linha => {
+            const status = linha.querySelector(".status").innerText.toLowerCase();
+            const setor = linha.querySelector(".setor").innerText.toLowerCase();
+            const prioridade = linha.querySelector(".prioridade").innerText.toLowerCase();
+            const solicitante = linha.querySelector(".solicitante").innerText.toLowerCase();
+            const responsavel = linha.querySelector(".responsavel").innerText.toLowerCase();
+
+            const exibir =
+                (statusFiltro === "" || status.includes(statusFiltro)) &&
+                (setorFiltro === "" || setor.includes(setorFiltro)) &&
+                (prioridadeFiltro === "" || prioridade.includes(prioridadeFiltro)) &&
+                (solicitanteFiltro === "" || solicitante.includes(solicitanteFiltro)) &&
+                (responsavelFiltro === "" || responsavel.includes(responsavelFiltro));
+
+            linha.style.display = exibir ? "" : "none";
+        });
+    }
+
+    ["filtroStatus", "filtroSetor", "filtroPrioridade", "filtroSolicitante", "filtroResponsavel"].forEach(id => {
+        document.getElementById(id).addEventListener("input", aplicarFiltros);
+    });
+</script>
+
+{% endblock %}

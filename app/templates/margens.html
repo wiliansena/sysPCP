@@ -69,6 +69,8 @@
                 <p><strong>Cliente:</strong> {{ margem.cliente }}</p>
                 <p><strong>Embalagem:</strong> {{ margem.embalagem_escolhida }}</p>
                 <p><strong>Preço de Venda:</strong> R$ {{ margem.preco_venda }}</p>
+                <p><strong>Dolar:</strong> $ {{ margem.dolar }}</p>
+                <p><strong>Preço de Venda (Dolar $):</strong> $ {{ margem.preco_venda_dolar }}</p>
                 <p><strong>Custo Total:</strong> R$ {{ "%.2f"|format(margem.custo_total) }}</p>
                 <p><strong>Lucro Líquido:</strong> R$ {{ "%.2f"|format(margem.lucro_unitario) }}</p>
                 <p><strong>Margem:</strong> {{ "%.2f"|format(margem.margem) }}%</p>

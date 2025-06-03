@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Ordens de Compras - Quadro Kanban</h2>
+<hr>
+<a href="{{ url_for('routes.nova_ordemCompra') }}" class="btn btn-success mb-3">Nova Ordem</a>
+
+
+<!-- Filtros (mesmos do outro template, se quiser manter aqui) -->
+<!-- Filtros -->
+<div class="row mb-3">
+  <div class="col-md-2">
+    <select id="filtroStatus" class="form-select">
+      <option value="">Status</option>
+      {% for valor, label in form.status.choices %}
+      <option value="{{ valor }}">{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-2">
+    <select id="filtroSetor" class="form-select">
+      <option value="">Setor</option>
+      {% for valor, label in form.setor.choices %}
+      <option value="{{ valor }}">{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-2">
+    <select id="filtroPrioridade" class="form-select">
+      <option value="">Prioridade</option>
+      {% for valor, label in form.prioridade.choices %}
+      <option value="{{ valor }}">{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-3">
+    <input type="text" id="filtroSolicitante" class="form-control" placeholder="Solicitante">
+  </div>
+  <div class="col-md-3">
+    <input type="text" id="filtroResponsavel" class="form-control" placeholder="Responsável">
+  </div>
+</div>
+
+<div class="row overflow-auto" style="flex-wrap: nowrap;">
+  {% for valor_status, label_status in form.status.choices %}
+  <div class="col-md-3 me-3">
+    <div class="card border-dark h-100">
+      <div class="card-header text-center
+  {% if valor_status == 'Aberto' %} bg-primary text-white
+  {% elif valor_status == 'Verificando' %} bg-warning text-dark
+  {% elif valor_status == 'Aprovado' %} bg-info text-white
+  {% elif valor_status == 'Comprado' %} bg-secondary text-white
+  {% elif valor_status == 'Recebido' %} bg-dark text-white
+  {% elif valor_status == 'Finalizado' %} bg-success text-white
+  {% elif valor_status == 'Cancelado' %} bg-danger text-white
+  {% else %} bg-light
+  {% endif %}
+">
+        {{ label_status }}
+      </div>
+
+      <div class="card-body p-2" style="min-height: 300px; max-height: 600px; overflow-y: auto;">
+        {% for oc in ordemcompras_por_status[valor_status] %}
+        <div class="card mb-2 shadow-sm oc-card">
+          <div class="card-body p-2">
+            <h6 class="mb-1">#{{ oc.id }} - {{ oc.titulo }}</h6>
+            <p class="mb-1"><strong>Setor:</strong> {{ oc.setor }}</p>
+            <p class="mb-1"><strong>Prioridade:</strong>
+              <span class="badge 
+                {% if oc.prioridade == 'Baixa' %} bg-secondary
+                {% elif oc.prioridade == 'Normal' %} bg-info
+                {% elif oc.prioridade == 'Alta' %} bg-warning text-dark
+                {% elif oc.prioridade == 'Urgente' %} bg-danger
+                {% endif %}">{{ oc.prioridade }}</span>
+            </p>
+            <p class="mb-1"><strong>Solicitante:</strong> {{ oc.solicitante.nome if oc.solicitante else '' }}</p>
+            <p class="mb-1"><strong>Responsável:</strong> {{ oc.responsavel.nome if oc.responsavel else '' }}</p>
+            <div class="d-flex justify-content-between mt-2">
+              <a href="{{ url_for('routes.ver_ordemCompra', id=oc.id) }}" class="btn btn-sm btn-outline-info">Ver</a>
+              <a href="{{ url_for('routes.editar_ordemCompra', id=oc.id) }}"
+                class="btn btn-sm btn-outline-warning">Editar</a>
+            </div>
+          </div>
+        </div>
+        {% else %}
+        <p class="text-muted text-center mt-2">Nenhuma ordem</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<script>
+  function aplicarFiltrosKanban() {
+    const statusFiltro = document.getElementById("filtroStatus").value.toLowerCase();
+    const setorFiltro = document.getElementById("filtroSetor").value.toLowerCase();
+    const prioridadeFiltro = document.getElementById("filtroPrioridade").value.toLowerCase();
+    const solicitanteFiltro = document.getElementById("filtroSolicitante").value.toLowerCase();
+    const responsavelFiltro = document.getElementById("filtroResponsavel").value.toLowerCase();
+
+    document.querySelectorAll('.oc-card').forEach(card => {
+      const setor = card.querySelector('p:nth-of-type(1)').innerText.toLowerCase();
+      const prioridade = card.querySelector('p:nth-of-type(2)').innerText.toLowerCase();
+      const solicitante = card.querySelector('p:nth-of-type(3)').innerText.toLowerCase();
+      const responsavel = card.querySelector('p:nth-of-type(4)').innerText.toLowerCase();
+
+      const statusColuna = card.closest('.col-md-3').querySelector('.card-header').innerText.toLowerCase();
+
+      const mostrar =
+        (statusFiltro === "" || statusColuna.includes(statusFiltro)) &&
+        (setorFiltro === "" || setor.includes(setorFiltro)) &&
+        (prioridadeFiltro === "" || prioridade.includes(prioridadeFiltro)) &&
+        (solicitanteFiltro === "" || solicitante.includes(solicitanteFiltro)) &&
+        (responsavelFiltro === "" || responsavel.includes(responsavelFiltro));
+
+      card.style.display = mostrar ? "" : "none";
+    });
+  }
+
+  ["filtroStatus", "filtroSetor", "filtroPrioridade", "filtroSolicitante", "filtroResponsavel"].forEach(id => {
+    document.getElementById(id).addEventListener("input", aplicarFiltrosKanban);
+  });
+</script>
+
+
+{% endblock %}

@@ -4,8 +4,8 @@ from flask import Blueprint, jsonify, render_template, redirect, url_for, flash,
 from flask_login import current_user, login_required
 import pytz
 from app import db, csrf
-from app.models import Cor, FormulacaoSolado, FormulacaoSoladoFriso, Funcionario, Grade, Linha, LogAcao, Manutencao, ManutencaoComponente, ManutencaoMaquina, Maquina, MargemPorPedido, MargemPorPedidoReferencia, Matriz, MovimentacaoMatriz, Permissao, PlanejamentoProducao, Referencia, Componente, CustoOperacional, ReferenciaAlca, ReferenciaComponentes, ReferenciaCustoOperacional, ReferenciaEmbalagem1, ReferenciaEmbalagem2, ReferenciaEmbalagem3, ReferenciaMaoDeObra, ReferenciaSolado, Remessa, Salario, MaoDeObra, Margem, TamanhoGrade, TamanhoMatriz, TamanhoMovimentacao, TrocaHorario, TrocaMatriz, Usuario, hora_brasilia
-from app.forms import CorForm, DeleteForm, FuncionarioForm, GradeForm, LinhaForm, ManutencaoForm, MaquinaForm, MargemForm, MargemPorPedidoForm, MargemPorPedidoReferenciaForm, MatrizForm, MovimentacaoMatrizForm, PlanejamentoProducaoForm, ReferenciaForm, ComponenteForm, CustoOperacionalForm, RemessaForm, SalarioForm, MaoDeObraForm, TrocaMatrizForm, UsuarioForm
+from app.models import Cor, FormulacaoSolado, FormulacaoSoladoFriso, Funcionario, Grade, Linha, LogAcao, Manutencao, ManutencaoComponente, ManutencaoMaquina, Maquina, MargemPorPedido, MargemPorPedidoReferencia, Matriz, MovimentacaoMatriz, OrdemCompra, Permissao, PlanejamentoProducao, Referencia, Componente, CustoOperacional, ReferenciaAlca, ReferenciaComponentes, ReferenciaCustoOperacional, ReferenciaEmbalagem1, ReferenciaEmbalagem2, ReferenciaEmbalagem3, ReferenciaMaoDeObra, ReferenciaSolado, Remessa, Salario, MaoDeObra, Margem, TamanhoGrade, TamanhoMatriz, TamanhoMovimentacao, TrocaHorario, TrocaMatriz, Usuario, hora_brasilia
+from app.forms import CorForm, DeleteForm, FuncionarioForm, GradeForm, LinhaForm, ManutencaoForm, MaquinaForm, MargemForm, MargemPorPedidoForm, MargemPorPedidoReferenciaForm, MatrizForm, MovimentacaoMatrizForm, OrdemCompraForm, PlanejamentoProducaoForm, ReferenciaForm, ComponenteForm, CustoOperacionalForm, RemessaForm, SalarioForm, MaoDeObraForm, TrocaMatrizForm, UsuarioForm
 import os
 from flask import render_template, redirect, url_for, flash, request
 from app.models import Solado, Tamanho, Componente, FormulacaoSolado, Alca, TamanhoAlca, FormulacaoAlca, Colecao
@@ -27,6 +27,7 @@ from sqlalchemy import case
 from flask import render_template, make_response
 from weasyprint import HTML
 from io import BytesIO
+from sqlalchemy.orm import aliased
 
 
 
@@ -134,7 +135,7 @@ def gerenciar_permissoes(id):
         flash("As permissões do Admin não podem ser modificadas por outro usuário!", "danger")
         return redirect(url_for('routes.listar_usuarios'))
 
-    categorias = ["comercial","desenvolvimento","manutencao","margens",
+    categorias = ["administrativo","desenvolvimento","manutencao","margens",
                   "custoproducao", "componentes",
                   "controleproducao", "maquinas",
                   "funcionario", "relatorio", "usuarios", "trocar_senha"]
@@ -173,12 +174,23 @@ def listar_logs():
 @bp.route('/')
 @login_required
 def home():
+    user_agent = request.headers.get('User-Agent', '').lower()
+    if any(mobile in user_agent for mobile in ['iphone', 'android', 'mobile']):
+        return redirect(url_for('routes.home_mobile'))
     return render_template('home.html')
+
+@bp.route('/home')
+@login_required
+def home_desktop():
+    return render_template('home.html')
+
 
 @bp.route('/home_mobile')
 @login_required
 def home_mobile():
     return render_template('home_mobile.html')
+
+
 
 
     #REFERENCIAS
@@ -1937,6 +1949,9 @@ def nova_margem():
             tributos_valor=form.tributos_valor.data or Decimal(0),
             outros_porcentagem=form.outros_porcentagem.data or Decimal(0),
             outros_valor=form.outros_valor.data or Decimal(0),
+
+            #DOLAR
+            dolar = form.dolar.data or Decimal(0),
             
             # Campos fixos armazenados no banco
             custo_total=Decimal(0),
@@ -1948,7 +1963,9 @@ def nova_margem():
             preco_sugerido_10=Decimal(0),
             preco_sugerido_12=Decimal(0),
             preco_sugerido_15=Decimal(0),
-            preco_sugerido_20=Decimal(0)
+            preco_sugerido_20=Decimal(0),
+            #DOLAR
+            preco_venda_dolar=Decimal(0)
         )
 
         db.session.add(nova_margem)
@@ -2000,6 +2017,9 @@ def editar_margem(id):
         margem.tributos_valor = form.tributos_valor.data or Decimal(0)
         margem.outros_porcentagem = form.outros_porcentagem.data or Decimal(0)
         margem.outros_valor = form.outros_valor.data or Decimal(0)
+
+        #DOLAR
+        margem.dolar = Decimal(form.dolar.data or 0)
 
         # 🔹 Recalcula os custos
         margem.calcular_custos()
@@ -2062,7 +2082,11 @@ def copiar_margem(id):
         preco_sugerido_10=margem_original.preco_sugerido_10,
         preco_sugerido_12=margem_original.preco_sugerido_12,
         preco_sugerido_15=margem_original.preco_sugerido_15,
-        preco_sugerido_20=margem_original.preco_sugerido_20
+        preco_sugerido_20=margem_original.preco_sugerido_20,
+
+        #DOLAR
+        dolar=margem_original.dolar,
+        preco_venda_dolar=margem_original.preco_venda_dolar
     )
 
     db.session.add(nova_margem)
@@ -3532,6 +3556,208 @@ def excluir_funcionario(id):
     return redirect(url_for('routes.listar_funcionarios'))
 
 
+
+
+
+# ROTA OTIMIZADA
+@bp.route('/OrdemCompras')
+@login_required
+@requer_permissao('administrativo', 'ver')
+def listar_ordemCompras():
+    form = OrdemCompraForm()
+    oc_query = OrdemCompra.query.options(
+        db.joinedload(OrdemCompra.solicitante),
+        db.joinedload(OrdemCompra.responsavel)
+    ).order_by(OrdemCompra.id.desc()).all()
+
+    return render_template(
+        'listar_ordemCompras.html',
+        ordemcompras=oc_query,
+        status_choices=form.status.choices,
+        prioridade_choices=form.prioridade.choices,
+        setor_choices=form.setor.choices,
+        form=form
+    )
+
+@bp.route('/OrdemComprasKanban')
+@login_required
+@requer_permissao('administrativo', 'ver')
+def listar_ordemComprasKanban():
+    form = OrdemCompraForm()
+    oc_query = OrdemCompra.query.options(
+        db.joinedload(OrdemCompra.solicitante),
+        db.joinedload(OrdemCompra.responsavel)
+    ).all()
+
+    # Agrupar por status dinamicamente com base no form
+    ordemcompras_por_status = {status[0]: [] for status in form.status.choices}
+    for oc in oc_query:
+        ordemcompras_por_status.get(oc.status, []).append(oc)
+
+    return render_template(
+        'listar_ordemCompras_kanban.html',
+        ordemcompras_por_status=ordemcompras_por_status,
+        form=form
+    )
+
+
+
+@bp.route("/ordemCompras/exportar")
+@login_required
+def exportar_ordemCompras_excel():
+
+    Solicitante = aliased(Funcionario)
+    Responsavel = aliased(Funcionario)
+
+    ordemcompras = (
+        db.session.query(
+            OrdemCompra.id,
+            OrdemCompra.titulo,
+            OrdemCompra.nota_fiscal,
+            OrdemCompra.status,
+            OrdemCompra.setor,
+            OrdemCompra.prioridade,
+            Solicitante.nome.label("Solicitante"),
+            Responsavel.nome.label("Responsavel")
+        )
+        .join(Solicitante, OrdemCompra.solicitante_id == Solicitante.id)
+        .join(Responsavel, OrdemCompra.responsavel_id == Responsavel.id)
+        .all()
+    )
+
+    # Criar DataFrame
+    df = pd.DataFrame(ordemcompras, columns=["id", "titulo", "nota fiscal",
+                                              "status", "setor", "prioridade",
+                                                "solicitante", "Responsavel"])
+
+    # Exportar para Excel em memória
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, index=False, sheet_name='Ordens_Compras')
+    output.seek(0)
+
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name="oc.xlsx",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
+
+@bp.route('/ordemCompra/ver/<int:id>')
+@login_required
+@requer_permissao('administrativo', 'ver')
+def ver_ordemCompra(id):
+    ordemcompra = OrdemCompra.query.get_or_404(id)
+    return render_template('ver_ordemCompra.html', ordemcompra=ordemcompra)
+
+
+@bp.route('/ordemCompra/nova', methods=['GET', 'POST'])
+@login_required
+@requer_permissao('administrativo', 'criar')
+def nova_ordemCompra():
+    form = OrdemCompraForm()
+    funcionarios = Funcionario.query.all()
+    responsaveis = Funcionario.query.filter_by(funcao='Compras').all()
+
+
+    if form.validate_on_submit():
+        ordemcompra = OrdemCompra(
+            titulo=form.titulo.data,
+            nota_fiscal=form.nota_fiscal.data or '-',
+            status=form.status.data,
+            setor=form.setor.data,
+            prioridade=form.prioridade.data,
+            solicitante_id=request.form.get("solicitante_id") or None,
+            responsavel_id=request.form.get("responsavel_id") or None,
+            descricao=form.descricao.data,
+            valor = form.valor.data or 0
+        )
+
+
+        db.session.add(ordemcompra)
+        db.session.commit()
+        flash("Manutenção cadastrada com sucesso!", "success")
+        return redirect(url_for('routes.listar_ordemCompras'))
+
+    return render_template(
+        'nova_ordemCompra.html',
+        form=form,
+        funcionarios=funcionarios,
+        responsaveis=responsaveis  # 🔹 Passa os funcionários pro template
+    )
+
+
+
+@bp.route('/ordemCompra/editar/<int:id>', methods=['GET', 'POST'])
+@login_required
+@requer_permissao('administrativo', 'editar')
+def editar_ordemCompra(id):
+    ordemcompra = OrdemCompra.query.get_or_404(id)
+    form = OrdemCompraForm()
+
+    funcionarios = Funcionario.query.all()
+
+    if form.validate_on_submit():
+        
+        #Bloqueio no POST caso já esteja finalizada
+        if ordemcompra.status == "Finalizado":
+            flash("Esta O.C está finalizada e não pode mais ser alterada.", "warning")
+            return redirect(url_for('routes.listar_ordemCompras'))
+        
+        status_anterior = ordemcompra.status
+        ordemcompra.titulo = form.titulo.data
+        ordemcompra.nota_fiscal = form.nota_fiscal.data or '-'
+        ordemcompra.status = form.status.data
+        ordemcompra.setor = form.setor.data
+        ordemcompra.prioridade = form.prioridade.data
+        ordemcompra.solicitante_id = request.form.get("solicitante_id") or ordemcompra.solicitante_id
+        ordemcompra.responsavel_id = request.form.get("responsavel_id") or ordemcompra.responsavel_id
+        ordemcompra.descricao = form.descricao.data
+        ordemcompra.valor = form.valor.data or 0
+
+        # Só gera a data_fim se o status tiver sido ALTERADO para Finalizado
+        if status_anterior != "Finalizado" and ordemcompra.status == "Finalizado":
+            ordemcompra.data_fim = datetime.now().replace(microsecond=0)
+
+        db.session.commit()
+
+        flash("Ordem de Compra atualizada com sucesso!", "success")
+        return redirect(url_for('routes.listar_ordemCompras'))
+    else:
+        print("Erro")
+        print(form.errors)
+
+    # Pré-carregar o form
+    form.titulo.data = ordemcompra.titulo
+    form.nota_fiscal.data = ordemcompra.nota_fiscal
+    form.status.data = ordemcompra.status
+    form.setor.data = ordemcompra.setor
+    form.prioridade.data = ordemcompra.prioridade
+    form.descricao.data = ordemcompra.descricao
+    form.valor.data = ordemcompra.valor
+
+    return render_template(
+        'editar_ordemCompra.html',
+        form=form,
+        ordemcompra=ordemcompra,
+        funcionarios=funcionarios
+    )
+
+@bp.route('/ordemCompra/excluir/<int:id>', methods=['POST'])
+@login_required
+@requer_permissao('administrativo', 'excluir')
+def excluir_ordemCompra(id):
+    ordemcompra = OrdemCompra.query.get_or_404(id)
+
+    db.session.delete(ordemcompra)
+    db.session.commit()
+    flash("Ordem de compra excluída com sucesso!", "success")
+    return redirect(url_for('routes.listar_ordemCompras'))
+
+
+
+
 @bp.route('/manutencoes')
 @login_required
 def listar_manutencoes():
@@ -3649,10 +3875,14 @@ def editar_manutencao(id):
         status_anterior = manutencao.status
         manutencao.titulo = form.titulo.data
         manutencao.status = form.status.data
+        print("VALOR STATUS:", manutencao.status)
+        print("FORM STATUS CHOICES:", form.status.choices)
+
         manutencao.tipo = form.tipo.data
         manutencao.prioridade = form.prioridade.data
-        manutencao.solicitante_id = request.form.get("solicitante_id") or None
-        manutencao.responsavel_id = request.form.get("responsavel_id") or None
+        manutencao.solicitante_id = request.form.get("solicitante_id") or manutencao.solicitante_id
+        manutencao.responsavel_id = request.form.get("responsavel_id") or manutencao.responsavel_id
+
         manutencao.descricao = form.descricao.data
         
         # Só gera a data_fim se o status tiver sido ALTERADO para Finalizado

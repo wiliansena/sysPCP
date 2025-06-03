@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Editar Ordem de Compra</h2>
+<hr>
+
+<form method="POST">
+    {{ form.hidden_tag() }}
+
+    <!-- Status, Tipo e Prioridade -->
+    <div class="row">
+
+        <div class="col-md-4 mb-3">
+            {{ form.titulo.label(class="form-label") }}
+            {{ form.titulo(class="form-control") }}
+        </div>
+        <div class="col-md-4 mb-3">
+            {{ form.nota_fiscal.label(class="form-label") }}
+            {{ form.nota_fiscal(class="form-control") }}
+        </div>
+
+        <div class="col-md-4 mb-3">
+            {{ form.status.label(class="form-label") }}
+            {{ form.status(class="form-select") }}
+        </div>
+        <div class="col-md-4 mb-3">
+            {{ form.setor.label(class="form-label") }}
+            {{ form.setor(class="form-select") }}
+        </div>
+        <div class="col-md-4 mb-3">
+            {{ form.prioridade.label(class="form-label") }}
+            {{ form.prioridade(class="form-select") }}
+        </div>
+    </div>
+
+    <!-- Solicitante e Responsável -->
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label>Solicitante</label>
+            <div class="input-group">
+                <input type="text" id="solicitante_nome" class="form-control"
+                    value="{{ ordemcompra.solicitante.nome if ordemcompra.solicitante else '' }}" readonly>
+                <input type="hidden" name="solicitante_id" id="solicitante_id"
+                    value="{{ ordemcompra.solicitante_id or '' }}">
+                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal"
+                    data-bs-target="#modalSolicitante" data-tipo="solicitante">Selecionar</button>
+            </div>
+        </div>
+        <div class="col-md-6 mb-3">
+            <label>Responsável</label>
+            <div class="input-group">
+                <input type="text" id="responsavel_nome" class="form-control"
+                    value="{{ ordemcompra.responsavel.nome if ordemcompra.responsavel else '' }}" readonly>
+                <input type="hidden" name="responsavel_id" id="responsavel_id"
+                    value="{{ ordemcompra.responsavel_id or '' }}">
+                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal"
+                    data-bs-target="#modalResponsavel" data-tipo="responsavel">Selecionar</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Descrição -->
+    <div class="mb-3">
+        {{ form.descricao.label(class="form-label") }}
+        {{ form.descricao(class="form-control", rows=3) }}
+    </div>
+
+    <!-- Valor -->
+    <div class="col-md-2 mb-3">
+        {{ form.valor.label(class="form-label") }}
+        {{ form.valor(class="form-control", rows=3) }}
+    </div>
+
+    <button type="submit" class="btn btn-success">Salvar Alterações</button>
+    <a href="{{ url_for('routes.listar_ordemCompras') }}" class="btn btn-secondary">Cancelar</a>
+</form>
+
+<!-- Modal Solicitante -->
+<div class="modal fade" id="modalSolicitante" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Selecionar Solicitante</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for f in funcionarios %}
+                        <tr>
+                            <td>{{ f.nome }}</td>
+                            <td><button type="button" class="btn btn-primary btn-sm selecionar-funcionario"
+                                    data-id="{{ f.id }}" data-nome="{{ f.nome }}"
+                                    data-tipo="solicitante">Selecionar</button></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Responsável -->
+<div class="modal fade" id="modalResponsavel" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Selecionar Responsável</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for f in funcionarios %}
+                        <tr>
+                            <td>{{ f.nome }}</td>
+                            <td><button type="button" class="btn btn-primary btn-sm selecionar-funcionario"
+                                    data-id="{{ f.id }}" data-nome="{{ f.nome }}"
+                                    data-tipo="responsavel">Selecionar</button></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const botoesSelecionar = document.querySelectorAll('.selecionar-funcionario');
+
+        botoesSelecionar.forEach(botao => {
+            botao.addEventListener('click', function () {
+                const tipo = this.getAttribute('data-tipo'); // "solicitante" ou "responsavel"
+                const id = this.getAttribute('data-id');
+                const nome = this.getAttribute('data-nome');
+
+                // Define os campos corretos
+                if (tipo === 'solicitante') {
+                    document.getElementById('solicitante_id').value = id;
+                    document.getElementById('solicitante_nome').value = nome;
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('modalSolicitante'));
+                    modal.hide();
+                } else if (tipo === 'responsavel') {
+                    document.getElementById('responsavel_id').value = id;
+                    document.getElementById('responsavel_nome').value = nome;
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('modalResponsavel'));
+                    modal.hide();
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

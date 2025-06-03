@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<h2>Detalhes da Ordem de Compra</h2>
+<hr>
+
+<div class="row">
+    <div class="col-md-4 mb-3">
+        <strong>ID:</strong> {{ ordemcompra.id }}
+    </div>
+    <div class="col-md-4 mb-3">
+        <strong>Título:</strong> {{ ordemcompra.titulo }}
+    </div>
+        <div class="col-md-4 mb-3">
+        <strong>Nota Fiscal:</strong> {{ ordemcompra.nota_fiscal }}
+    </div>
+    <div class="col-md-4 mb-3">
+        <strong>Status:</strong> {{ ordemcompra.status }}
+    </div>
+
+    <div class="col-md-4 mb-3">
+        <strong>Setor:</strong> {{ ordemcompra.setor }}
+    </div>
+    <div class="col-md-4 mb-3">
+        <strong>Prioridade:</strong> {{ ordemcompra.prioridade }}
+    </div>
+    <div class="col-md-4 mb-3">
+        <strong>Solicitante:</strong> {{ ordemcompra.solicitante.nome if ordemcompra.solicitante else '-' }}
+    </div>
+
+    <div class="col-md-4 mb-3">
+        <strong>Responsável:</strong> {{ ordemcompra.responsavel.nome if ordemcompra.responsavel else '-' }}
+    </div>
+    <div class="col-md-4 mb-3">
+        <strong>Data de Início:</strong> {{ ordemcompra.data_inicio.strftime('%d/%m/%Y %H:%M') }}
+    </div>
+    <div class="col-md-4 mb-3">
+        <strong>Data de Fim:</strong>
+        {{ ordemcompra.data_fim.strftime('%d/%m/%Y %H:%M') if ordemcompra.data_fim else '-' }}
+    </div>
+
+    <div class="col-md-12 mb-3">
+        <strong>Descrição:</strong><br>
+        {{ ordemcompra.descricao }}
+    </div>
+    <div class="col-md-4 mb-3">
+        <strong>Valor:</strong><br>
+        {{ ordemcompra.valor }}
+    </div>
+</div>
+
+<div class="d-flex gap-2">
+
+    <a href="{{ url_for('routes.listar_ordemCompras') }}" class="btn btn-secondary">Voltar</a>
+
+    <button class="btn btn-primary" onclick="window.print()">
+        <i class="fa fa-print"></i> Imprimir
+    </button>
+
+    <form action="{{ url_for('routes.excluir_ordemCompra', id=ordemcompra.id) }}" method="POST" onsubmit="return confirm('Deseja realmente excluir esta OC?')">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-danger">
+            <i class="fas fa-trash"></i> Excluir
+        </button>
+    </form>
+
+</div>
+
+{% endblock %}

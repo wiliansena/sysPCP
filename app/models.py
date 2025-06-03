@@ -644,7 +644,13 @@ class Margem(db.Model):
     preco_sugerido_12 = db.Column(db.Numeric(10,2), nullable=False, default=Decimal(0))
     preco_sugerido_15 = db.Column(db.Numeric(10,2), nullable=False, default=Decimal(0))
     preco_sugerido_20 = db.Column(db.Numeric(10,2), nullable=False, default=Decimal(0))
-    
+
+    #DOLAR
+    dolar = db.Column(db.Numeric(10,2), nullable=True)
+    preco_venda_dolar = db.Column(db.Numeric(10,2), nullable=True, default=Decimal(0))
+
+
+    #RELACIONAMENTOS
     referencia_id = db.Column(db.Integer, db.ForeignKey('referencia.id', ondelete='CASCADE'), nullable=False)
     referencia = db.relationship('Referencia', backref=db.backref('margens', lazy=True, cascade="all, delete-orphan"))
 
@@ -671,6 +677,16 @@ class Margem(db.Model):
               )/100
 
         )
+
+        #DOLAR calculo do preço de venda em dolar
+
+        if self.dolar and self.dolar > 0:
+            self.preco_venda_dolar = round(self.preco_venda / self.dolar, 2)
+        else:
+            self.preco_venda_dolar = Decimal(0)
+
+            ####
+
         print(f"[DEBUG] Despesas Porcentagem Decimal: {self.total_despesas_porcentagem_decimal}")
         
         self.despesas_venda = self.total_despesas_valor + self.total_despesas_porcentagem
@@ -711,7 +727,6 @@ class Margem(db.Model):
             15: round(self.preco_sugerido_15 * Decimal(0.15), 2),
             20: round(self.preco_sugerido_20 * Decimal(0.20), 2)
         }
-
 
 
 
@@ -1026,6 +1041,26 @@ class Funcionario(db.Model):
     funcao = db.Column(db.String(50), nullable=False)  # Exemplo: Operador, Trocador, Técnico
 
 # Modelo correto
+
+class OrdemCompra(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    data_inicio = db.Column(db.DateTime, default=lambda: datetime.now().replace(microsecond=0))
+    data_fim = db.Column(db.DateTime, nullable=True)
+    titulo = db.Column(db.String(100), nullable=True)
+    status = db.Column(db.String(20), nullable=False, default="Aberto")
+    setor = db.Column(db.String(20), nullable=False)
+    prioridade = db.Column(db.String(20), nullable=False, default="Baixa")
+    solicitante_id = db.Column(db.Integer, db.ForeignKey('funcionario.id'), nullable=True)
+    responsavel_id = db.Column(db.Integer, db.ForeignKey('funcionario.id'), nullable=True)
+    descricao = db.Column(db.String(150), nullable=False)
+    nota_fiscal = db.Column(db.String(50), nullable=True)
+    valor = db.Column(db.Numeric(10,2), default=Decimal(0))
+
+    #RELAÇÕES
+    solicitante = db.relationship("Funcionario", foreign_keys=[solicitante_id])
+    responsavel = db.relationship("Funcionario", foreign_keys=[responsavel_id])
+
+
 
 class Manutencao(db.Model):
     id = db.Column(db.Integer, primary_key=True)

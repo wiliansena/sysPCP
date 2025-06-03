@@ -164,6 +164,7 @@ class ReferenciaMaoDeObraForm(FlaskForm):
 
 
 
+
 class MargemForm(FlaskForm):
     referencia_id = HiddenField('Referência', validators=[DataRequired()])
     cliente = StringField('Cliente', validators=[Optional()])
@@ -195,6 +196,7 @@ class MargemForm(FlaskForm):
     preco_embalagem_escolhida = HiddenField()
     lucro_unitario = HiddenField()
     margem = HiddenField()
+    preco_venda_dolar = HiddenField()
     
     # Campos para armazenar preços sugeridos
     preco_sugerido_5 = HiddenField()
@@ -203,6 +205,10 @@ class MargemForm(FlaskForm):
     preco_sugerido_12 = HiddenField()
     preco_sugerido_15 = HiddenField()
     preco_sugerido_20 = HiddenField()
+
+    # DOLAR
+    dolar = DecimalField('Dolar ($)', places=2, default=0, validators=[Optional()])
+    
     
     data_criacao = HiddenField()
     
@@ -353,6 +359,7 @@ class FuncionarioForm(FlaskForm):
     nome = StringField("Nome", validators=[DataRequired()])
     funcao = SelectField("Função", choices=[ 
                                             ("Técnico", "Técnico"),
+                                            ("Compras", "Compras"),
                                             ("Líder", "Líder"),
                                             ("Produção", "Produção"),
                                             ("Administrativo", "Administrativo"),
@@ -363,30 +370,59 @@ class FuncionarioForm(FlaskForm):
     submit = SubmitField("Salvar")
 
 
-class ManutencaoForm(FlaskForm):
-    tipo = SelectField('Tipo', choices=[('PREVENTIVA', 'Preventiva'), ('CORRETIVA', 'Corretiva'), ('MELHORIA', 'Melhoria')], validators=[DataRequired()])
-    prioridade = SelectField('Prioridade', choices=[('BAIXA', 'Baixa'), ('NORMAL', 'Normal'), ('ALTA', 'Alta'), ('URGENTE', 'Urgente')], validators=[DataRequired()])
-    status = HiddenField()  # inicia automaticamente com "ABERTO"
-    solicitante_id = HiddenField(validators=[DataRequired()])
-    responsavel_id = HiddenField()
-    maquina_id = HiddenField()
-    componente_id = HiddenField()
+
+class OrdemCompraForm(FlaskForm):
+    titulo = StringField('Título', validators=[DataRequired(), Length(max=100)])
+    nota_fiscal = StringField('Nota Fiscal', validators=[Length(max=50)])
+    setor = SelectField('Setor', choices=[
+                                    ('ALMOXARIFADO', 'ALMOXARIFADO'),
+                                    ('COMERCIAL', 'COMERCIAL'),
+                                    ('CONTABILIDADE', 'CONTABILIDADE'),
+                                    ('COPA', 'COPA'),
+                                    ('DESENVOLVIMENTO', 'DESENVOLVIMENTO'),
+                                    ('DIRETORIA', 'DIRETORIA'),
+                                    ('FINANCEIRO', 'FINANCEIRO'),
+                                    ('MANUTENCAO', 'MANUTENCAO'),
+                                    ('PPCP', 'PPCP'),
+                                    ('PRODUCAO', 'PRODUCAO'),
+                                    ('RH', 'RH'),
+                                    ('TI', 'TI')
+                                ], validators=[DataRequired()])
+
+    prioridade = SelectField('Prioridade', choices=[('Baixa', 'Baixa'),
+                                                    ('Normal', 'Normal'),
+                                                    ('Alta', 'Alta'),
+                                                    ('Urgente', 'Urgente')], validators=[DataRequired()])
+    status = SelectField('Status', choices=[
+                        ('Aberto', 'Aberto'),
+                        ('Verificando', 'Verificando'),
+                        ('Aprovado', 'Aprovado'),
+                        ('Comprado', 'Comprado'),
+                        ('Recebido', 'Recebido'),
+                        ('Finalizado', 'Finalizado'),
+                        ('Cancelado', 'Cancelado')
+                    ], validators=[DataRequired()])
     descricao = TextAreaField('Descrição', validators=[DataRequired()])
+    valor = DecimalField('Valor', places=2, default=0, validators=[Optional()])
 
-
-
-
-
-from flask_wtf import FlaskForm
-from wtforms import StringField, TextAreaField, SelectField, SubmitField
-from wtforms.validators import DataRequired
+    
 
 class ManutencaoForm(FlaskForm):
     titulo = StringField('Título', validators=[DataRequired(), Length(max=100)])
-    status = SelectField('Status', choices=[('Aberto', 'Aberto'), ('Verificando', 'Verificando'), ('Finalizado', 'Finalizado')])
-    tipo = SelectField('Tipo', choices=[('Preventiva', 'Preventiva'), ('Corretiva', 'Corretiva'), ('Melhoria', 'Melhoria')])
-    prioridade = SelectField('Prioridade', choices=[('Baixa', 'Baixa'), ('Normal', 'Normal'), ('Alta', 'Alta'), ('Urgente', 'Urgente')])  
-
+    tipo = SelectField('Tipo', choices=[('Preventiva', 'Preventiva'),
+                                        ('Corretiva', 'Corretiva'),
+                                        ('Melhoria', 'Melhoria')])
+    prioridade = SelectField('Prioridade', choices=[('Baixa', 'Baixa'),
+                                                    ('Normal', 'Normal'),
+                                                    ('Alta', 'Alta'),
+                                                    ('Urgente', 'Urgente')], validators=[DataRequired()])
+    status = SelectField('Status', choices=[('Aberto', 'Aberto'),
+                                            ('Verificando', 'Verificando'),
+                                            ('Finalizado', 'Finalizado')])
+    solicitante_id = HiddenField()
+    responsavel_id = HiddenField()
+    maquina_id = HiddenField()
+    componente_id = HiddenField()
     descricao = TextAreaField('Descrição', validators=[DataRequired()])
 
 
