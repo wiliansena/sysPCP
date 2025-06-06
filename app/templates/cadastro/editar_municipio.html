@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Editar Município</h2>
+<form method="POST">
+    {{ form.hidden_tag() }}
+    <div class="col-md-3">
+        {{ form.nome.label(class="form-label") }}
+        {{ form.nome(class="form-control") }}
+    </div>
+    <div class="col-md-3">
+        <label class="form-label"><strong>Estado:</strong></label>
+        {{ form.estado_id(class="form-select select2") }}
+    </div>
+    <hr>
+    <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Salvar</button>
+    <a href="{{ url_for('routes.listar_municipios') }}" class="btn btn-secondary">Cancelar</a>
+</form>
+
+<!-- Ativa o select2 -->
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        $('.select2').select2({
+            width: '100%',
+            placeholder: 'Selecione',
+            allowClear: true
+        });
+    });
+</script>
+{% endblock %}

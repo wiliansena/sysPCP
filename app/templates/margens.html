@@ -70,34 +70,40 @@
                 <p><strong>Embalagem:</strong> {{ margem.embalagem_escolhida }}</p>
                 <p><strong>Preço de Venda:</strong> R$ {{ margem.preco_venda }}</p>
                 <p><strong>Dolar:</strong> $ {{ margem.dolar }}</p>
-                <p><strong>Preço de Venda (Dolar $):</strong> $ {{ margem.preco_venda_dolar }}</p>
+                <p><strong>Preço de Venda (Dolar):</strong> $ {{ margem.preco_venda_dolar }}</p>
                 <p><strong>Custo Total:</strong> R$ {{ "%.2f"|format(margem.custo_total) }}</p>
                 <p><strong>Lucro Líquido:</strong> R$ {{ "%.2f"|format(margem.lucro_unitario) }}</p>
                 <p><strong>Margem:</strong> {{ "%.2f"|format(margem.margem) }}%</p>
 
 
                 <!-- 🔹 Botões de Ação -->
-                <div class="d-grid gap-2">
-                    <a href="{{ url_for('routes.ver_margem', id=margem.id) }}" class="btn btn-info btn-sm btn-3d">
-                        <i class="fas fa-eye"></i> Ver
-                    </a>
-
-                    <a href="{{ url_for('routes.editar_margem', id=margem.id) }}" class="btn btn-warning btn-sm btn-3d">
-                        <i class="fas fa-edit"></i> Editar
-                    </a>
-
-                    <a href="{{ url_for('routes.copiar_margem', id=margem.id) }}" class="btn btn-primary btn-sm btn-3d">
-                        <i class="fas fa-copy"></i> Copiar
-                    </a>
-
-                    <form action="{{ url_for('routes.excluir_margem', id=margem.id) }}" method="POST">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button type="submit" class="btn btn-danger btn-sm btn-3d"
-                            onclick="return confirm('Tem certeza que deseja excluir esta margem?')">
-                            <i class="fas fa-trash"></i> Excluir
-                        </button>
-                    </form>
+                <div class="row g-2">
+                    <div class="col-6">
+                        <a href="{{ url_for('routes.ver_margem', id=margem.id) }}" class="btn btn-info w-100">
+                            <i class="fas fa-eye"></i> Ver
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <a href="{{ url_for('routes.editar_margem', id=margem.id) }}" class="btn btn-warning w-100">
+                            <i class="fas fa-edit"></i> Editar
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <a href="{{ url_for('routes.copiar_margem', id=margem.id) }}" class="btn btn-primary w-100">
+                            <i class="fas fa-copy"></i> Copiar
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <form action="{{ url_for('routes.excluir_margem', id=margem.id) }}" method="POST">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-danger w-100"
+                                onclick="return confirm('Tem certeza que deseja excluir esta margem?')">
+                                <i class="fas fa-trash"></i> Excluir
+                            </button>
+                        </form>
+                    </div>
                 </div>
+
 
             </div>
         </div>

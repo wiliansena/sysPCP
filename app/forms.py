@@ -496,3 +496,29 @@ class PlanejamentoProducaoForm(FlaskForm):
     fechado = BooleanField('Fechado')
 
     submit = SubmitField('Salvar')
+
+
+##### CADASTROS ##########
+
+class EstadoForm(FlaskForm):
+    nome = StringField('Nome', validators=[DataRequired()])
+    sigla = StringField('Sigla', validators=[DataRequired(), Length(min=2, max=2)])
+
+    submit = SubmitField('Salvar')
+
+class MunicipioForm(FlaskForm):
+    nome = StringField('Nome', validators=[DataRequired()])
+    estado_id = SelectField('Estado', coerce=int, validators=[DataRequired()])
+
+    submit = SubmitField('Salvar')
+
+class CepForm(FlaskForm):
+    cep = StringField('Cep', validators=[DataRequired()])
+    logradouro = StringField('Logradouro', validators=[Optional()])
+    numero = StringField('Numero', validators=[Optional()])
+    bairro = StringField('Bairro', validators=[Optional()])
+    
+    municipio_id = SelectField('Municipio', coerce=int, validators=[DataRequired()])
+    estado_id = SelectField('Estado', coerce=int, validators=[DataRequired()])
+
+    submit = SubmitField('Salvar')

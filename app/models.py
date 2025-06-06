@@ -1180,12 +1180,75 @@ class PlanejamentoProducao(db.Model):
     remessa_id = db.Column(db.Integer, db.ForeignKey("remessa.id"))
     remessa = db.relationship("Remessa", back_populates="planejamentos")
 
+    #PRODUCAO X FATURAMENTO
+
+    data_producao = db.Column(db.Date)  # Data real da produção
+    quantidade_produzida = db.Column(db.Integer, default=0)  # Produção do dia
+    preco_medio = db.Column(db.Numeric(10, 4), default=Decimal(0))  # Valor unitário
+    faturamento_medio = db.Column(db.Numeric(12, 2), default=Decimal(0))  # preco_medio * qtd produzida
+
+
     @property
     def faltando(self):
         return max(self.quantidade - self.esteira_qtd, 0)
 
 
 
+class Estado(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(50), nullable=False)
+    sigla = db.Column(db.String(2), nullable=False)
+
+    municipios = db.relationship("Municipio", back_populates="estado")
+    ceps = db.relationship("Cep", back_populates="estado")
+
+
+class Municipio(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(50), nullable=False)
+
+    estado_id = db.Column(db.Integer, db.ForeignKey("estado.id"))
+    estado = db.relationship("Estado", back_populates="municipios")
+
+    ceps = db.relationship("Cep", back_populates="municipio")
+
+
+class Cep(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    cep = db.Column(db.String(9), nullable=False)
+    bairro = db.Column(db.String(100), nullable=True)
+    logradouro = db.Column(db.String(100), nullable=True)
+    numero = db.Column(db.String(20), nullable=True)
+
+    municipio_id = db.Column(db.Integer, db.ForeignKey("municipio.id"))
+    estado_id = db.Column(db.Integer, db.ForeignKey("estado.id"))
+
+    municipio = db.relationship("Municipio", back_populates="ceps")
+    estado = db.relationship("Estado", back_populates="ceps")
 
 
 
+
+
+class Empresa(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    razao_social = db.Column(db.String(150), nullable=False)
+    nome_fantasia = db.Column(db.String(100))
+    cnpj = db.Column(db.String(18), nullable=False)
+    inscricao_estadual = db.Column(db.String(14))
+    telefone1 = db.Column(db.String(15))
+    telefone2 = db.Column(db.String(15))
+    email = db.Column(db.String(100))
+    site = db.Column(db.String(100))
+    endereco = db.Column(db.String(200))
+    bairro = db.Column(db.String(100))
+    cep = db.Column(db.String(9))
+    municipio_id = db.Column(db.Integer, db.ForeignKey("municipio.id"))
+    municipio = db.relationship("Municipio")
+    ativo = db.Column(db.Boolean, default=True)
+
+
+
+
+
+ 

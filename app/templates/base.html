@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
 
     <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- Ícone da aba -->
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/favicon.png') }}">
@@ -71,6 +71,19 @@
         <a href="{{ url_for('routes.home') }}"><i class="fas fa-home"></i> Página Inicial</a>
         <hr>
 
+        <!-- Cadastros -->
+        {% if ('cadastro', 'ver') in g.permissoes %}
+        <div class="sidebar-category" onclick="toggleMenu('cadastro')">
+            <i class="fa-solid fa-address-card"></i> Cadastros
+            <i class="fas fa-chevron-down"></i>
+        </div>
+        <div class="sidebar-submenu" id="cadastro">
+            <a href="{{ url_for('routes.listar_estados') }}"><i class="fa-solid fa-map-location-dot"></i> Estados </a>
+            <a href="{{ url_for('routes.listar_municipios') }}"><i class="fa-solid fa-location-dot"></i> Municipios </a>
+            <a href="{{ url_for('routes.listar_ceps') }}"><i class="fa-solid fa-location-dot"></i> CEPs </a>
+        </div>
+        {% endif %}
+
         <!-- Planejamento de Custos -->
         {% if ('margens', 'ver') in g.permissoes %}
         <div class="sidebar-category" onclick="toggleMenu('margens')">
@@ -123,8 +136,14 @@
 
             <a href="{{ url_for('routes.listar_maquinas') }}"><i class="fa-solid fa-gears"></i> Máquinas</a>
             <a href="{{ url_for('routes.listar_matrizes') }}"><i class="fas fa-cube"></i> Matrizes</a>
+            <a href="{{ url_for('routes.listar_remessas') }}"><i class="fa-solid fa-clipboard-list"></i> Remessas</a>
             <a href="{{ url_for('routes.listar_planejamentos') }}">
                 <i class="fa-solid fa-sitemap"></i> Planejamento de Produção</a>
+            <a href="{{ url_for('routes.listar_prodfat') }}">
+                <i class="fas fa-filter"></i> Produção x Faturamento
+            </a>
+
+
         </div>
         {% endif %}
 

@@ -137,3 +137,60 @@ body {
     cursor: pointer;
 }
 
+
+
+/* 🔹 Melhora profissional dos botões */
+
+/* Botões mais elegantes, com efeito e transição */
+.btn {
+    font-size: 17px;
+    padding: 14px;
+    width: 100%;
+    border-radius: 10px;
+    font-weight: 600;
+    border: none;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* sombra externa */
+    transition: all 0.3s ease; /* transição suave */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Ícone com espaçamento */
+.btn i {
+    margin-right: 8px;
+    font-size: 1.2rem;
+}
+
+/* Efeito de hover */
+.btn:hover {
+    opacity: 0.9;
+    box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
+}
+
+/* Efeito ao pressionar */
+.btn:active {
+    transform: scale(0.97);
+    box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2);
+}
+
+/* Cores personalizadas suaves para os botões de ação */
+.btn-info {
+    background-color: #17a2b8;
+    color: white;
+}
+
+.btn-warning {
+    background-color: #ffc107;
+    color: #333;
+}
+
+.btn-primary {
+    background-color: #007bff;
+    color: white;
+}
+
+.btn-danger {
+    background-color: #dc3545;
+    color: white;
+}

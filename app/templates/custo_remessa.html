@@ -4,6 +4,7 @@
 <div class="container mt-4">
     <h2>Margens por Remessa</h2>
     <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="d-flex align-items-center gap-2">
             <select name="remessa" class="form-select select2" style="width: 300px;">
                 <option value="">Selecione</option>

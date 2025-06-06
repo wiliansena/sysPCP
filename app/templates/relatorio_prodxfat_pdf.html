@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Relatório Produção × Faturamento</title>
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 1.5cm;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th,
+        td {
+            border: 1px solid #000;
+            padding: 4px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f0f0f0;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Relatório de Produção × Faturamento</h2>
+
+    <div style="margin-top: 10px;">
+        <span style="display: inline-block; margin-right: 40px;">
+            <strong>Produzido:</strong> {{ total_produzido }}
+        </span>
+        <span style="display: inline-block;">
+            <strong>Faturado:</strong> R$ {{ "%.2f"|format(total_faturado) }}
+        </span>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Data</th>
+                <th>Remessa</th>
+                <th>Linha</th>
+                <th>Referência</th>
+                <th>Qtd</th>
+                <th>Preço Médio (R$)</th>
+                <th>Faturamento Médio (R$)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in resultados %}
+            <tr>
+                <td>{{ r.data_producao.strftime('%d/%m/%Y') if r.data_producao }}</td>
+                <td>{{ r.remessa.codigo }}</td>
+                <td>{{ r.linha.nome if r.linha else '' }}</td>
+                <td>{{ r.referencia }}</td>
+                <td>{{ r.quantidade_produzida }}</td>
+                <td>{{ "%.2f"|format(r.preco_medio or 0) }}</td>
+                <td>{{ "%.2f"|format(r.faturamento_medio or 0) }}</td>
+
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+
+</html>

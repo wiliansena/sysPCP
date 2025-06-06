@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Editar CEP</h2>
+<form method="POST">
+    {{ form.hidden_tag() }}
+    <div class="col-md-3">
+        {{ form.cep.label(class="form-label") }}
+        {{ form.cep(class="form-control") }}
+    </div>
+    <div class="col-md-7">
+        {{ form.logradouro.label(class="form-label") }}
+        {{ form.logradouro(class="form-control") }}
+    </div>
+
+    <div class="col-md-1">
+        {{ form.numero.label(class="form-label") }}
+        {{ form.numero(class="form-control") }}
+    </div>
+
+    <div class="col-md-7">
+        {{ form.bairro.label(class="form-label") }}
+        {{ form.bairro(class="form-control") }}
+    </div>
+
+    <div class="col-md-3">
+        <label class="form-label"><strong>Municipio:</strong></label>
+        {{ form.municipio_id(class="form-select select2") }}
+    </div>
+
+    <div class="col-md-3">
+        <label class="form-label"><strong>Estado:</strong></label>
+        {{ form.estado_id(class="form-select select2") }}
+    </div>
+
+    <hr>
+    <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Salvar</button>
+    <a href="{{ url_for('routes.listar_ceps') }}" class="btn btn-secondary">Cancelar</a>
+</form>
+
+<!-- Ativa o select2 -->
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        $('.select2').select2({
+            width: '100%',
+            placeholder: 'Selecione',
+            allowClear: true
+        });
+    });
+</script>
+{% endblock %}

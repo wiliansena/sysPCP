@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Lista de Ceps</h2>
+<a href="{{ url_for('routes.novo_cep') }}" class="btn btn-success mb-3">
+    <i class="fas fa-plus"></i> Novo Cep
+</a>
+
+
+<div class="row mb-3">
+    <div class="col-md-4">
+        <input type="text" id="buscaEstado" class="form-control" placeholder="Buscar por nome...">
+    </div>
+</div>
+
+
+<table class="table table-bordered table-hover text-center align-middle">
+    <thead class="table-light">
+        <tr>
+            <th>CEP</th>
+            <th>Logradouro</th>
+            <th>Bairro</th>
+            <th>Municipio</th>
+            <th>Estado</th>
+        </tr>
+    </thead>
+    <tbody id="listaCeps">
+        {% for cep in ceps %}
+        <tr>
+            <td>{{ cep.cep }}</td>
+            <td>{{ cep.logradouro }}</td>
+            <td>{{ cep.bairro }}</td>
+            <td>{{ cep.municipio.nome }}</td>
+            <td>{{ cep.estado.sigla }}</td>
+            <td>
+                <a href="{{ url_for('routes.editar_cep', id=cep.id) }}" class="btn btn-warning btn-sm">
+                    <i class="fas fa-edit"></i> Editar</a>
+                <form action="{{ url_for('routes.excluir_cep', id=cep.id) }}" method="post" style="display:inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger btn-sm"
+                        onclick="return confirm('Tem certeza que deseja excluir?')">
+                        <i class="fas fa-trash-alt"></i> Excluir</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<script>
+    document.getElementById('buscaEstado').addEventListener('input', function () {
+        const termo = this.value.toLowerCase();
+        document.querySelectorAll('#listaEstados tr').forEach(row => {
+            const nome = row.cells[1].textContent.toLowerCase();
+            row.style.display = nome.includes(termo) ? '' : 'none';
+        });
+    });
+</script>
+{% endblock %}
