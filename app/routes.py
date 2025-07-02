@@ -4,8 +4,8 @@ from flask import Blueprint, jsonify, render_template, redirect, url_for, flash,
 from flask_login import current_user, login_required
 import pytz
 from app import db, csrf
-from app.models import Cor, Estado, FormulacaoSolado, FormulacaoSoladoFriso, Funcionario, Grade, Linha, LogAcao, Manutencao, ManutencaoComponente, ManutencaoMaquina, Maquina, MargemPorPedido, MargemPorPedidoReferencia, Matriz, MovimentacaoMatriz, Municipio, OrdemCompra, Permissao, PlanejamentoProducao, Referencia, Componente, CustoOperacional, ReferenciaAlca, ReferenciaComponentes, ReferenciaCustoOperacional, ReferenciaEmbalagem1, ReferenciaEmbalagem2, ReferenciaEmbalagem3, ReferenciaMaoDeObra, ReferenciaSolado, Remessa, Salario, MaoDeObra, Margem, TamanhoGrade, TamanhoMatriz, TamanhoMovimentacao, TrocaHorario, TrocaMatriz, Usuario, hora_brasilia
-from app.forms import CorForm, DeleteForm, EstadoForm, FuncionarioForm, GradeForm, LinhaForm, ManutencaoForm, MaquinaForm, MargemForm, MargemPorPedidoForm, MargemPorPedidoReferenciaForm, MatrizForm, MovimentacaoMatrizForm, OrdemCompraForm, PlanejamentoProducaoForm, ReferenciaForm, ComponenteForm, CustoOperacionalForm, RemessaForm, SalarioForm, MaoDeObraForm, TrocaMatrizForm, UsuarioForm
+from app.models import Cor, Estado, FormulacaoSolado, FormulacaoSoladoFriso, Funcionario, Grade, Linha, LogAcao, Manutencao, ManutencaoMaquina, ManutencaoPeca, Maquina, MargemPorPedido, MargemPorPedidoReferencia, Matriz, MovimentacaoMatriz, Municipio, OrdemCompra, Peca, Permissao, PlanejamentoProducao, ProducaoDiaria, Referencia, Componente, CustoOperacional, ReferenciaAlca, ReferenciaComponentes, ReferenciaCustoOperacional, ReferenciaEmbalagem1, ReferenciaEmbalagem2, ReferenciaEmbalagem3, ReferenciaMaoDeObra, ReferenciaSolado, Remessa, Salario, MaoDeObra, Margem, TamanhoGrade, TamanhoMatriz, TamanhoMovimentacao, Tipo, TrocaHorario, TrocaMatriz, Usuario, hora_brasilia
+from app.forms import CorForm, DeleteForm, EstadoForm, FuncionarioForm, GradeForm, LinhaForm, ManutencaoForm, MaquinaForm, MargemForm, MargemPorPedidoForm, MargemPorPedidoReferenciaForm, MatrizForm, MovimentacaoMatrizForm, OrdemCompraForm, PecaForm, PlanejamentoProducaoForm, ProducaoDiariaForm, ReferenciaForm, ComponenteForm, CustoOperacionalForm, RemessaForm, SalarioForm, MaoDeObraForm, TipoForm, TrocaMatrizForm, UsuarioForm
 import os
 from flask import render_template, redirect, url_for, flash, request
 from app.models import Solado, Tamanho, Componente, FormulacaoSolado, Alca, TamanhoAlca, FormulacaoAlca, Colecao
@@ -34,7 +34,8 @@ from sqlalchemy.orm import aliased
 
 bp = Blueprint('routes', __name__)
 
-from app import cadastro_routes  # Importando as rotas de cadastro para usar o bp da rota principal
+from app import cadastro_routes
+from app import planejamentos_routes  # Importando as rotas de cadastro para usar o bp da rota principal
 
 UPLOAD_FOLDER = 'app/static/uploads'
 if not os.path.exists(UPLOAD_FOLDER):
@@ -58,6 +59,7 @@ def listar_usuarios():
 
     usuarios = Usuario.query.all()
     return render_template('usuarios.html', usuarios=usuarios)
+
 
 
 @bp.route('/usuario/novo', methods=['GET', 'POST'])
@@ -887,7 +889,151 @@ def excluir_colecao(id):
 
 
         #COMPONENTES OK
+@bp.route('/tipos', methods=['GET'])
+@login_required
+def listar_tipos():
+    tipos = Tipo.query.order_by(Tipo.id.desc()).all()
+    return render_template('listar_tipos.html', tipos=tipos)
 
+@bp.route('/tipo/novo', methods=['GET', 'POST'])
+@login_required
+def novo_tipo():
+    form = TipoForm()
+    if form.validate_on_submit():
+        tiponovo = Tipo(
+            tipo = form.tipo.data
+        )
+
+        db.session.add(tiponovo)
+        db.session.commit()
+        flash('Tipo adicionado com sucesso!', 'success')
+        return redirect(url_for('routes.listar_tipos'))
+    return render_template('novo_tipo.html', form=form)
+
+
+
+@bp.route('/tipo/editar/<int:id>', methods=['GET', 'POST'])
+@login_required
+def editar_tipo(id):
+    tipo = Tipo.query.get_or_404(id)
+    form = TipoForm(obj=tipo)
+
+    if form.validate_on_submit():
+        tipo.tipo = form.tipo.data
+
+        db.session.commit()
+        flash('Tipo atualizado com sucesso!', 'success')
+        return redirect(url_for('routes.listar_tipos'))
+    
+    return render_template('editar_tipo.html', form=form, tipo=tipo)
+
+
+@bp.route('/tipo/excluir/<int:id>', methods=['POST'])
+@login_required
+def excluir_tipo(id):
+    tipo = Tipo.query.get_or_404(id)
+
+    try:
+        db.session.delete(tipo)
+        db.session.commit()
+        flash('Tipo excluído com sucesso!', 'success')
+
+    except IntegrityError:
+        db.session.rollback()
+
+        # 🔹 Mensagem genérica sem listar onde o componente é usado
+        flash("Erro: Este TIPO! não pode ser excluído porque está sendo utilizado em outras tabelas do sistema.", "danger")
+
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Erro inesperado ao excluir o TIPO: {str(e)}", "danger")
+
+    return redirect(url_for('routes.listar_tipos'))
+
+
+## PEÇAS ##
+@bp.route('/pecas', methods=['GET'])
+@login_required
+@requer_permissao('manutencao', 'ver')
+def listar_pecas():
+    filtro = request.args.get('filtro', '')
+
+    if filtro:
+        pecas = Peca.query.filter(Peca.descricao.ilike(f"%{filtro}%")).order_by(Peca.id.desc()).all()
+    else:
+        pecas = Peca.query.order_by(Peca.id.desc()).all()
+
+    return render_template('listar_pecas.html', pecas=pecas)
+
+
+@bp.route('/peca/novo', methods=['GET', 'POST'])
+@login_required
+@requer_permissao('manutencao', 'criar')
+def nova_peca():
+    form = PecaForm()
+    form.tipo_id.choices = [(t.id, t.tipo) for t in Tipo.query.order_by(Tipo.tipo).all()]
+
+    if form.validate_on_submit():
+        peca = Peca(
+            codigo=form.codigo.data,
+            tipo_id = form.tipo_id.data,
+            descricao=form.descricao.data,
+            unidade_medida=form.unidade_medida.data,
+            preco=form.preco.data if form.preco.data is not None else 0
+        )
+        db.session.add(peca)
+        db.session.commit()
+        flash('Peça adicionada com sucesso!', 'success')
+        return redirect(url_for('routes.listar_pecas'))
+    return render_template('nova_peca.html', form=form)
+
+@bp.route('/peca/editar/<int:id>', methods=['GET', 'POST'])
+@login_required
+@requer_permissao('manutencao', 'editar')
+def editar_peca(id):
+    peca = Peca.query.get_or_404(id)
+    form = PecaForm(obj=peca)
+
+    #popular o select de tipos
+    form.tipo_id.choices = [(t.id, t.tipo) for t in Tipo.query.order_by(Tipo.tipo).all()]
+    
+    if form.validate_on_submit():
+        peca.codigo = form.codigo.data
+        peca.tipo_id = form.tipo_id.data
+        peca.descricao = form.descricao.data
+        peca.unidade_medida = form.unidade_medida.data
+        peca.preco = form.preco.data
+        
+        db.session.commit()
+        flash('Peça atualizada com sucesso!', 'success')
+        return redirect(url_for('routes.listar_pecas'))
+    
+    return render_template('editar_peca.html', form=form, peca=peca)
+
+
+@bp.route('/peca/excluir/<int:id>', methods=['POST'])
+@login_required
+@requer_permissao('manutencao', 'excluir')
+def excluir_peca(id):
+    peca = Peca.query.get_or_404(id)
+
+    try:
+        db.session.delete(peca)
+        db.session.commit()
+        flash('Peça excluída com sucesso!', 'success')
+
+    except IntegrityError:
+        db.session.rollback()
+
+        # 🔹 Mensagem genérica sem listar onde o componente é usado
+        flash("Erro: Esta Peça não pode ser excluída porque está sendo utilizada em outras tabelas do sistema.", "danger")
+
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Erro inesperado ao excluir o componente: {str(e)}", "danger")
+
+    return redirect(url_for('routes.listar_pecas'))
+  
 
 @bp.route('/componentes', methods=['GET'])
 @login_required
@@ -905,9 +1051,6 @@ def listar_componentes():
     return render_template('componentes.html', componentes=componentes)
 
 
-
-
-
 @bp.route('/componente/novo', methods=['GET', 'POST'])
 @login_required
 @requer_permissao('componentes', 'criar')
@@ -919,7 +1062,7 @@ def novo_componente():
             tipo=form.tipo.data,
             descricao=form.descricao.data,
             unidade_medida=form.unidade_medida.data,
-            preco=form.preco.data
+            preco=form.preco.data if form.preco.data is not None else 0
         )
         db.session.add(componente)
         db.session.commit()
@@ -1599,14 +1742,24 @@ def excluir_solado(id):
 @requer_permissao('custoproducao', 'ver')
 def listar_alcas():
     filtro = request.args.get('filtro', '')
+    pagina = request.args.get('page', 1, type=int)
+    por_pagina = 10
+
+    query = Alca.query
 
     if filtro:
-        alcas = Alca.query.filter(Alca.referencia.ilike(f"%{filtro}%")).all()
-    else:
-        alcas = Alca.query.order_by(Alca.id.desc()).all()
+        query = query.filter(Alca.referencia.ilike(f"%{filtro}%"))
 
-    return render_template('alcas.html', alcas=alcas)
+    query = query.order_by(Alca.id.desc())
 
+    paginadas = query.paginate(page=pagina, per_page=por_pagina, error_out=False)
+
+    return render_template(
+        'alcas.html',
+        alcas=paginadas.items,
+        paginacao=paginadas,
+        filtro=filtro
+    )
 
 @bp.route("/alcas/exportar")
 @login_required
@@ -2370,6 +2523,7 @@ def custo_remessa():
 @bp.route('/margem_pedido/importar', methods=['POST'])
 @login_required
 @requer_permissao('margens', 'editar')
+@csrf.exempt
 def importar_referencias():
     if 'file' not in request.files:
         return jsonify({"success": False, "error": "Nenhum arquivo enviado"})
@@ -2412,7 +2566,6 @@ def importar_referencias():
 
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
-
 
 
 
@@ -3794,7 +3947,7 @@ def ver_manutencao(id):
         db.joinedload(Manutencao.solicitante),
         db.joinedload(Manutencao.responsavel),
         db.joinedload(Manutencao.maquinas).joinedload(ManutencaoMaquina.maquina),
-        db.joinedload(Manutencao.componentes).joinedload(ManutencaoComponente.componente)
+        db.joinedload(Manutencao.pecas).joinedload(ManutencaoPeca.peca)
     ).get_or_404(id)
 
     return render_template(
@@ -3812,8 +3965,8 @@ def nova_manutencao():
     form = ManutencaoForm()
 
     maquinas = Maquina.query.all()
-    componentes = Componente.query.all()
-    funcionarios = Funcionario.query.all()  # 🔹 Agora carregando todos os funcionários sem filtro
+    funcionarios = Funcionario.query.all()
+    pecas = Peca.query.all()
 
     if form.validate_on_submit():
         manutencao = Manutencao(
@@ -3837,11 +3990,11 @@ def nova_manutencao():
                 maquina_id=int(maquina_id)
             ))
 
-        # 🔹 Vincula componentes selecionados
-        for componente_id in request.form.getlist('componente_id[]'):
-            db.session.add(ManutencaoComponente(
+        # 🔹 Vincula peças selecionados
+        for peca_id in request.form.getlist('peca_id[]'):
+            db.session.add(ManutencaoPeca(
                 manutencao_id=manutencao.id,
-                componente_id=int(componente_id)
+                peca_id=int(peca_id)
             ))
 
         db.session.commit()
@@ -3852,8 +4005,8 @@ def nova_manutencao():
         'nova_manutencao.html',
         form=form,
         maquinas=maquinas,
-        componentes=componentes,
-        funcionarios=funcionarios  # 🔹 Passa os funcionários pro template
+        funcionarios=funcionarios, # 🔹 Passa os funcionários pro template
+        pecas = pecas
     )
 
 # rota de editar manutenção com carregamento de máquinas, componentes e funcionários corretamente
@@ -3865,8 +4018,8 @@ def editar_manutencao(id):
     form = ManutencaoForm()
 
     maquinas = Maquina.query.all()
-    componentes = Componente.query.all()
     funcionarios = Funcionario.query.all()
+    pecas = Peca.query.all()
 
     if form.validate_on_submit():
         
@@ -3896,7 +4049,7 @@ def editar_manutencao(id):
 
         # Limpa as ligações anteriores
         ManutencaoMaquina.query.filter_by(manutencao_id=manutencao.id).delete()
-        ManutencaoComponente.query.filter_by(manutencao_id=manutencao.id).delete()
+        ManutencaoPeca.query.filter_by(manutencao_id=manutencao.id).delete()
 
         # Reinsere máquinas
         for maquina_id in request.form.getlist('maquina_id[]'):
@@ -3905,11 +4058,12 @@ def editar_manutencao(id):
                 maquina_id=int(maquina_id)
             ))
 
-        # Reinsere componentes
-        for componente_id in request.form.getlist('componente_id[]'):
-            db.session.add(ManutencaoComponente(
+        
+        # Reinsere pecas
+        for peca_id in request.form.getlist('peca_id[]'):
+            db.session.add(ManutencaoPeca(
                 manutencao_id=manutencao.id,
-                componente_id=int(componente_id)
+                peca_id=int(peca_id)
             ))
 
         db.session.commit()
@@ -3928,8 +4082,8 @@ def editar_manutencao(id):
         form=form,
         manutencao=manutencao,
         maquinas=maquinas,
-        componentes=componentes,
-        funcionarios=funcionarios
+        funcionarios=funcionarios,
+        pecas = pecas
     )
 
 
@@ -3942,7 +4096,7 @@ def excluir_manutencao(id):
 
     # Remove máquinas e componentes vinculados
     ManutencaoMaquina.query.filter_by(manutencao_id=manutencao.id).delete()
-    ManutencaoComponente.query.filter_by(manutencao_id=manutencao.id).delete()
+    ManutencaoPeca.query.filter_by(manutencao_id=manutencao.id).delete()
 
     db.session.delete(manutencao)
     db.session.commit()
@@ -4010,38 +4164,39 @@ def relatorio_manutencoes():
         filtros=filtros, data_emissao=datetime.now()
     )
 
-@bp.route('/manutencao/relatorio-componentes', methods=['GET', 'POST'])
+
+@bp.route('/manutencao/relatorio-pecas', methods=['GET', 'POST'])
 @login_required
 @requer_permissao('manutencao', 'ver')
-def relatorio_componentes_manutencao():
+def relatorio_pecas_manutencao():
     manutencoes = Manutencao.query.order_by(Manutencao.id.desc()).all()
     resultado = {}
     total_geral = 0
 
     if request.method == 'POST':
-        manutencao_ids = request.form.getlist('manutencoes[]')  # <- Corrigido
+        manutencao_ids = request.form.getlist('manutencoes[]')
         if manutencao_ids:
             for mid in manutencao_ids:
                 manutencao = Manutencao.query.get(int(mid))
-                componentes = db.session.query(
-                    Componente.codigo,
-                    Componente.descricao,
-                    Componente.preco
-                ).join(ManutencaoComponente, Componente.id == ManutencaoComponente.componente_id) \
-                 .filter(ManutencaoComponente.manutencao_id == mid).all()
+                
+                pecas = db.session.query(
+                    Peca.codigo,
+                    Peca.descricao,
+                    Peca.preco
+                ).join(ManutencaoPeca, Peca.id == ManutencaoPeca.peca_id) \
+                 .filter(ManutencaoPeca.manutencao_id == mid).all()
 
-                subtotal = sum([float(c[2]) for c in componentes]) if componentes else 0
+                subtotal = sum([float(p[2]) for p in pecas]) if pecas else 0
                 total_geral += subtotal
 
                 resultado[manutencao] = {
-                    "componentes": componentes,
+                    "pecas": pecas,
                     "subtotal": subtotal
                 }
 
-    return render_template('relatorio_componentes.html',
+    return render_template('relatorio_pecas_manutencao.html',
                            manutencoes=manutencoes, resultado=resultado,
                            total_geral=total_geral, data_emissao=datetime.now())
-
 
 
 
@@ -4260,7 +4415,10 @@ def listar_remessas():
 def nova_remessa():
     form = RemessaForm()
     if form.validate_on_submit():
-        remessa = Remessa(codigo=form.codigo.data)
+        remessa = Remessa(
+            codigo=form.codigo.data,
+            descricao=form.descricao.data or '-'
+                          )
         db.session.add(remessa)
         db.session.commit()
         flash('Remessa criada com sucesso!', 'success')
@@ -4276,6 +4434,7 @@ def editar_remessa(id):
 
     if form.validate_on_submit():
         remessa.codigo = form.codigo.data
+        remessa.descricao = form.descricao.data or '-'
 
         # Se o usuário tentou preencher a data de fechamento
         if form.data_fechamento.data:
@@ -4387,7 +4546,7 @@ def listar_planejamentos():
             total_por_grupo[grupo] += p.quantidade
 
     total_geral = sum(total_por_grupo.values())
-    remessas = Remessa.query.order_by(Remessa.codigo).all()
+    remessas = Remessa.query.order_by(Remessa.id.desc()).all()
 
     return render_template(
         'listar_planejamentos.html',
@@ -4635,6 +4794,13 @@ def excluir_planejamento(id):
     return redirect(url_for('routes.listar_planejamentos'))
 
 
+@bp.route('/planejamento/importacao/novo', methods=['GET', 'POST'])
+@login_required
+@requer_permissao('controleproducao', 'criar')
+def nova_importacao_planejamentos():
+    return render_template('importar_planejamentos.html')
+
+
 @bp.route('/planejamento/importar', methods=['POST'])
 @login_required
 @requer_permissao('controleproducao', 'criar')
@@ -4642,20 +4808,20 @@ def importar_planejamentos():
     arquivo = request.files.get('arquivo')
     if not arquivo:
         flash('Nenhum arquivo enviado.', 'danger')
-        return redirect(url_for('routes.novo_planejamento'))
+        return redirect(url_for('routes.importar_planejamento'))
 
     try:
         df = pd.read_excel(arquivo)
     except Exception as e:
         flash(f'Erro ao ler a planilha: {str(e)}', 'danger')
-        return redirect(url_for('routes.novo_planejamento'))
+        return redirect(url_for('routes.importar_planejamento'))
 
     registros_criados = 0
 
     for _, row in df.iterrows():
         try:
             codigo_remessa = str(row['Código da Remessa']).strip()
-            referencia = str(row['Referência']).strip()
+            referencia = str(row['Referência']).strip().upper()
             linha_nome = str(row['Linha']).strip()
             quantidade = int(row['Quantidade'])
 
@@ -4713,7 +4879,8 @@ def importar_planejamentos():
 
 
 ### PRODUCAO X FATURAMENTO   ##########
-@bp.route('/planejamento/prodfat', methods=['GET', 'POST'])
+
+@bp.route('/planejamento/prodfat', methods=['GET'])
 @login_required
 @requer_permissao('controleproducao', 'ver')
 def listar_prodfat():
@@ -4721,7 +4888,66 @@ def listar_prodfat():
     total_faturado = 0
     total_produzido = 0
 
-    # ⏬ POST: Importação
+    data_inicio = request.args.get('data_inicio')
+    data_fim = request.args.get('data_fim')
+    referencia = request.args.get('referencia')
+    remessa_id = request.args.get('remessa_id')
+    linha_id = request.args.get('linha_id')
+
+    try:
+        remessa_id = int(remessa_id) if remessa_id else None
+    except ValueError:
+        remessa_id = None
+
+    try:
+        linha_id = int(linha_id) if linha_id else None
+    except ValueError:
+        linha_id = None
+
+    if referencia == 'None' or not referencia:
+        referencia = None
+
+    query = db.session.query(ProducaoDiaria).join(PlanejamentoProducao).filter()
+
+    if data_inicio:
+        query = query.filter(ProducaoDiaria.data_producao >= data_inicio)
+    if data_fim:
+        query = query.filter(ProducaoDiaria.data_producao <= data_fim)
+    if referencia:
+        query = query.filter(PlanejamentoProducao.referencia.ilike(f"%{referencia}%"))
+    if remessa_id:
+        query = query.filter(PlanejamentoProducao.remessa_id == remessa_id)
+    if linha_id:
+        query = query.filter(PlanejamentoProducao.linha_id == linha_id)
+
+    resultados = query.order_by(ProducaoDiaria.data_producao.asc()).all()
+
+    total_produzido = sum(p.quantidade for p in resultados)
+    total_faturado = sum(p.faturamento for p in resultados)
+
+    remessas = Remessa.query.order_by(Remessa.codigo).all()
+    linhas = Linha.query.order_by(Linha.nome).all()
+
+    return render_template(
+        "listar_producao_diaria.html",
+        resultados=resultados,
+        remessas=remessas,
+        linhas=linhas,
+        data_inicio=data_inicio,
+        data_fim=data_fim,
+        referencia=referencia,
+        remessa_id=remessa_id,
+        linha_id=linha_id,
+        total_faturado=total_faturado,
+        total_produzido=total_produzido
+    )
+
+
+
+@bp.route('/planejamento/importar_prodfat', methods=['GET', 'POST'])
+@login_required
+@requer_permissao('controleproducao', 'criar')
+def importar_producao_faturamento():
     if request.method == 'POST':
         arquivo = request.files.get('arquivo')
         if not arquivo or not allowed_file(arquivo.filename):
@@ -4737,8 +4963,10 @@ def listar_prodfat():
                     flash(f"Colunas obrigatórias ausentes: {', '.join(faltando)}", "danger")
                     return redirect(request.url)
 
-                total_atualizados = 0
+                total_inseridos = 0
                 total_nao_encontrados = 0
+
+                print("\n=== Iniciando importação de Produção Diária ===\n")
 
                 for _, row in df.iterrows():
                     setor = row.get('SETOR', None)
@@ -4750,12 +4978,15 @@ def listar_prodfat():
                     data_producao = pd.to_datetime(row['DATA']).date()
                     qtd = int(row['QTD']) if not pd.isna(row['QTD']) else 0
 
-                    # Busca remessa exata
+                    print(f"\n--> Processando: REF={referencia} | REMESSA={remessa_codigo} | QTD={qtd} | DATA={data_producao}")
+
                     remessa = Remessa.query.filter(Remessa.codigo.ilike(remessa_codigo)).first()
                     if not remessa:
-                        flash(f"Remessa '{remessa_codigo}' não encontrada.", "warning")
+                        print(f"❌ Remessa '{remessa_codigo}' não encontrada.")
                         total_nao_encontrados += 1
                         continue
+                    else:
+                        print(f"✅ Remessa encontrada: ID={remessa.id} | CODIGO={remessa.codigo}")
 
                     planejamento = PlanejamentoProducao.query.filter_by(
                         referencia=referencia,
@@ -4763,92 +4994,46 @@ def listar_prodfat():
                     ).first()
 
                     if planejamento:
+                        print(f"✅ Planejamento encontrado: ID={planejamento.id}")
+
                         if setor:
-                            planejamento.setor = setor  # Só atualiza se veio preenchido
+                            planejamento.setor = setor  # só atualiza se veio preenchido
 
-                        planejamento.quantidade_produzida = qtd
-                        planejamento.data_producao = data_producao
-
-                        # Calcula faturamento com base no preço médio existente
+                        # Calcula faturamento com base no preço médio
                         if planejamento.preco_medio:
-                            planejamento.faturamento_medio = round(float(planejamento.preco_medio) * qtd, 2)
+                            faturamento = round(float(planejamento.preco_medio) * qtd, 2)
                         else:
-                            planejamento.faturamento_medio = 0
+                            faturamento = 0.0
 
-                        total_atualizados += 1
+                        # Cria registro de produção diária
+                        prod_diaria = ProducaoDiaria(
+                            planejamento_id=planejamento.id,
+                            data_producao=data_producao,
+                            quantidade=qtd,
+                            faturamento=faturamento
+                        )
+                        db.session.add(prod_diaria)
+
+                        print(f"✅ ProducaoDiaria inserida: QTD={qtd} | FATURAMENTO={faturamento}")
+
+                        total_inseridos += 1
                     else:
-                        flash(f"Planejamento não encontrado para REF '{referencia}' e REMESSA '{remessa.codigo}'", "warning")
+                        print(f"❌ Planejamento não encontrado para REF '{referencia}' e REMESSA '{remessa.codigo}'")
                         total_nao_encontrados += 1
 
-
                 db.session.commit()
-                flash(f"Importação concluída! {total_atualizados} atualizados. {total_nao_encontrados} não encontrados.", "success")
+                print("\n=== Importação Finalizada ===\n")
+                print(f"TOTAL INSERIDOS: {total_inseridos}")
+                print(f"TOTAL NÃO ENCONTRADOS: {total_nao_encontrados}")
+
+                flash(f"Importação concluída! {total_inseridos} registros inseridos. {total_nao_encontrados} não encontrados.", "success")
 
             except Exception as e:
                 flash(f"Erro ao importar: {str(e)}", "danger")
 
-        return redirect(request.url)
+        return redirect(url_for('routes.importar_producao_faturamento'))
 
-    # ⏫ GET: Filtros
-    data_inicio = request.args.get('data_inicio')
-    data_fim = request.args.get('data_fim')
-    referencia = request.args.get('referencia')
-    remessa_id = request.args.get('remessa_id')
-    linha_id = request.args.get('linha_id')
-
-    try:
-        remessa_id = int(remessa_id) if remessa_id else None
-    except ValueError:
-        remessa_id = None
-
-    try:
-        linha_id = int(linha_id) if linha_id else None
-    except ValueError:
-        linha_id = None
-
-    if referencia == 'None' or not referencia:
-        referencia = None
-
-    if any([data_inicio, data_fim, referencia, remessa_id, linha_id]):
-        query = PlanejamentoProducao.query.filter(
-            PlanejamentoProducao.data_producao.isnot(None),
-            PlanejamentoProducao.quantidade_produzida > 0
-        )
-        if data_inicio:
-            query = query.filter(PlanejamentoProducao.data_producao >= data_inicio)
-        if data_fim:
-            query = query.filter(PlanejamentoProducao.data_producao <= data_fim)
-        if referencia:
-            query = query.filter(PlanejamentoProducao.referencia.ilike(f"%{referencia}%"))
-        if remessa_id:
-            query = query.filter(PlanejamentoProducao.remessa_id == remessa_id)
-        if linha_id:
-            query = query.filter(PlanejamentoProducao.linha_id == linha_id)
-
-        resultados = query.order_by(PlanejamentoProducao.data_producao.asc()).all()
-
-        total_produzido = sum(p.quantidade_produzida for p in resultados)
-        total_faturado = sum(r.faturamento_medio for r in resultados)
-
-    remessas = Remessa.query.order_by(Remessa.codigo).all()
-    linhas = Linha.query.order_by(Linha.nome).all()
-
-    return render_template(
-        "prodfat.html",
-        resultados=resultados,
-        remessas=remessas,
-        linhas=linhas,
-        data_inicio=data_inicio,
-        data_fim=data_fim,
-        referencia=referencia,
-        remessa_id=remessa_id,
-        linha_id=linha_id,
-        total_faturado=total_faturado,
-        total_produzido=total_produzido
-    )
-
-
-
+    return render_template("importar_prodfat.html")
 
 
 @bp.route('/planejamento/relatorio_prodxfat_pdf')
@@ -4861,7 +5046,6 @@ def relatorio_prodxfat_pdf():
     remessa_id = request.args.get('remessa_id')
     linha_id = request.args.get('linha_id')
 
-    # Conversão segura
     try:
         remessa_id = int(remessa_id) if remessa_id else None
     except ValueError:
@@ -4878,15 +5062,12 @@ def relatorio_prodxfat_pdf():
     resultados = []
 
     if any([data_inicio, data_fim, referencia, remessa_id, linha_id]):
-        query = PlanejamentoProducao.query.filter(
-            PlanejamentoProducao.data_producao.isnot(None),
-            PlanejamentoProducao.quantidade_produzida > 0
-        )
+        query = ProducaoDiaria.query.join(PlanejamentoProducao)
 
         if data_inicio:
-            query = query.filter(PlanejamentoProducao.data_producao >= data_inicio)
+            query = query.filter(ProducaoDiaria.data_producao >= data_inicio)
         if data_fim:
-            query = query.filter(PlanejamentoProducao.data_producao <= data_fim)
+            query = query.filter(ProducaoDiaria.data_producao <= data_fim)
         if referencia:
             query = query.filter(PlanejamentoProducao.referencia.ilike(f"%{referencia}%"))
         if remessa_id:
@@ -4894,12 +5075,11 @@ def relatorio_prodxfat_pdf():
         if linha_id:
             query = query.filter(PlanejamentoProducao.linha_id == linha_id)
 
-        resultados = query.order_by(PlanejamentoProducao.data_producao.asc()).all()
-    
-    total_faturado = sum(float(r.faturamento_medio or 0) for r in resultados)
-    total_produzido = sum(int(p.quantidade_produzida or 0) for p in resultados)
+        resultados = query.order_by(ProducaoDiaria.data_producao.asc()).all()
 
-
+    # Calcular totais com segurança
+    total_produzido = sum(p.quantidade for p in resultados)
+    total_faturado = sum(p.faturamento_medio for p in resultados)
 
     html = render_template(
         "relatorio_prodxfat_pdf.html",
@@ -4915,6 +5095,9 @@ def relatorio_prodxfat_pdf():
     response.headers["Content-Type"] = "application/pdf"
     response.headers["Content-Disposition"] = "inline; filename=relatorio_prodxfat.pdf"
     return response
+
+
+
 
 
 @bp.route('/planejamento/grafico_prodfat')
@@ -4951,21 +5134,21 @@ def grafico_prodfat_img():
 
     try:
         remessa_id = int(remessa_id) if remessa_id else None
-    except: remessa_id = None
+    except:
+        remessa_id = None
     try:
         linha_id = int(linha_id) if linha_id else None
-    except: linha_id = None
+    except:
+        linha_id = None
     if referencia == 'None' or not referencia:
         referencia = None
 
-    query = PlanejamentoProducao.query.filter(
-        PlanejamentoProducao.data_producao.isnot(None),
-        PlanejamentoProducao.quantidade_produzida > 0
-    )
+    query = db.session.query(ProducaoDiaria).join(PlanejamentoProducao).filter()
+
     if data_inicio:
-        query = query.filter(PlanejamentoProducao.data_producao >= data_inicio)
+        query = query.filter(ProducaoDiaria.data_producao >= data_inicio)
     if data_fim:
-        query = query.filter(PlanejamentoProducao.data_producao <= data_fim)
+        query = query.filter(ProducaoDiaria.data_producao <= data_fim)
     if referencia:
         query = query.filter(PlanejamentoProducao.referencia.ilike(f"%{referencia}%"))
     if remessa_id:
@@ -4975,14 +5158,11 @@ def grafico_prodfat_img():
 
     resultados = query.all()
 
-    # Gera DataFrame agrupado por data
     df = pd.DataFrame([{
         'data': r.data_producao,
-        'producao': int(r.quantidade_produzida or 0),
-        'faturamento': float(r.faturamento_medio or 0),
-        'preco': float(r.preco_medio or 0)
+        'producao': r.quantidade,
+        'faturamento': r.faturamento
     } for r in resultados])
-
 
     if df.empty:
         return "Sem dados para o gráfico.", 204
@@ -4990,53 +5170,133 @@ def grafico_prodfat_img():
     df['data'] = pd.to_datetime(df['data'])
     df = df.groupby('data').agg({
         'producao': 'sum',
-        'faturamento': 'sum',
-        'preco': 'mean'
+        'faturamento': 'sum'
     }).reset_index()
+
+    # Adiciona coluna de preço médio diário
+    df['preco_medio'] = df.apply(
+        lambda row: round(row['faturamento'] / row['producao'], 2) if row['producao'] > 0 else 0.0,
+        axis=1
+    )
 
     df['label'] = df['data'].dt.strftime('%d-%b')
 
-    # Gera gráfico
     fig = Figure(figsize=(10, 5))
     ax1 = fig.add_subplot(111)
-    ax2 = ax1.twinx()
 
-    # Barras: faturamento
     bars = ax1.bar(df['label'], df['faturamento'], color='orange', label='Faturamento')
 
-    # Linha: produção
-    ax2.plot(df['label'], df['producao'], color='blue', marker='o', label='Produção')
-
-    # Texto com valores por dia
     for i, row in df.iterrows():
-        # 🔺 Preço médio (acima da barra)
-        preco_label = f"R$ {row['preco']:.2f}"
-        ax1.text(i, row['faturamento'] + (df['faturamento'].max() * 0.02), preco_label,
-                 ha='center', fontsize=9, color='red')
-
-        # 🟠 Faturamento (dentro da barra)
+        # Faturamento (centro da barra)
         fat_label = f"R$ {row['faturamento']:.2f}"
         ax1.text(i, row['faturamento'] * 0.5, fat_label,
-                 ha='center', fontsize=9, color='black')
+                ha='center', fontsize=9, color='black')
 
-        # 🔵 Produção (abaixo da barra)
+        # Produção (embaixo da barra)
         prod_label = f"{int(row['producao'])} pares"
         ax1.text(i, -df['faturamento'].max() * 0.05, prod_label,
-                 ha='center', fontsize=9, color='blue')
+                ha='center', fontsize=9, color='blue')
+
+        # Preço médio (acima da barra)
+        preco_label = f"R$ {row['preco_medio']:.2f}"
+        ax1.text(i, row['faturamento'] + df['faturamento'].max() * 0.02, preco_label,
+                ha='center', fontsize=9, color='red')
 
     ax1.set_ylabel("Faturamento (R$)")
-    ax2.set_ylabel("Produção (pares)")
     ax1.set_title("Produção × Faturamento por Dia")
-
-    # Ajuste para garantir que as legendas fiquem dentro da área visível
     ax1.set_ylim(bottom=-df['faturamento'].max() * 0.1)
 
     fig.tight_layout()
 
-    # Retornar imagem
+
     canvas = FigureCanvas(fig)
     img = BytesIO()
     canvas.print_png(img)
     img.seek(0)
 
     return send_file(img, mimetype='image/png')
+
+##### CRUD DE PRODUÇÃO DIÁRIA    ########
+
+
+@bp.route('/producao_diaria/ver/<int:id>')
+@login_required
+def ver_producao_diaria(id):
+    producao = ProducaoDiaria.query.get_or_404(id)
+    form = DeleteForm()
+    return render_template('ver_producao_diaria.html', producao=producao, form=form)
+
+@bp.route('/producao_diaria/nova', methods=['GET', 'POST'])
+@login_required
+def nova_producao_diaria():
+    form = ProducaoDiariaForm()
+
+    # Preenche as opções do SelectField
+    form.planejamento_id.choices = [
+        (p.id, f"{p.referencia} - Rem: ({p.remessa.codigo}) - {p.quantidade} pares")
+        for p in PlanejamentoProducao.query.all()
+    ]
+
+    if form.validate_on_submit():
+        planejamento = PlanejamentoProducao.query.get(form.planejamento_id.data)
+
+        if not planejamento:
+            flash('Planejamento não encontrado.', 'danger')
+            return render_template('nova_producao_diaria.html', form=form)
+
+        producao = ProducaoDiaria(
+            data_producao=form.data_producao.data,
+            quantidade=form.quantidade.data,
+            planejamento_id=planejamento.id,
+            faturamento=form.quantidade.data * planejamento.preco_medio
+        )
+        db.session.add(producao)
+        db.session.commit()
+        flash('Produção diária cadastrada com sucesso.', 'success')
+        return redirect(url_for('routes.listar_prodfat'))
+
+    return render_template('nova_producao_diaria.html', form=form)
+
+
+@bp.route('/producao_diaria/editar/<int:id>', methods=['GET', 'POST'])
+@login_required
+def editar_producao_diaria(id):
+    producao = ProducaoDiaria.query.get_or_404(id)
+    form = ProducaoDiariaForm(obj=producao)
+
+    # Preenche as opções do SelectField
+    form.planejamento_id.choices = [
+        (p.id, f"{p.referencia} - Rem:({p.remessa.codigo}) - {p.quantidade} pares")
+        for p in PlanejamentoProducao.query.all()
+    ]
+
+    if form.validate_on_submit():
+        planejamento = PlanejamentoProducao.query.get(form.planejamento_id.data)
+
+        if not planejamento:
+            flash('Planejamento não encontrado.', 'danger')
+            return render_template('editar_producao_diaria.html', form=form, producao=producao)
+
+        producao.data_producao = form.data_producao.data
+        producao.quantidade = form.quantidade.data
+        producao.planejamento_id = planejamento.id
+        producao.faturamento = form.quantidade.data * planejamento.preco_medio
+
+        db.session.commit()
+        flash('Produção diária atualizada com sucesso.', 'success')
+        return redirect(url_for('routes.ver_producao_diaria', id=producao.id))
+
+    return render_template('editar_producao_diaria.html', form=form, producao=producao)
+
+
+
+
+# Excluir produção diária
+@bp.route('/producao_diaria/excluir/<int:id>', methods=['POST'])
+@login_required
+def excluir_producao_diaria(id):
+    producao = ProducaoDiaria.query.get_or_404(id)
+    db.session.delete(producao)
+    db.session.commit()
+    flash('Produção diária excluída com sucesso.', 'success')
+    return redirect(url_for('routes.listar_prodfat'))

@@ -7,6 +7,9 @@
         <a href="{{ url_for('routes.novo_planejamento') }}" class="btn btn-success">
             <i class="fas fa-plus"></i> Adicionar
         </a>
+        <a href="{{ url_for('routes.nova_importacao_planejamentos') }}" class="btn btn-outline-success me-2">
+            <i class="fas fa-upload"></i> Importar
+        </a>
     </div>
 
     <form method="GET" class="row mb-4">
@@ -19,7 +22,7 @@
                 {% for remessa in remessas %}
                 <option value="{{ remessa.id }}" {% if remessa.id|string in request.args.getlist('remessa_id')
                     %}selected{% endif %}>
-                    {{ remessa.codigo }}
+                    {{ remessa.codigo }} . {{ remessa.descricao or '-' }}
                 </option>
                 {% endfor %}
             </select>
@@ -44,12 +47,11 @@
                     class="fas fa-sync-alt"></i></a>
         </div>
     </form>
-    <div class="small">
-        <a href="{{ url_for('routes.relatorio_planejamentos_pdf', **request.args) }}" class="btn btn-outline-dark"
+    <div class="col-12 d-flex justify-content-between mt-3">
+        <a href="{{ url_for('routes.relatorio_planejamentos_pdf', **request.args) }}" class="btn btn-danger"
             target="_blank">
-            <i class="fa fa-file-alt"></i> Imprimir Relatório
+            <i class="fa fa-file-alt"></i> Gerar PDF
         </a>
-
     </div>
 
 

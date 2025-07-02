@@ -34,24 +34,31 @@
         <div class="col-md-6 mb-3">
             <label>Solicitante</label>
             <div class="input-group">
-                <input type="text" id="solicitante_nome" class="form-control" value="{{ manutencao.solicitante.nome if manutencao.solicitante else '' }}" readonly>
-                <input type="hidden" name="solicitante_id" id="solicitante_id" value="{{ manutencao.solicitante_id or '' }}">
-                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalSolicitante" data-tipo="solicitante">Selecionar</button>
+                <input type="text" id="solicitante_nome" class="form-control"
+                    value="{{ manutencao.solicitante.nome if manutencao.solicitante else '' }}" readonly>
+                <input type="hidden" name="solicitante_id" id="solicitante_id"
+                    value="{{ manutencao.solicitante_id or '' }}">
+                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal"
+                    data-bs-target="#modalSolicitante" data-tipo="solicitante">Selecionar</button>
             </div>
         </div>
         <div class="col-md-6 mb-3">
             <label>Responsável</label>
             <div class="input-group">
-                <input type="text" id="responsavel_nome" class="form-control" value="{{ manutencao.responsavel.nome if manutencao.responsavel else '' }}" readonly>
-                <input type="hidden" name="responsavel_id" id="responsavel_id" value="{{ manutencao.responsavel_id or '' }}">
-                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalResponsavel" data-tipo="responsavel">Selecionar</button>
+                <input type="text" id="responsavel_nome" class="form-control"
+                    value="{{ manutencao.responsavel.nome if manutencao.responsavel else '' }}" readonly>
+                <input type="hidden" name="responsavel_id" id="responsavel_id"
+                    value="{{ manutencao.responsavel_id or '' }}">
+                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal"
+                    data-bs-target="#modalResponsavel" data-tipo="responsavel">Selecionar</button>
             </div>
         </div>
     </div>
 
     <!-- Máquinas -->
     <h5>Máquinas</h5>
-    <button type="button" class="btn btn-primary btn-sm mb-2" data-bs-toggle="modal" data-bs-target="#modalMaquinas">Adicionar</button>
+    <button type="button" class="btn btn-primary btn-sm mb-2" data-bs-toggle="modal"
+        data-bs-target="#modalMaquinas">Adicionar</button>
     <table class="table table-bordered" id="tabela-maquinas">
         <thead>
             <tr>
@@ -72,10 +79,11 @@
         </tbody>
     </table>
 
-    <!-- Componentes -->
-    <h5>Componentes</h5>
-    <button type="button" class="btn btn-primary btn-sm mb-2" data-bs-toggle="modal" data-bs-target="#modalComponentes">Adicionar</button>
-    <table class="table table-bordered" id="tabela-componentes">
+    <!-- Peças -->
+    <h5>Peças</h5>
+    <button type="button" class="btn btn-primary btn-sm mb-2" data-bs-toggle="modal"
+        data-bs-target="#modalPecas">Adicionar</button>
+    <table class="table table-bordered" id="tabela-pecas">
         <thead>
             <tr>
                 <th>Código</th>
@@ -84,13 +92,13 @@
             </tr>
         </thead>
         <tbody>
-            {% for c in manutencao.componentes %}
-            <tr data-id="{{ c.componente.id }}">
+            {% for p in manutencao.pecas %}
+            <tr data-id="{{ p.peca.id }}">
                 <td>
-                    <input type="hidden" name="componente_id[]" value="{{ c.componente.id }}">
-                    {{ c.componente.codigo }}
+                    <input type="hidden" name="peca_id[]" value="{{ p.peca.id }}">
+                    {{ p.peca.codigo }}
                 </td>
-                <td>{{ c.componente.descricao }}</td>
+                <td>{{ p.peca.descricao }}</td>
                 <td><button type="button" class="btn btn-danger btn-sm remover-linha">Remover</button></td>
             </tr>
             {% endfor %}
@@ -110,7 +118,7 @@
 <!-- Modais -->
 {% include 'modais/modal_manutencao_funcionarios.html' %}
 {% include 'modais/modal_manutencao_maquinas.html' %}
-{% include 'modais/modal_manutencao_componentes.html' %}
+{% include 'modais/modal_manutencao_pecas.html' %}
 
 <script src="{{ url_for('static', filename='js/manutencao.js') }}"></script>
 {% endblock %}

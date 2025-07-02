@@ -73,7 +73,8 @@
                             </span>
                         </div>
 
-                        <small>Solicitante: {{ m.solicitante.nome if m.solicitante else '-' }}</small><br>
+                        <small><strong>Solicitante:</strong> {{ m.solicitante.nome if m.solicitante else '-' }}</small><br>
+                        <small><strong>Responsável:</strong> {{ m.responsavel.nome if m.solicitante else '-' }}</small><br>
                         <small>Início: {{ m.data_inicio.strftime('%d/%m/%Y %H:%M') }}</small><br>
 
 

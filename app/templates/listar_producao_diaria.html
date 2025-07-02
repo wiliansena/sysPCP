@@ -1,38 +1,12 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Produção × Faturamento</h2>
-
-<!-- MENSAGENS -->
-{% with messages = get_flashed_messages(with_categories=true) %}
-{% if messages %}
-{% for category, message in messages %}
-<div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-  {{ message }}
-  <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+<h2>Produção Diária</h2>
+<div class="d-flex align-items-center gap-2 mt-4">
+    <a href="{{ url_for('routes.nova_producao_diaria') }}" class="btn btn-success">
+        <i class="fas fa-plus"></i> Adicionar
+    </a>
 </div>
-{% endfor %}
-{% endif %}
-{% endwith %}
-
-<!-- FORM DE IMPORTAÇÃO -->
-<form method="POST" enctype="multipart/form-data" class="mb-4 border rounded p-3 bg-light shadow-sm">
-  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-  <div class="row g-3 align-items-end">
-    <div class="col-md-5">
-      <label class="form-label">Arquivo Excel (.xlsx)</label>
-      <input type="file" name="arquivo" class="form-control" accept=".xlsx" required>
-    </div>
-    <div class="col-md-2">
-      <button type="submit" class="btn btn-success">
-        <i class="fas fa-upload"></i> Importar
-      </button>
-    </div>
-  </div>
-  <div class="form-text mt-2">
-    A planilha deve conter colunas: <code>SETOR, DATA, REMESSA, REF, QTD </code>
-    <strong>|Campos Opicionais :</strong><code> SETOR</code>
-  </div>
-</form>
+<hr>
 
 <!-- FORM DE FILTRO -->
 <form method="get" class="row g-3 mb-4">
@@ -93,12 +67,17 @@
         linha_id=linha_id) }}" class="btn btn-danger" target="_blank">
       <i class="fas fa-file-pdf"></i> Gerar PDF
     </a>
+
+    <a href="{{ url_for('routes.importar_producao_faturamento') }}" class="btn btn-success me-2">
+      <i class="fas fa-upload"></i> Importar Produção do Dia
+    </a>
+
   </div>
 
 </form>
 
 <!-- LISTAGEM -->
-{% if resultados %}
+{% if request.args and resultados %}
 <div class="table-responsive">
   <table class="table table-bordered table-sm text-center align-middle">
     <thead class="table-light">
@@ -110,25 +89,33 @@
         <th>Qtd</th>
         <th>Preço Médio (R$)</th>
         <th>Faturamento Médio (R$)</th>
+        <th>Ações</th>
+
       </tr>
     </thead>
     <tbody>
       {% for r in resultados %}
       <tr>
         <td>{{ r.data_producao.strftime('%d/%m/%Y') if r.data_producao }}</td>
-        <td>{{ r.remessa.codigo }}</td>
-        <td>{{ r.linha.nome if r.linha }}</td>
-        <td>{{ r.referencia }}</td>
-        <td>{{ r.quantidade_produzida }}</td>
+        <td>{{ r.planejamento.remessa.codigo }}</td>
+        <td>{{ r.planejamento.linha.nome if r.planejamento.linha }}</td>
+        <td>{{ r.planejamento.referencia }}</td>
+        <td>{{ r.quantidade }}</td>
         <td>
-          {% if r.preco_medio is not none %}
-          {{ "%.2f"|format(r.preco_medio) }}
+          {% if r.planejamento.preco_medio is not none %}
+          {{ "%.2f"|format(r.planejamento.preco_medio) }}
           {% else %}
           -
           {% endif %}
         </td>
+        <td>{{ "%.2f"|format(r.faturamento) }}</td>
+        <td>
+          <a href="{{ url_for('routes.ver_producao_diaria', id=r.id) }}" class="btn btn-sm btn-primary">
+            Ver
+          </a>
 
-        <td>{{ "%.2f"|format(r.faturamento_medio) }}</td>
+        </td>
+
       </tr>
       {% endfor %}
     </tbody>
@@ -136,10 +123,13 @@
 </div>
 
 <div class="mt-3 text-end">
-  <strong>Total Produzido: R$ {{ total_produzido }}</strong>
+  <strong>Total Produzido: {{ total_produzido }} pares</strong>
+  &nbsp; | &nbsp;
   <strong>Total Faturado: R$ {{ "%.2f"|format(total_faturado) }}</strong>
 </div>
+
 {% elif request.args %}
 <div class="alert alert-warning mt-4">Nenhum resultado encontrado com os filtros aplicados.</div>
 {% endif %}
+
 {% endblock %}

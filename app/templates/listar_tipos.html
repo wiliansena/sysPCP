@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>TIPOS cadastrados</h2>
+<a href="{{ url_for('routes.novo_tipo') }}" class="btn btn-success mb-3">
+    <i class="fas fa-plus"></i> Novo
+</a>
+<table class="table table-bordered">
+    <thead class="table-light">
+        <tr>
+            <th>ID</th>
+            <th>Tipo</th>
+            <th>Ações</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for tipo in tipos %}
+        <tr>
+            <td>{{ tipo.id }}</td>
+            <td>{{ tipo.tipo }}</td>
+            <td>
+                <a href="{{ url_for('routes.editar_tipo', id=tipo.id) }}" class="btn btn-warning btn-sm">
+                    <i class="fas fa-edit"></i> Editar
+                </a>
+                <form action="{{ url_for('routes.excluir_tipo', id=tipo.id) }}" method="POST" style="display:inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Tem certeza que deseja excluir esta grade?')">
+                        <i class="fas fa-trash"></i> Excluir
+                    </button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

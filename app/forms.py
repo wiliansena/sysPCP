@@ -32,6 +32,19 @@ class ColecaoForm(FlaskForm):
     codigo = StringField('Código', validators=[DataRequired(), Length(max=20)])
     submit = SubmitField('Salvar')
 
+class TipoForm(FlaskForm):
+    tipo = StringField('Tipo', validators=[DataRequired()])
+    submit = SubmitField('Salvar')
+
+class PecaForm(FlaskForm):
+    codigo = StringField('Código', validators=[DataRequired()])
+    tipo_id = SelectField('Tipo', coerce=int, validators=[DataRequired()])
+    descricao = StringField('Descrição', validators=[DataRequired()])
+    unidade_medida = SelectField('Unidade de Medida', choices=[('KQ', 'KQ'), ('L', 'L'), ('M', 'M'), ('UND', 'UND')], validators=[DataRequired()])
+    preco = FloatField('Preço', validators=[Optional()])
+    submit = SubmitField('Salvar')
+
+
 class ComponenteForm(FlaskForm):
     codigo = StringField('Código', validators=[DataRequired()])
     tipo = SelectField('Tipo', choices=[('PINTURA/SERIGRAFIA', 'PINTURA/SERIGRAFIA'),
@@ -422,7 +435,7 @@ class ManutencaoForm(FlaskForm):
     solicitante_id = HiddenField()
     responsavel_id = HiddenField()
     maquina_id = HiddenField()
-    componente_id = HiddenField()
+    peca_id = HiddenField()
     descricao = TextAreaField('Descrição', validators=[DataRequired()])
 
 
@@ -474,6 +487,7 @@ class GradeForm(FlaskForm):
 
 class RemessaForm(FlaskForm):
     codigo = StringField('Código da Remessa', validators=[DataRequired()])
+    descricao = StringField('Descrição')
     data_fechamento = DateField('Data de Fechamento', format='%Y-%m-%d', validators=[Optional()])
     submit = SubmitField('Salvar')
 
@@ -496,6 +510,16 @@ class PlanejamentoProducaoForm(FlaskForm):
     fechado = BooleanField('Fechado')
 
     submit = SubmitField('Salvar')
+
+
+
+class ProducaoDiariaForm(FlaskForm):
+    data_producao = DateField('Data', format='%Y-%m-%d', validators=[DataRequired()])
+    quantidade = IntegerField('Pares', validators=[DataRequired(), NumberRange(min=0)])
+    planejamento_id = SelectField('Planejamento', coerce=int, validators=[DataRequired()])
+    submit = SubmitField('Salvar')
+
+
 
 
 ##### CADASTROS ##########

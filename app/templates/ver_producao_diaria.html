@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Detalhes da Produção Diária</h2>
+<hr>
+
+<div class="row mb-3">
+    <div class="col-md-4">
+        <label class="form-label fw-bold">Data da Produção</label>
+        <div class="form-control-plaintext">{{ producao.data_producao.strftime('%d/%m/%Y') if producao.data_producao }}</div>
+    </div>
+
+    <div class="col-md-4">
+        <label class="form-label fw-bold">Pares</label>
+        <div class="form-control-plaintext">{{ producao.quantidade }}</div>
+    </div>
+
+    <div class="col-md-4">
+        <label class="form-label fw-bold">Faturamento médio</label>
+        <div class="form-control-plaintext">R$ {{ "%.2f"|format(producao.faturamento) }}</div>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col-md-4">
+        <label class="form-label fw-bold">Planejamento - Referência</label>
+        <div class="form-control-plaintext">{{ producao.planejamento.referencia }}</div>
+    </div>
+
+    <div class="col-md-4">
+        <label class="form-label fw-bold">Remessa</label>
+        <div class="form-control-plaintext">{{ producao.planejamento.remessa.codigo }}</div>
+    </div>
+
+    <div class="col-md-4">
+        <label class="form-label fw-bold">Quantidade Planejada</label>
+        <div class="form-control-plaintext">{{ producao.planejamento.quantidade }}</div>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col-md-4">
+        <label class="form-label fw-bold">Preço Médio</label>
+        <div class="form-control-plaintext">R$ {{ "%.2f"|format(producao.planejamento.preco_medio) }}</div>
+    </div>
+</div>
+
+<hr>
+
+<div class="d-flex justify-content-between">
+    <div>
+        <a href="{{ url_for('routes.editar_producao_diaria', id=producao.id) }}" class="btn btn-warning me-2">Editar</a>
+
+        <form action="{{ url_for('routes.excluir_producao_diaria', id=producao.id) }}" method="post" style="display:inline;">
+            {{ form.hidden_tag() }}
+            <button type="submit" class="btn btn-danger" onclick="return confirm('Tem certeza que deseja excluir esta produção?');">Excluir</button>
+        </form>
+    </div>
+
+    <div>
+        <a href="{{ url_for('routes.listar_prodfat') }}" class="btn btn-secondary">Voltar</a>
+    </div>
+</div>
+
+{% endblock %}

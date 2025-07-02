@@ -272,6 +272,23 @@ class MaoDeObra(db.Model):
 
 
 
+class Tipo(db.Model):
+        id = db.Column(db.Integer, primary_key=True)
+        tipo = db.Column(db.String(50), nullable=False)
+
+
+class Peca(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    codigo = db.Column(db.String(50), nullable=False)
+    descricao = db.Column(db.String(200), nullable=False)
+    unidade_medida = db.Column(db.String(10), nullable=False)
+    preco = db.Column(db.Numeric(10,4), nullable=False, default=Decimal(0))
+    
+    #relação com tipo
+    tipo_id = db.Column(db.Integer, db.ForeignKey("tipo.id"), nullable=False)
+    #acessar os atributos de tipo
+    tipo = db.relationship('Tipo', backref=db.backref('pecas', lazy=True))
+
 
 
 class Componente(db.Model):
@@ -1078,7 +1095,7 @@ class Manutencao(db.Model):
     solicitante = db.relationship("Funcionario", foreign_keys=[solicitante_id])
     responsavel = db.relationship("Funcionario", foreign_keys=[responsavel_id])
     maquinas = db.relationship("ManutencaoMaquina", backref="manutencao", cascade="all, delete-orphan", lazy="joined")
-    componentes = db.relationship("ManutencaoComponente", backref="manutencao", cascade="all, delete-orphan", lazy="joined")
+    pecas = db.relationship("ManutencaoPeca", backref="manutencao", cascade="all, delete-orphan", lazy="joined")
 
 class ManutencaoMaquina(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -1088,12 +1105,12 @@ class ManutencaoMaquina(db.Model):
     maquina = db.relationship("Maquina")
 
 
-class ManutencaoComponente(db.Model):
+class ManutencaoPeca(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     manutencao_id = db.Column(db.Integer, db.ForeignKey('manutencao.id'))
-    componente_id = db.Column(db.Integer, db.ForeignKey('componente.id'))
+    peca_id = db.Column(db.Integer, db.ForeignKey('peca.id'))
 
-    componente = db.relationship("Componente")
+    peca = db.relationship("Peca")
 
 class Cor(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -1150,6 +1167,7 @@ class TamanhoGrade(db.Model):
 class Remessa(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     codigo = db.Column(db.String(20), nullable=False, unique=True)
+    descricao = db.Column(db.String(20), nullable=True)
     data_criacao = db.Column(db.DateTime, default=hora_brasilia)
     data_fechamento = db.Column(db.DateTime, nullable=True)
 
@@ -1173,6 +1191,7 @@ class PlanejamentoProducao(db.Model):
     data_fechado = db.Column(db.DateTime)
 
     data_criacao = db.Column(db.DateTime, default=hora_brasilia)
+    preco_medio = db.Column(db.Numeric(10, 4), default=Decimal(0))  # Valor unitário
 
     linha_id = db.Column(db.Integer, db.ForeignKey("linha.id"))
     linha = db.relationship("Linha")
@@ -1180,17 +1199,37 @@ class PlanejamentoProducao(db.Model):
     remessa_id = db.Column(db.Integer, db.ForeignKey("remessa.id"))
     remessa = db.relationship("Remessa", back_populates="planejamentos")
 
-    #PRODUCAO X FATURAMENTO
+    # RELACIONAMENTO COM PRODUCAO DIARIA
+    producoes_diarias = db.relationship(
+        "ProducaoDiaria",
+        back_populates="planejamento",
+        cascade="all, delete-orphan"
+    )
 
-    data_producao = db.Column(db.Date)  # Data real da produção
-    quantidade_produzida = db.Column(db.Integer, default=0)  # Produção do dia
-    preco_medio = db.Column(db.Numeric(10, 4), default=Decimal(0))  # Valor unitário
-    faturamento_medio = db.Column(db.Numeric(12, 2), default=Decimal(0))  # preco_medio * qtd produzida
 
 
     @property
     def faltando(self):
         return max(self.quantidade - self.esteira_qtd, 0)
+
+
+class ProducaoDiaria(db.Model):
+    __tablename__ = 'producao_diaria'
+
+    id = db.Column(db.Integer, primary_key=True)
+    planejamento_id = db.Column(db.Integer, db.ForeignKey('planejamento_producao.id'), nullable=False)
+    data_producao = db.Column(db.Date, nullable=False)
+    quantidade = db.Column(db.Integer, nullable=False, default=0)
+    faturamento = db.Column(db.Float, nullable=False, default=0.0)
+
+    planejamento = db.relationship('PlanejamentoProducao', back_populates='producoes_diarias')
+
+
+    @property
+    def faturamento_medio(self):
+        if self.planejamento and self.planejamento.preco_medio:
+            return round(self.quantidade * self.planejamento.preco_medio, 2)
+        return 0.0
 
 
 

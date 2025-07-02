@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <title>{% block title %}sysPCP Mobile{% endblock %}</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Select2 -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+    <!-- Favicon e PWA -->
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon.png') }}">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='images/favicon.ico') }}" type="image/x-icon">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <meta name="theme-color" content="#0d6efd">
+
+    <!-- CSS personalizado -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/paginas3.css') }}">
+
+    <!-- Viewport para mobile -->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+    <!-- Navbar mobile -->
+    <nav class="navbar navbar-dark bg-primary d-flex justify-content-between px-3">
+        <a href="{{ url_for('routes.home') }}" class="navbar-brand mb-0 h6 text-white text-decoration-none">
+            <i class="fas fa-shoe-prints me-1"></i>sysPCP Mobile
+        </a>
+        <span class="text-white small">Olá, {{ current_user.nome }}!</span>
+    </nav>
+
+
+    <div class="container-fluid py-3 px-3">
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- Rodapé -->
+    <footer class="text-center text-muted py-3 small">
+        SysPCP &copy; {{ current_year if current_year else "2025" }}
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            $('.select2').select2({
+                width: '100%',
+                placeholder: 'Selecione',
+                allowClear: true
+            });
+
+            // Passar automaticamente para o próximo campo ao pressionar Enter
+            let inputs = document.querySelectorAll("input, select, textarea");
+            inputs.forEach((input, index) => {
+                input.addEventListener("keydown", function (event) {
+                    if (event.key === "Enter") {
+                        event.preventDefault();
+                        let nextInput = inputs[index + 1];
+                        if (nextInput) {
+                            nextInput.focus();
+                        }
+                    }
+                });
+            });
+        });
+    </script>
+
+    <!-- Scripts adicionais -->
+    <script src="{{ url_for('static', filename='js/formatacao_numeros.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/zoom.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/marcar_botoes_selecionados.js') }}"></script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+
+</html>

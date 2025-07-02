@@ -1,0 +1,31 @@
+{%extends 'base.html'%}
+{% block content %}
+<h2>Importação de Planejamentos</h2>
+<hr>
+<h5 class="mb-3">Importar Planejamentos por Remessa</h5>
+<hr>
+<form method="POST" enctype="multipart/form-data" action="{{ url_for('routes.importar_planejamentos') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <label class="form-label">Arquivo Excel (.xlsx)</label>
+            <input type="file" name="arquivo" accept=".xlsx" class="form-control" required>
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-file-import"></i> Importar
+            </button>
+        </div>
+    </div>
+</form>
+
+<div class="alert alert-info">
+    <strong>Layout da Planilha:</strong><br>
+    A primeira linha deve conter os seguintes cabeçalhos:<br>
+    <code>|Código da Remessa |Linha | Referência| Quantidade </code>
+</div>
+
+<div class="mt-4">
+    <a href="{{ url_for('routes.listar_planejamentos') }}" class="btn btn-secondary">Cancelar</a>
+</div>
+{% endblock %}

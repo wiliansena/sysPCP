@@ -1,88 +1,129 @@
 {% extends 'base.html' %}
 
 {% block content %}
+<h2 class="mb-4"><i class="fas fa-tools me-2"></i>Detalhes da Manutenção</h2>
 
-<h2>Detalhes da Manutenção</h2>
-<hr>
+<div class="row g-4">
 
-<div class="card">
-    <div class="card-header 
-        {% if manutencao.status == 'Aberto' %} bg-primary text-white
-        {% elif manutencao.status == 'Verificando' %} bg-warning text-dark
-        {% elif manutencao.status == 'Finalizado' %} bg-success text-white
-        {% endif %}
-    ">
-        <h5>#{{ manutencao.id }} - {{ manutencao.titulo }}</h5>
+    <!-- Painel Principal -->
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center
+                {% if manutencao.status == 'Aberto' %} bg-primary text-white
+                {% elif manutencao.status == 'Verificando' %} bg-warning text-dark
+                {% elif manutencao.status == 'Finalizado' %} bg-success text-white
+                {% endif %}
+            ">
+                <strong>#{{ manutencao.id }} - {{ manutencao.titulo }}</strong>
+                <span class="badge bg-light text-dark">{{ manutencao.tipo }}</span>
+            </div>
+            <div class="card-body">
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="text-muted small">Status</label>
+                        <div class="fw-semibold">{{ manutencao.status }}</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="text-muted small">Prioridade</label>
+                        <div class="fw-semibold">{{ manutencao.prioridade }}</div>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="text-muted small">Data Início</label>
+                        <div>{{ manutencao.data_inicio.strftime('%d/%m/%Y %H:%M') }}</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="text-muted small">Data Fim</label>
+                        <div>{{ manutencao.data_fim.strftime('%d/%m/%Y %H:%M') if manutencao.data_fim else '-' }}</div>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="text-muted small">Solicitante</label>
+                        <div>{{ manutencao.solicitante.nome if manutencao.solicitante else '-' }}</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="text-muted small">Responsável</label>
+                        <div>{{ manutencao.responsavel.nome if manutencao.responsavel else '-' }}</div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="text-muted small">Descrição</label>
+                    <div class="p-2 bg-light rounded border">{{ manutencao.descricao }}</div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div class="card-body">
-        <p><strong>Título:</strong> {{ manutencao.titulo }}</p>
-        <p><strong>Data Início:</strong> {{ manutencao.data_inicio.strftime('%d/%m/%Y %H:%M') }}</p>
-        <p><strong>Data Fim:</strong>
-            {% if manutencao.data_fim %}
-            {{ manutencao.data_fim.strftime('%d/%m/%Y %H:%M') }}
-            {% else %}
-            -
-            {% endif %}
-        </p>
-        <p><strong>Status:</strong> {{ manutencao.status }}</p>
-        <p><strong>Tipo:</strong> {{ manutencao.tipo }}</p>
-        <p><strong>Prioridade:</strong> {{ manutencao.prioridade }}</p>
-        <p><strong>Solicitante:</strong> {{ manutencao.solicitante.nome if manutencao.solicitante else '-' }}</p>
-        <p><strong>Responsável:</strong> {{ manutencao.responsavel.nome if manutencao.responsavel else '-' }}</p>
-        <p><strong>Data Início:</strong> {{ manutencao.data_inicio.strftime('%d/%m/%Y %H:%M') }}</p>
-        <p><strong>Data Fim:</strong> {{ manutencao.data_fim.strftime('%d/%m/%Y %H:%M') if manutencao.data_fim else '-'
-            }}</p>
-        <p><strong>Descrição:</strong><br> {{ manutencao.descricao }}</p>
+    <!-- Informações Técnicas -->
+    <div class="col-lg-4">
 
-        <hr>
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-light fw-semibold">
+                <i class="fas fa-industry me-1"></i>Máquinas Vinculadas
+            </div>
+            <div class="card-body p-2">
+                {% if manutencao.maquinas %}
+                <ul class="list-group list-group-flush">
+                    {% for m in manutencao.maquinas %}
+                    <li class="list-group-item py-2">
+                        <strong>{{ m.maquina.codigo }}</strong><br>
+                        <small>{{ m.maquina.descricao }}</small>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <div class="text-muted">Nenhuma máquina vinculada.</div>
+                {% endif %}
+            </div>
+        </div>
 
-        <!-- Máquinas -->
-        <h5>Máquinas vinculadas</h5>
-        {% if manutencao.maquinas %}
-        <ul class="list-group mb-3">
-            {% for m in manutencao.maquinas %}
-            <li class="list-group-item">
-                {{ m.maquina.codigo }} - {{ m.maquina.descricao }}
-            </li>
-            {% endfor %}
-        </ul>
-        {% else %}
-        <p class="text-muted">Nenhuma máquina vinculada.</p>
-        {% endif %}
-
-        <!-- Componentes -->
-        <h5>Componentes vinculados</h5>
-        {% if manutencao.componentes %}
-        <ul class="list-group">
-            {% for c in manutencao.componentes %}
-            <li class="list-group-item">
-                {{ c.componente.codigo }} - {{ c.componente.descricao }}
-            </li>
-            {% endfor %}
-        </ul>
-        {% else %}
-        <p class="text-muted">Nenhum componente vinculado.</p>
-        {% endif %}
+        <div class="card shadow-sm">
+            <div class="card-header bg-light fw-semibold">
+                <i class="fas fa-cogs me-1"></i>Peças Vinculadas
+            </div>
+            <div class="card-body p-2">
+                {% if manutencao.pecas %}
+                <ul class="list-group list-group-flush">
+                    {% for p in manutencao.pecas %}
+                    <li class="list-group-item py-2">
+                        <strong>{{ p.peca.codigo }}</strong><br>
+                        <small>{{ p.peca.descricao }}</small>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <div class="text-muted">Nenhuma peça vinculada.</div>
+                {% endif %}
+            </div>
+        </div>
 
     </div>
 </div>
-<hr>
-<div class="d-flex gap-2">
 
-    <a href="{{ url_for('routes.listar_manutencoes') }}" class="btn btn-secondary">Voltar</a>
+<hr class="my-4">
+
+<!-- Ações -->
+<div class="d-flex flex-wrap gap-2">
+    <a href="{{ url_for('routes.listar_manutencoes') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Voltar
+    </a>
 
     <button class="btn btn-primary" onclick="window.print()">
         <i class="fa fa-print"></i> Imprimir
     </button>
 
-    <form action="{{ url_for('routes.excluir_manutencao', id=manutencao.id) }}" method="POST" onsubmit="return confirm('Deseja realmente excluir esta manutenção?')">
+    <form action="{{ url_for('routes.excluir_manutencao', id=manutencao.id) }}" method="POST"
+        onsubmit="return confirm('Deseja realmente excluir esta manutenção?')">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit" class="btn btn-danger">
             <i class="fas fa-trash"></i> Excluir
         </button>
     </form>
-
 </div>
-
 {% endblock %}

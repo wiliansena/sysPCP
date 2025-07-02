@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2>Novo TIPO</h2>
+
+    <form method="POST">
+        {{ form.hidden_tag() }}
+
+        <div class="mb-3">
+            <label for="nome" class="form-label">Tipo:</label>
+            {{ form.tipo(class="form-control") }}
+        </div>
+
+        <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Salvar</button>
+        <a href="{{ url_for('routes.listar_tipos') }}" class="btn btn-secondary">Cancelar</a>
+    </form>
+</div>
+{% endblock %}

@@ -61,10 +61,10 @@
         <tbody></tbody>
     </table>
 
-    <!-- Componentes -->
-    <h5>Componentes</h5>
-    <button type="button" class="btn btn-primary btn-sm mb-2" data-bs-toggle="modal" data-bs-target="#modalComponentes">Adicionar</button>
-    <table class="table table-bordered" id="tabela-componentes">
+    <!-- Peças -->
+    <h5>Peças</h5>
+    <button type="button" class="btn btn-primary btn-sm mb-2" data-bs-toggle="modal" data-bs-target="#modalPecas">Adicionar</button>
+    <table class="table table-bordered" id="tabela-pecas">
         <thead>
             <tr>
                 <th>Código</th>
@@ -88,7 +88,7 @@
 <!-- Modais -->
 {% include 'modais/modal_manutencao_funcionarios.html' %}
 {% include 'modais/modal_manutencao_maquinas.html' %}
-{% include 'modais/modal_manutencao_componentes.html' %}
+{% include 'modais/modal_manutencao_pecas.html' %}
 
 <script src="{{ url_for('static', filename='js/manutencao.js') }}"></script>
 {% endblock %}

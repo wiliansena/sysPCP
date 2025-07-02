@@ -9,7 +9,7 @@
     </div>
 </div>
 
-<h2>Relatório de Componentes por Manutenção</h2>
+<h2>Relatório de Peças por Manutenção</h2>
 
 <!-- Botão para abrir o modal -->
 <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalManutencoes">
@@ -29,32 +29,41 @@
         <tbody></tbody>
     </table>
     <button type="submit" class="btn btn-success">Gerar Relatório</button>
-    <a href="{{ url_for('routes.relatorio_componentes_manutencao') }}"
-        class="btn btn-secondary btn-sm ms-2"><i class="fas fa-sync-alt"></i></a><!-- ícone de atualização -->
+    <a href="{{ url_for('routes.relatorio_pecas_manutencao') }}" class="btn btn-secondary btn-sm ms-2"><i
+            class="fas fa-sync-alt"></i></a>
 </form>
 
 <hr>
 
 {% if resultado %}
 {% for manutencao, data in resultado.items() %}
-<h5>Manutenção #{{ manutencao.id }} - {{ manutencao.titulo or 'Sem Título' }}</h5>
-{% if data.componentes|length == 0 %}
-<p class="text-muted">Nenhum componente nesta manutenção.</p>
+<div class="bg-light p-3 mb-3 border rounded">
+    <h5 class="mb-0">
+        <i class="fas fa-tools me-1"></i> 
+        Manutenção <span class="text-primary"> {{ manutencao.id }}</span> — 
+        <span class="text-dark">Título:</span> 
+        <strong>{{ manutencao.titulo or 'Sem Título' }}</strong>
+    </h5>
+</div>
+
+
+{% if data.pecas|length == 0 %}
+<p class="text-muted">Nenhuma peça nesta manutenção.</p>
 {% else %}
 <table class="table table-bordered">
     <thead>
         <tr>
-            <th>Código</th>
+            <th>Peça</th>
             <th>Descrição</th>
             <th>Preço</th>
         </tr>
     </thead>
     <tbody>
-        {% for c in data.componentes %}
+        {% for p in data.pecas %}
         <tr>
-            <td>{{ c[0] }}</td>
-            <td>{{ c[1] }}</td>
-            <td>R$ {{ "%.2f"|format(c[2]) }}</td>
+            <td>{{ p[0] }}</td>
+            <td>{{ p[1] }}</td>
+            <td>R$ {{ "%.2f"|format(p[2]) }}</td>
         </tr>
         {% endfor %}
         <tr>
@@ -101,9 +110,11 @@
                             <td>{{ m.titulo or 'Sem Título' }}</td>
                             <td>{{ m.status }}</td>
                             <td>{{ m.prioridade }}</td>
-                            <td><button type="button" class="btn btn-success btn-sm selecionar-manutencao"
+                            <td>
+                                <button type="button" class="btn btn-success btn-sm selecionar-manutencao"
                                     data-id="{{ m.id }}"
-                                    data-titulo="{{ m.titulo or 'Sem Título' }}">Selecionar</button></td>
+                                    data-titulo="{{ m.titulo or 'Sem Título' }}">Selecionar</button>
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -137,20 +148,16 @@
 
             let tabela = $("#tabela-manutencoes");
 
-            if (tabela.find('tr[data-id="' + id + '"]')
-                .length === 0) {
+            if (tabela.find('tr[data-id="' + id + '"]').length === 0) {
                 let novaLinha = `
                     <tr data-id="${id}">
                         <td><input type="hidden" name="manutencoes[]" value="${id}">${id}</td>
                         <td>${titulo}</td>
-                        <td><button type="button" class="btn btn-danger btn-sm remover-manutencao" style="background-color: #dc3545; color: white;">Remover</button>
-</td>
+                        <td><button type="button" class="btn btn-danger btn-sm remover-manutencao">Remover</button></td>
                     </tr>
                 `;
                 tabela.append(novaLinha);
             }
-
-          //  $("#modalManutencoes").modal("hide");
         });
 
         $(document).on("click", ".remover-manutencao", function () {
@@ -158,6 +165,7 @@
         });
     });
 </script>
+
 <hr>
 <!-- Botão de Imprimir -->
 <a href="#" onclick="window.print();" class="btn btn-primary mb-3">Imprimir Relatório</a>

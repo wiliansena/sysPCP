@@ -91,7 +91,7 @@
             {% for id in request.args.getlist('remessa_id') %}
             {% for remessa in remessas %}
             {% if remessa.id|string == id %}
-            {{ remessa.codigo }}{% if not loop.last %}, {% endif %}
+            {{ remessa.codigo }} - {{ remessa.descricao }} {% if not loop.last %}, {% endif %}
             {% endif %}
             {% endfor %}
             {% endfor %}

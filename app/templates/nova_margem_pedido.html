@@ -35,12 +35,15 @@
         </div>
         <hr>
         <!-- Botão para Importar Arquivo -->
+        <div class="alert alert-info">
         <h5><strong>📦 Importar Pedido</strong></h5>
         <p class="text-muted mb-3">Apenas arquivos <strong>.xlsx</strong> (Excel) são permitidos.</p>
+        <p> Colunas: <code>Código Referência | Descrição | Quantidade | Embalagem | Preço Venda</code></p>
         <div class="d-flex align-items-center">
             <input type="file" id="fileInput" class="form-control w-auto">
             <button type="button" class="btn btn-success ms-2" onclick="importarArquivo()">
                 <i class="fas fa-upload me-1"></i>Importar</button>
+        </div>
         </div>
         <br>
 

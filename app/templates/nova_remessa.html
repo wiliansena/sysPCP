@@ -8,7 +8,10 @@
         {{ form.codigo.label(class="form-label") }}
         {{ form.codigo(class="form-control") }}
     </div>
-
+    <div class="mb-3">
+        {{ form.descricao.label(class="form-label") }}
+        {{ form.descricao(class="form-control") }}
+    </div>
     <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> {{ form.submit.label.text }}</button>
     <a href="{{ url_for('routes.listar_remessas') }}" class="btn btn-secondary">Cancelar</a>
 </form>

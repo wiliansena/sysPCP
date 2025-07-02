@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Nova Peça</h2>
+    <hr>
+
+    <form method="POST">
+        {{ form.hidden_tag() }}
+
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                {{ form.codigo.label(class="form-label") }}
+                {{ form.codigo(class="form-control") }}
+            </div>
+            <div class="col-md-8 mb-3">
+                {{ form.descricao.label(class="form-label") }}
+                {{ form.descricao(class="form-control") }}
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                {{ form.tipo_id.label(class="form-label") }}
+                {{ form.tipo_id(class="form-select select2") }}
+            </div>
+            <div class="col-md-3 mb-3">
+                {{ form.unidade_medida.label(class="form-label") }}
+                {{ form.unidade_medida(class="form-select") }}
+            </div>
+            <div class="col-md-3 mb-3">
+                {{ form.preco.label(class="form-label") }}
+                {{ form.preco(class="form-control") }}
+            </div>
+        </div>
+
+        <div class="mt-3">
+            <button type="submit" class="btn btn-success">
+                <i class="fas fa-save"></i> {{ form.submit.label.text }}
+            </button>
+            <a href="{{ url_for('routes.listar_pecas') }}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+
+<!-- Select2 CSS & JS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+    $(document).ready(function () {
+        $('.select2').select2({ width: '100%' });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>PEÇAS</h2>
+<br>
+<a href="{{ url_for('routes.nova_peca') }}" class="btn btn-success mb-3"><i class="fas fa-plus"></i> Adicionar</a>
+<hr>
+
+<!-- 🔎 Campo de busca -->
+<div class="row mb-3">
+    <div class="col-md-4"> <!-- Define um tamanho menor para o campo -->
+        <form method="GET" action="{{ url_for('routes.listar_pecas') }}" class="d-flex gap-2">
+            <input type="text" name="filtro" class="form-control form-control-sm" placeholder="Buscar Descrição"
+                value="{{ request.args.get('filtro', '') }}">
+            <button type="submit" class="btn btn-primary btn-sm">Buscar</button>
+            <a href="{{ url_for('routes.listar_pecas') }}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-sync-alt"></i> <!-- Ícone de atualização -->
+            </a>
+        </form>
+
+
+    </div>
+</div>
+
+<table class="table table-striped mt-3">
+    <thead>
+        <tr>
+            <th>Código</th>
+            <th>Descrição</th>
+            <th>Tipo</th>
+            <th>UN / MED</th>
+            <th>Preço</th>
+            <th>Ações</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for peca in pecas %}
+        <tr>
+            <td>{{ peca.codigo }}</td>
+            <td>{{ peca.descricao }}</td>
+            <td>{{ peca.tipo.tipo }}</td>
+            <td>{{ peca.unidade_medida }}</td>
+            <td>R$ {{ "%.2f"|format(peca.preco) }}</td>
+            <td>
+                <a href="{{ url_for('routes.editar_peca', id=peca.id) }}"
+                    class="btn btn-warning btn-sm">
+                    <i class="fas fa-edit"></i> Editar</a>
+                <form action="{{ url_for('routes.excluir_peca', id=peca.id) }}" method="post"
+                    style="display:inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger btn-sm"
+                        onclick="return confirm('Tem certeza que deseja excluir?')">
+                        <i class="fas fa-trash-alt"></i> Excluir</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

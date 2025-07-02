@@ -5,9 +5,6 @@
 <hr>
 
 <div class="d-flex align-items-center gap-2 mt-4">
-    <a href="{{ url_for('routes.listar_planejamentos') }}" class="btn btn-secondary">
-        <i class="fas fa-arrow-left"></i> Voltar
-    </a>
     <a href="{{ url_for('routes.nova_remessa') }}" class="btn btn-success">
         <i class="fas fa-plus"></i> Adicionar
     </a>
@@ -24,6 +21,7 @@
     <thead class="table-primary">
         <tr>
             <th>Código</th>
+            <th>Descrição</th>
             <th>Data de Criação</th>
             <th>Data Fechamento</th>
             <th>Ações</th>
@@ -33,6 +31,7 @@
         {% for r in remessas %}
         <tr>
             <td>{{ r.codigo }}</td>
+            <td>{{ r.descricao }}</td>
             <td>{{ r.data_criacao.strftime('%d/%m/%Y %H:%M') }}</td>
             <td>{{ r.data_fechamento.strftime('%d/%m/%Y') if r.data_fechamento else 'Aberta' }}</td>
             <td>

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Editar Produção Diária</h2>
+<hr>
+
+<form method="post">
+    {{ form.hidden_tag() }}
+
+    <div class="mb-3">
+        {{ form.data_producao.label(class="form-label") }}
+        {{ form.data_producao(class="form-control") }}
+    </div>
+
+    <div class="mb-3">
+        {{ form.quantidade.label(class="form-label") }}
+        {{ form.quantidade(class="form-control") }}
+    </div>
+
+    <div class="mb-3">
+        {{ form.planejamento_id.label(class="form-label") }}
+        {{ form.planejamento_id(class="form-select select2")}}
+    </div>
+
+    <button type="submit" class="btn btn-primary">{{ form.submit.label.text }}</button>
+    <a href="{{ url_for('routes.ver_producao_diaria', id=producao.id) }}" class="btn btn-secondary">Cancelar</a>
+</form>
+
+<!-- Select2 JS/CSS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+    $(document).ready(function() {
+        $('.select2').select2({ width: '100%' });
+    });
+</script>
+{% endblock %}

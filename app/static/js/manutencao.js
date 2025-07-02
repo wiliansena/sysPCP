@@ -84,6 +84,39 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
+
+        // -------------------------------
+    // Adicionar Peca
+    // -------------------------------
+    document.querySelectorAll('.selecionar-peca').forEach(botao => {
+        botao.addEventListener('click', function() {
+            const id = this.dataset.id;
+            const codigo = this.dataset.codigo;
+            const descricao = this.dataset.descricao;
+
+            const tabela = document.querySelector('#tabela-pecas tbody');
+
+            if (tabela.querySelector(`tr[data-id="${id}"]`)) {
+                alert('Esta Peça já foi adicionada.');
+                return;
+            }
+
+            const linha = document.createElement('tr');
+            linha.setAttribute('data-id', id);
+            linha.innerHTML = `
+                <td>
+                    <input type="hidden" name="peca_id[]" value="${id}">
+                    ${codigo}
+                </td>
+                <td>${descricao}</td>
+                <td><button type="button" class="btn btn-danger btn-sm remover-linha">Remover</button></td>
+            `;
+            tabela.appendChild(linha);
+
+            $('#modalPecas').modal('hide');
+        });
+    });
+
     // -------------------------------
     // Remover qualquer linha
     // -------------------------------

@@ -2,7 +2,7 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h2>ALÇAS</h2>
+    <h2>ALÇAS</h2> 
     <br>
     <a href="{{ url_for('routes.nova_alca') }}" class="btn btn-success mb-3"><i class="fas fa-plus"></i> Adicionar</a>
     <br>
@@ -70,57 +70,65 @@
         </tbody>
     </table>
 
-    {% if alcas.pages > 1 %}
-    <nav aria-label="Navegação de páginas">
-        <ul class="pagination justify-content-center">
+{% if paginacao.pages > 1 %}
+<nav aria-label="Navegação de páginas">
+    <ul class="pagination justify-content-center">
 
-            {% if alcas.has_prev %}
-            <li class="page-item">
-                <a class="page-link"
-                    href="{{ url_for('routes.listar_alcas', page=alcas.prev_num, filtro=request.args.get('filtro', '')) }}">
-                    Anterior
-                </a>
-            </li>
+        {% if paginacao.has_prev %}
+        <li class="page-item">
+            <a class="page-link"
+               href="{{ url_for('routes.listar_alcas', page=paginacao.prev_num, filtro=filtro) }}">
+                Anterior
+            </a>
+        </li>
+        {% endif %}
+
+        {# Parâmetros de controle #}
+        {% set total_pages = paginacao.pages %}
+        {% set current_page = paginacao.page %}
+        {% set max_visible = 10 %}
+        {% set half = max_visible // 2 %}
+
+        {% set start = current_page - half %}
+        {% if start < 1 %}
+            {% set start = 1 %}
+        {% endif %}
+
+        {% set end = start + max_visible - 1 %}
+        {% if end > total_pages %}
+            {% set end = total_pages %}
+            {% set start = end - max_visible + 1 %}
+            {% if start < 1 %}
+                {% set start = 1 %}
             {% endif %}
+        {% endif %}
 
-            {# Variáveis de controle #}
-            {% set total_pages = alcas.pages %}
-            {% set current_page = alcas.page %}
-            {% set max_visible = alcas.per_page %}
-            {% set half = max_visible // 2 %}
+        {% if start > 1 %}
+        <li class="page-item disabled"><span class="page-link">…</span></li>
+        {% endif %}
 
-            {% set start = current_page - half %}
-            {% if start < 1 %} {% set start=1 %} {% endif %} {% set end=start + max_visible - 1 %} {% if end>
-                total_pages %}
-                {% set end = total_pages %}
-                {% set start = end - max_visible + 1 %}
-                {% if start < 1 %} {% set start=1 %} {% endif %} {% endif %} {% if start> 1 %}
-                    <li class="page-item disabled"><span class="page-link">…</span></li>
-                    {% endif %}
+        {% for pagina in range(start, end + 1) %}
+        <li class="page-item {% if pagina == current_page %}active{% endif %}">
+            <a class="page-link" href="{{ url_for('routes.listar_alcas', page=pagina, filtro=filtro) }}">{{ pagina }}</a>
+        </li>
+        {% endfor %}
 
-                    {% for pagina in range(start, end + 1) %}
-                    <li class="page-item {% if pagina == current_page %}active{% endif %}">
-                        <a class="page-link"
-                            href="{{ url_for('routes.listar_alcas', page=pagina, filtro=request.args.get('filtro', '')) }}">
-                            {{ pagina }}
-                        </a>
-                    </li>
-                    {% endfor %}
+        {% if end < total_pages %}
+        <li class="page-item disabled"><span class="page-link">…</span></li>
+        {% endif %}
 
-                    {% if end < total_pages %} <li class="page-item disabled"><span class="page-link">…</span></li>
-                        {% endif %}
+        {% if paginacao.has_next %}
+        <li class="page-item">
+            <a class="page-link"
+               href="{{ url_for('routes.listar_alcas', page=paginacao.next_num, filtro=filtro) }}">
+                Próxima
+            </a>
+        </li>
+        {% endif %}
 
-                        {% if alcas.has_next %}
-                        <li class="page-item">
-                            <a class="page-link"
-                                href="{{ url_for('routes.listar_alcas', page=alcas.next_num, filtro=request.args.get('filtro', '')) }}">
-                                Próxima
-                            </a>
-                        </li>
-                        {% endif %}
+    </ul>
+</nav>
+{% endif %}
 
-        </ul>
-    </nav>
-    {% endif %}
 </div>
 {% endblock %}
