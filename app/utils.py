@@ -5,6 +5,27 @@ from functools import wraps
 from flask import redirect, url_for, flash, request
 from flask_login import current_user
 from flask import request
+import locale
+
+locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
+
+def formatar_moeda(valor):
+    try:
+        return locale.currency(valor, grouping=True, symbol=False)
+    except Exception:
+        return "0,00"
+
+def formatar_numero(valor):
+    try:
+        numero = int(round(valor))
+        return f"{numero:,}".replace(",", "X").replace(".", ",").replace("X", ".")
+    except Exception:
+        return "0"
+
+
+def registrar_filtros_jinja(app):
+    app.jinja_env.filters['br_moeda'] = formatar_moeda
+    app.jinja_env.filters['br_numero'] = formatar_numero
 
 
 def requer_permissao(categoria, acao):

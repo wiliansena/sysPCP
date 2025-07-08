@@ -888,152 +888,7 @@ def excluir_colecao(id):
     return redirect(url_for('routes.listar_colecoes'))
 
 
-        #COMPONENTES OK
-@bp.route('/tipos', methods=['GET'])
-@login_required
-def listar_tipos():
-    tipos = Tipo.query.order_by(Tipo.id.desc()).all()
-    return render_template('listar_tipos.html', tipos=tipos)
-
-@bp.route('/tipo/novo', methods=['GET', 'POST'])
-@login_required
-def novo_tipo():
-    form = TipoForm()
-    if form.validate_on_submit():
-        tiponovo = Tipo(
-            tipo = form.tipo.data
-        )
-
-        db.session.add(tiponovo)
-        db.session.commit()
-        flash('Tipo adicionado com sucesso!', 'success')
-        return redirect(url_for('routes.listar_tipos'))
-    return render_template('novo_tipo.html', form=form)
-
-
-
-@bp.route('/tipo/editar/<int:id>', methods=['GET', 'POST'])
-@login_required
-def editar_tipo(id):
-    tipo = Tipo.query.get_or_404(id)
-    form = TipoForm(obj=tipo)
-
-    if form.validate_on_submit():
-        tipo.tipo = form.tipo.data
-
-        db.session.commit()
-        flash('Tipo atualizado com sucesso!', 'success')
-        return redirect(url_for('routes.listar_tipos'))
-    
-    return render_template('editar_tipo.html', form=form, tipo=tipo)
-
-
-@bp.route('/tipo/excluir/<int:id>', methods=['POST'])
-@login_required
-def excluir_tipo(id):
-    tipo = Tipo.query.get_or_404(id)
-
-    try:
-        db.session.delete(tipo)
-        db.session.commit()
-        flash('Tipo excluído com sucesso!', 'success')
-
-    except IntegrityError:
-        db.session.rollback()
-
-        # 🔹 Mensagem genérica sem listar onde o componente é usado
-        flash("Erro: Este TIPO! não pode ser excluído porque está sendo utilizado em outras tabelas do sistema.", "danger")
-
-    except Exception as e:
-        db.session.rollback()
-        flash(f"Erro inesperado ao excluir o TIPO: {str(e)}", "danger")
-
-    return redirect(url_for('routes.listar_tipos'))
-
-
-## PEÇAS ##
-@bp.route('/pecas', methods=['GET'])
-@login_required
-@requer_permissao('manutencao', 'ver')
-def listar_pecas():
-    filtro = request.args.get('filtro', '')
-
-    if filtro:
-        pecas = Peca.query.filter(Peca.descricao.ilike(f"%{filtro}%")).order_by(Peca.id.desc()).all()
-    else:
-        pecas = Peca.query.order_by(Peca.id.desc()).all()
-
-    return render_template('listar_pecas.html', pecas=pecas)
-
-
-@bp.route('/peca/novo', methods=['GET', 'POST'])
-@login_required
-@requer_permissao('manutencao', 'criar')
-def nova_peca():
-    form = PecaForm()
-    form.tipo_id.choices = [(t.id, t.tipo) for t in Tipo.query.order_by(Tipo.tipo).all()]
-
-    if form.validate_on_submit():
-        peca = Peca(
-            codigo=form.codigo.data,
-            tipo_id = form.tipo_id.data,
-            descricao=form.descricao.data,
-            unidade_medida=form.unidade_medida.data,
-            preco=form.preco.data if form.preco.data is not None else 0
-        )
-        db.session.add(peca)
-        db.session.commit()
-        flash('Peça adicionada com sucesso!', 'success')
-        return redirect(url_for('routes.listar_pecas'))
-    return render_template('nova_peca.html', form=form)
-
-@bp.route('/peca/editar/<int:id>', methods=['GET', 'POST'])
-@login_required
-@requer_permissao('manutencao', 'editar')
-def editar_peca(id):
-    peca = Peca.query.get_or_404(id)
-    form = PecaForm(obj=peca)
-
-    #popular o select de tipos
-    form.tipo_id.choices = [(t.id, t.tipo) for t in Tipo.query.order_by(Tipo.tipo).all()]
-    
-    if form.validate_on_submit():
-        peca.codigo = form.codigo.data
-        peca.tipo_id = form.tipo_id.data
-        peca.descricao = form.descricao.data
-        peca.unidade_medida = form.unidade_medida.data
-        peca.preco = form.preco.data
-        
-        db.session.commit()
-        flash('Peça atualizada com sucesso!', 'success')
-        return redirect(url_for('routes.listar_pecas'))
-    
-    return render_template('editar_peca.html', form=form, peca=peca)
-
-
-@bp.route('/peca/excluir/<int:id>', methods=['POST'])
-@login_required
-@requer_permissao('manutencao', 'excluir')
-def excluir_peca(id):
-    peca = Peca.query.get_or_404(id)
-
-    try:
-        db.session.delete(peca)
-        db.session.commit()
-        flash('Peça excluída com sucesso!', 'success')
-
-    except IntegrityError:
-        db.session.rollback()
-
-        # 🔹 Mensagem genérica sem listar onde o componente é usado
-        flash("Erro: Esta Peça não pode ser excluída porque está sendo utilizada em outras tabelas do sistema.", "danger")
-
-    except Exception as e:
-        db.session.rollback()
-        flash(f"Erro inesperado ao excluir o componente: {str(e)}", "danger")
-
-    return redirect(url_for('routes.listar_pecas'))
-  
+#COMPONENTES OK
 
 @bp.route('/componentes', methods=['GET'])
 @login_required
@@ -2637,113 +2492,6 @@ def importar_componentes():
         os.remove(filepath)  # Remove o arquivo temporário
 
     return redirect(url_for('routes.listar_componentes'))  # 🔹 Redireciona corretamente para listar componentes
-
-
-@bp.route('/importar_solados', methods=['POST'])
-@login_required
-@requer_permissao('custoproducao', 'editar')
-def importar_solados():
-    if 'file' not in request.files:
-        flash("Nenhum arquivo enviado.", "danger")
-        return redirect(url_for('routes.listar_solados'))
-
-    file = request.files['file']
-
-    if file.filename == '':
-        flash("Arquivo inválido.", "danger")
-        return redirect(url_for('routes.listar_solados'))
-
-    filename = secure_filename(file.filename)
-    filepath = os.path.join(UPLOAD_FOLDER, filename)
-    file.save(filepath)
-
-    try:
-        df = pd.read_excel(filepath, dtype={'referencia': str})
-
-        atualizados = 0
-        criados = 0
-
-        for _, row in df.iterrows():
-            referencia = row['referencia']
-            descricao = row['descricao']
-            imagem = row['imagem']
-            tamanhos = row['tamanhos'].split(",")  # 🔹 Lista de tamanhos
-            grades = list(map(int, row['grade'].split(",")))  # 🔹 Lista de grades como inteiros
-            peso_medio = row['peso_medio']
-            peso_friso = row['peso_friso']
-            peso_sem_friso = row['peso_sem_friso']
-            comp_friso = row['comp_friso']
-            carga_friso = Decimal(str(row['carga_friso']).replace(',', '.'))
-            comp_sem_friso = row['comp_sem_friso']
-            carga_sem_friso = Decimal(str(row['carga_sem_friso']).replace(',', '.'))
-
-            # Verifica se o solado já existe
-            solado = Solado.query.filter_by(referencia=referencia).first()
-
-            if solado:
-                # Atualiza os dados existentes
-                solado.descricao = descricao
-                solado.imagem = imagem
-                solado.tamanhos.clear()  # 🔹 Remove tamanhos antigos
-
-                for tamanho, grade in zip(tamanhos, grades):
-                    novo_tamanho = Tamanho(
-                        solado_id=solado.id, nome=tamanho, quantidade=grade,
-                        peso_medio=peso_medio, peso_friso=peso_friso, peso_sem_friso=peso_sem_friso
-                    )
-                    db.session.add(novo_tamanho)
-
-                atualizados += 1
-            else:
-                # Criando um novo solado
-                novo_solado = Solado(
-                    referencia=referencia,
-                    descricao=descricao,
-                    imagem=imagem
-                )
-                db.session.add(novo_solado)
-                db.session.flush()  # Obtém o ID antes de salvar
-
-                for tamanho, grade in zip(tamanhos, grades):
-                    novo_tamanho = Tamanho(
-                        solado_id=novo_solado.id, nome=tamanho, quantidade=grade,
-                        peso_medio=peso_medio, peso_friso=peso_friso, peso_sem_friso=peso_sem_friso
-                    )
-                    db.session.add(novo_tamanho)
-
-                criados += 1
-
-            # **Tratamento da formulação**
-            if comp_friso:
-                componente_friso = Componente.query.filter_by(codigo=comp_friso).first()
-                if componente_friso:
-                    formulacao_friso = FormulacaoSoladoFriso(
-                        solado_id=solado.id if solado else novo_solado.id,
-                        componente_id=componente_friso.id,
-                        carga=carga_friso
-                    )
-                    db.session.add(formulacao_friso)
-
-            if comp_sem_friso:
-                componente_sem_friso = Componente.query.filter_by(codigo=comp_sem_friso).first()
-                if componente_sem_friso:
-                    formulacao_sem_friso = FormulacaoSolado(
-                        solado_id=solado.id if solado else novo_solado.id,
-                        componente_id=componente_sem_friso.id,
-                        carga=carga_sem_friso
-                    )
-                    db.session.add(formulacao_sem_friso)
-
-        db.session.commit()
-        flash(f"Importação concluída! {criados} solados criados, {atualizados} atualizados.", "success")
-
-    except Exception as e:
-        flash(f"Erro ao processar arquivo: {str(e)}", "danger")
-
-    finally:
-        os.remove(filepath)
-
-    return redirect(url_for('routes.listar_solados'))
 
 
 
@@ -5300,3 +5048,159 @@ def excluir_producao_diaria(id):
     db.session.commit()
     flash('Produção diária excluída com sucesso.', 'success')
     return redirect(url_for('routes.listar_prodfat'))
+
+
+
+## TIPOS ##
+
+
+@bp.route('/tipos', methods=['GET'])
+@login_required
+@requer_permissao('manutencao', 'ver')
+def listar_tipos():
+    tipos = Tipo.query.order_by(Tipo.id.desc()).all()
+    return render_template('listar_tipos.html', tipos=tipos)
+
+@bp.route('/tipo/novo', methods=['GET', 'POST'])
+@login_required
+@requer_permissao('manutencao', 'criar')
+def novo_tipo():
+    form = TipoForm()
+    if form.validate_on_submit():
+        tiponovo = Tipo(
+            tipo = form.tipo.data
+        )
+
+        db.session.add(tiponovo)
+        db.session.commit()
+        flash('Tipo adicionado com sucesso!', 'success')
+        return redirect(url_for('routes.listar_tipos'))
+    return render_template('novo_tipo.html', form=form)
+
+
+
+@bp.route('/tipo/editar/<int:id>', methods=['GET', 'POST'])
+@login_required
+@requer_permissao('manutencao', 'editar')
+def editar_tipo(id):
+    tipo = Tipo.query.get_or_404(id)
+    form = TipoForm(obj=tipo)
+
+    if form.validate_on_submit():
+        tipo.tipo = form.tipo.data
+
+        db.session.commit()
+        flash('Tipo atualizado com sucesso!', 'success')
+        return redirect(url_for('routes.listar_tipos'))
+    
+    return render_template('editar_tipo.html', form=form, tipo=tipo)
+
+
+@bp.route('/tipo/excluir/<int:id>', methods=['POST'])
+@login_required
+@requer_permissao('manutencao', 'excluir')
+def excluir_tipo(id):
+    tipo = Tipo.query.get_or_404(id)
+
+    try:
+        db.session.delete(tipo)
+        db.session.commit()
+        flash('Tipo excluído com sucesso!', 'success')
+
+    except IntegrityError:
+        db.session.rollback()
+
+        # 🔹 Mensagem genérica sem listar onde o componente é usado
+        flash("Erro: Este TIPO! não pode ser excluído porque está sendo utilizado em outras tabelas do sistema.", "danger")
+
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Erro inesperado ao excluir o TIPO: {str(e)}", "danger")
+
+    return redirect(url_for('routes.listar_tipos'))
+
+
+ ##   PEÇAS    ####
+
+
+@bp.route('/pecas', methods=['GET'])
+@login_required
+@requer_permissao('manutencao', 'ver')
+def listar_pecas():
+    filtro = request.args.get('filtro', '')
+
+    if filtro:
+        pecas = Peca.query.filter(Peca.descricao.ilike(f"%{filtro}%")).order_by(Peca.id.desc()).all()
+    else:
+        pecas = Peca.query.order_by(Peca.id.desc()).all()
+
+    return render_template('listar_pecas.html', pecas=pecas)
+
+
+@bp.route('/peca/novo', methods=['GET', 'POST'])
+@login_required
+@requer_permissao('manutencao', 'criar')
+def nova_peca():
+    form = PecaForm()
+    form.tipo_id.choices = [(t.id, t.tipo) for t in Tipo.query.order_by(Tipo.tipo).all()]
+
+    if form.validate_on_submit():
+        peca = Peca(
+            codigo=form.codigo.data,
+            tipo_id = form.tipo_id.data,
+            descricao=form.descricao.data,
+            unidade_medida=form.unidade_medida.data,
+            preco=form.preco.data if form.preco.data is not None else 0
+        )
+        db.session.add(peca)
+        db.session.commit()
+        flash('Peça adicionada com sucesso!', 'success')
+        return redirect(url_for('routes.listar_pecas'))
+    return render_template('nova_peca.html', form=form)
+
+@bp.route('/peca/editar/<int:id>', methods=['GET', 'POST'])
+@login_required
+@requer_permissao('manutencao', 'editar')
+def editar_peca(id):
+    peca = Peca.query.get_or_404(id)
+    form = PecaForm(obj=peca)
+
+    #popular o select de tipos
+    form.tipo_id.choices = [(t.id, t.tipo) for t in Tipo.query.order_by(Tipo.tipo).all()]
+    
+    if form.validate_on_submit():
+        peca.codigo = form.codigo.data
+        peca.tipo_id = form.tipo_id.data
+        peca.descricao = form.descricao.data
+        peca.unidade_medida = form.unidade_medida.data
+        peca.preco = form.preco.data
+        
+        db.session.commit()
+        flash('Peça atualizada com sucesso!', 'success')
+        return redirect(url_for('routes.listar_pecas'))
+    
+    return render_template('editar_peca.html', form=form, peca=peca)
+
+
+@bp.route('/peca/excluir/<int:id>', methods=['POST'])
+@login_required
+@requer_permissao('manutencao', 'excluir')
+def excluir_peca(id):
+    peca = Peca.query.get_or_404(id)
+
+    try:
+        db.session.delete(peca)
+        db.session.commit()
+        flash('Peça excluída com sucesso!', 'success')
+
+    except IntegrityError:
+        db.session.rollback()
+
+        # 🔹 Mensagem genérica sem listar onde o componente é usado
+        flash("Erro: Esta Peça não pode ser excluída porque está sendo utilizada em outras tabelas do sistema.", "danger")
+
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Erro inesperado ao excluir o componente: {str(e)}", "danger")
+
+    return redirect(url_for('routes.listar_pecas'))

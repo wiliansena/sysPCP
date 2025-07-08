@@ -18,6 +18,12 @@ def create_app():
     # Torna o getattr disponível nos templates Jinja2
     app.jinja_env.globals.update(getattr=getattr)
 
+    #regitro de filtros no utils.py
+    # ✅ Registro dos filtros personalizados
+    from app.utils import registrar_filtros_jinja
+    registrar_filtros_jinja(app)
+    
+
     app.config.from_object(Config)  # Carrega as configurações do config.py
 
     # 🔹 Configuração do tempo de sessão

@@ -71,7 +71,7 @@
         <a href="{{ url_for('routes.home') }}"><i class="fas fa-home"></i> Página Inicial</a>
         <hr>
 
-        <!-- Cadastros -->
+        <!-- Cadastros 
         {% if ('cadastro', 'ver') in g.permissoes %}
         <div class="sidebar-category" onclick="toggleMenu('cadastro')">
             <i class="fa-solid fa-address-card"></i> Cadastros
@@ -82,7 +82,7 @@
             <a href="{{ url_for('routes.listar_municipios') }}"><i class="fa-solid fa-location-dot"></i> Municipios </a>
             <a href="{{ url_for('routes.listar_ceps') }}"><i class="fa-solid fa-location-dot"></i> CEPs </a>
         </div>
-        {% endif %}
+        {% endif %}-->
 
         <!-- Planejamento de Custos -->
         {% if ('margens', 'ver') in g.permissoes %}
@@ -295,42 +295,69 @@
             });
         });
     </script>
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            // Remove qualquer estado salvo no localStorage para garantir que as categorias sempre iniciem fechadas ao recarregar a página
-            localStorage.removeItem("categoriasAbertas");
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Recupera as categorias abertas do localStorage
+        let abertas = JSON.parse(localStorage.getItem("categoriasAbertas")) || [];
 
-            // Função para alternar os menus
-            function toggleMenu(id) {
-                let submenu = document.getElementById(id);
-                let category = submenu.previousElementSibling;
+        // Reabre as categorias salvas
+        abertas.forEach(id => {
+            const submenu = document.getElementById(id);
+            const category = submenu?.previousElementSibling;
 
-                if (submenu.style.display === "block") {
-                    submenu.style.display = "none";
-                    category.classList.remove("active");
-                } else {
-                    submenu.style.display = "block";
-                    category.classList.add("active");
-                }
+            if (submenu) {
+                submenu.style.display = "block";
+                category?.classList.add("active");
             }
-
-            // Adiciona os eventos de clique nos botões de categoria
-            document.querySelectorAll(".sidebar-category").forEach(category => {
-                category.addEventListener("click", function () {
-                    let id = this.nextElementSibling.id;
-                    toggleMenu(id);
-                });
-            });
-
-            // Mantém os menus abertos quando clicar em um link interno
-            document.querySelectorAll(".sidebar-submenu a").forEach(link => {
-                link.addEventListener("click", function (event) {
-                    event.stopPropagation(); // Impede que o clique no link feche o menu
-                });
-            });
         });
 
-    </script>
+        // Função para alternar um menu
+        function toggleMenu(id) {
+            const submenu = document.getElementById(id);
+            const category = submenu.previousElementSibling;
+
+            if (submenu.style.display === "block") {
+                submenu.style.display = "none";
+                category.classList.remove("active");
+                abertas = abertas.filter(item => item !== id); // remove da lista
+            } else {
+                submenu.style.display = "block";
+                category.classList.add("active");
+                if (!abertas.includes(id)) abertas.push(id); // adiciona se não existir
+            }
+
+            // Salva no localStorage
+            localStorage.setItem("categoriasAbertas", JSON.stringify(abertas));
+        }
+
+        // Associa o clique aos botões de categoria
+        document.querySelectorAll(".sidebar-category").forEach(category => {
+            category.addEventListener("click", function () {
+                const id = this.nextElementSibling.id;
+                toggleMenu(id);
+            });
+        });
+    });
+</script>
+<script>
+    // 🔁 Usa pagehide, que funciona mesmo com navegação instantânea
+    window.addEventListener("pagehide", function () {
+        sessionStorage.setItem("scrollY", window.scrollY);
+    });
+
+    // ✅ Restaura o scroll na próxima página
+    document.addEventListener("DOMContentLoaded", function () {
+        const scrollY = sessionStorage.getItem("scrollY");
+        if (scrollY !== null) {
+            window.scrollTo(0, parseInt(scrollY));
+            sessionStorage.removeItem("scrollY");
+        }
+    });
+</script>
+
+
+
+
 
     <!-- Ativa o select2
      

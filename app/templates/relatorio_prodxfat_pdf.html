@@ -11,6 +11,12 @@
     {% if data_fim %} | Fim: {{ data_fim }} {% endif %}
     {% if referencia %} | Referência: {{ referencia }} {% endif %}
 </p>
+<br>
+<div class="mt-3 text-end">
+    <strong>Total Produzido: {{ total_produzido|br_numero }} pares</strong> <br>
+    <br>
+    <strong>Total Faturado: R$ {{ total_faturado|br_moeda }}</strong>
+</div>
 {% endif %}
 
 {% if resultados %}
@@ -33,24 +39,19 @@
             <td>{{ r.planejamento.remessa.codigo }}</td>
             <td>{{ r.planejamento.linha.nome if r.planejamento.linha }}</td>
             <td>{{ r.planejamento.referencia }}</td>
-            <td>{{ r.quantidade }}</td>
+            <td>{{ r.quantidade|br_numero }}</td>
             <td>
                 {% if r.planejamento.preco_medio is not none %}
-                {{ "%.2f"|format(r.planejamento.preco_medio) }}
+                {{ r.planejamento.preco_medio|br_moeda }}
                 {% else %}
                 -
                 {% endif %}
             </td>
-            <td>{{ "%.2f"|format(r.faturamento_medio) }}</td>
+            <td>{{ r.faturamento_medio|br_moeda }}</td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
-
-<div class="mt-3 text-end">
-    <strong>Total Produzido: {{ total_produzido }} pares</strong> <br>
-    <strong>Total Faturado: R$ {{ "%.2f"|format(total_faturado) }}</strong>
-</div>
 
 {% else %}
 <div class="alert alert-warning mt-4">Nenhum resultado encontrado com os filtros aplicados.</div>
