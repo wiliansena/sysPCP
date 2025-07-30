@@ -2,9 +2,9 @@
 {% block content %}
 <h2>Produção Diária</h2>
 <div class="d-flex align-items-center gap-2 mt-4">
-    <a href="{{ url_for('routes.nova_producao_diaria') }}" class="btn btn-success">
-        <i class="fas fa-plus"></i> Adicionar
-    </a>
+  <a href="{{ url_for('routes.nova_producao_diaria') }}" class="btn btn-success">
+    <i class="fas fa-plus"></i> Adicionar
+  </a>
 </div>
 <hr>
 
@@ -27,7 +27,8 @@
     <select name="remessa_id" class="form-select select2">
       <option value="">Selecione...</option>
       {% for r in remessas %}
-      <option value="{{ r.id }}" {% if r.id==remessa_id %}selected{% endif %}>{{ r.codigo }} - {{ r.descricao }}</option>
+      <option value="{{ r.id }}" {% if r.id==remessa_id %}selected{% endif %}>{{ r.codigo }} - {{ r.descricao }}
+      </option>
       {% endfor %}
     </select>
   </div>
@@ -47,7 +48,7 @@
         <i class="fas fa-filter"></i> Filtrar
       </button>
       <a href="{{ url_for('routes.listar_prodfat') }}" class="btn btn-secondary">
-        <i class="fas fa-sync-alt"></i> Atualizar
+        <i class="fas fa-sync-alt"></i>
       </a>
     </div>
     <a href="{{ url_for('routes.grafico_prodfat', 
@@ -60,16 +61,21 @@
     </a>
 
     <a href="{{ url_for('routes.relatorio_prodxfat_pdf', 
-        data_inicio=data_inicio, 
-        data_fim=data_fim, 
-        referencia=referencia, 
-        remessa_id=remessa_id, 
-        linha_id=linha_id) }}" class="btn btn-danger" target="_blank">
+    data_inicio=data_inicio, 
+    data_fim=data_fim, 
+    referencia=referencia, 
+    remessa_id=remessa_id, 
+    linha_id=linha_id) }}" class="btn btn-outline-danger bg-white" target="_blank">
       <i class="fas fa-file-pdf"></i> Gerar PDF
     </a>
 
+
     <a href="{{ url_for('routes.importar_producao_faturamento') }}" class="btn btn-success me-2">
-      <i class="fas fa-upload"></i> Importar Produção do Dia
+      <i class="fas fa-upload"></i> Importar
+    </a>
+
+    <a href="{{ url_for('routes.excluir_producao_por_data') }}" class="btn btn-danger me-2">
+      <i class="fas fa-trash"></i> Excluir Produção/Data
     </a>
 
   </div>
@@ -82,7 +88,7 @@
   <table class="table table-bordered table-sm text-center align-middle">
     <thead class="table-light">
       <tr>
-        <th>Data</th>
+        <th>Data Produção</th>
         <th>Remessa</th>
         <th>Linha</th>
         <th>Referência</th>
@@ -133,13 +139,13 @@
 <div class="alert alert-warning mt-4">Nenhum resultado encontrado com os filtros aplicados.</div>
 {% endif %}
 
-  <script>
-    document.addEventListener("DOMContentLoaded", function () {
-        $('.select2').select2({
-            width: '100%',
-            placeholder: 'Selecione',
-            allowClear: true
-        });
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    $('.select2').select2({
+      width: '100%',
+      placeholder: 'Selecione',
+      allowClear: true
     });
+  });
 </script>
 {% endblock %}

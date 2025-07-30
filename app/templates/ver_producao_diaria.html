@@ -8,15 +8,19 @@
         <label class="form-label fw-bold">Data da Produção</label>
         <div class="form-control-plaintext">{{ producao.data_producao.strftime('%d/%m/%Y') if producao.data_producao }}</div>
     </div>
+    <div class="col-md-4">
+        <label class="form-label fw-bold">Data Inserção</label>
+        <div class="form-control-plaintext">{{ producao.data_insercao.strftime('%d/%m/%Y') if producao.data_insercao }}</div>
+    </div>
 
     <div class="col-md-4">
         <label class="form-label fw-bold">Pares</label>
-        <div class="form-control-plaintext">{{ producao.quantidade }}</div>
+        <div class="form-control-plaintext">{{ producao.quantidade or 0 }}</div>
     </div>
 
     <div class="col-md-4">
         <label class="form-label fw-bold">Faturamento médio</label>
-        <div class="form-control-plaintext">R$ {{ "%.2f"|format(producao.faturamento) }}</div>
+        <div class="form-control-plaintext">R$ {{ "%.2f"|format(producao.faturamento or 0) }}</div>
     </div>
 </div>
 
@@ -33,14 +37,14 @@
 
     <div class="col-md-4">
         <label class="form-label fw-bold">Quantidade Planejada</label>
-        <div class="form-control-plaintext">{{ producao.planejamento.quantidade }}</div>
+        <div class="form-control-plaintext">{{ producao.planejamento.quantidade or 0 }}</div>
     </div>
 </div>
 
 <div class="row mb-3">
     <div class="col-md-4">
         <label class="form-label fw-bold">Preço Médio</label>
-        <div class="form-control-plaintext">R$ {{ "%.2f"|format(producao.planejamento.preco_medio) }}</div>
+        <div class="form-control-plaintext">R$ {{ "%.2f"|format(producao.planejamento.preco_medio or 0) }}</div>
     </div>
 </div>
 

@@ -1,0 +1,200 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+    <h3><i class="fas fa-chart-bar"></i> Monitor de Lucros</h3>
+    <div class="row">
+        <div class="col-md-2">
+            <label>Últimos</label>
+            <select id="quantidade" class="form-select">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5" >5</option>
+                <option value="10">10</option>
+                <option value="15">15</option>
+                <option value="20">20</option>
+                <option value="50"selected>50</option>
+                <option value="100">100</option>
+                <option value="200">200</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label>Cliente</label>
+            <select id="cliente" class="form-control"></select>
+        </div>
+        <div class="col-md-2">
+            <label>Remessa</label>
+            <select id="remessa" class="form-control"></select>
+        </div>
+        <div class="col-md-2">
+            <label>Nota Fiscal</label>
+            <select id="nota" class="form-control"></select>
+        </div>
+        <div class="col-md-2">
+            <label>Início</label>
+            <input type="date" id="inicio" class="form-control">
+        </div>
+        <div class="col-md-2">
+            <label>Fim</label>
+            <input type="date" id="fim" class="form-control">
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <canvas id="graficoLucroPedido" height="100"></canvas>
+    </div>
+    <div class="text-end mb-2">
+        <button class="btn btn-secondary btn-sm" onclick="limparFiltros()">Limpar Filtros</button>
+    </div>
+    <div class="mt-3">
+        <h5 class="text-end">
+            Total de Lucro: <span id="totalLucro" class="fw-bold text-success">R$ 0,00</span><br>
+            Margem: <span id="porcentagemLucro" class="fw-bold text-primary">0,00%</span>
+        </h5>
+    </div>
+
+</div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0/dist/js/select2.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0/dist/css/select2.min.css" rel="stylesheet" />
+
+<script>
+    let chart;
+
+    function atualizarGrafico() {
+        const quantidade = $('#quantidade').val();
+        const cliente = $('#cliente').val();
+        const remessa = $('#remessa').val();
+        const nota = $('#nota').val();
+        const inicio = $('#inicio').val();
+        const fim = $('#fim').val();
+
+        $.getJSON('/monitor/lucro-pedidos', {
+            quantidade, cliente, remessa, nota, inicio, fim
+        }, function (dados) {
+            const labels = dados.map(d => d.pedido);
+            const valores = dados.map(d => d.lucro);
+
+            const totalLucro = valores.reduce((acc, val) => acc + val, 0);
+            const totalLucroSpan = document.getElementById('totalLucro');
+            totalLucroSpan.innerText = `R$ ${brMoeda(totalLucro)}`;
+            totalLucroSpan.classList.remove('text-success', 'text-danger');
+            totalLucroSpan.classList.add(totalLucro > 0 ? 'text-success' : 'text-danger');
+
+            const faturamentos = dados.map(d => d.faturamento || 0);
+            const totalFaturamento = faturamentos.reduce((acc, val) => acc + val, 0);
+            const porcentagem = totalFaturamento > 0 ? (totalLucro / totalFaturamento) * 100 : 0;
+            document.getElementById('porcentagemLucro').innerText = `${porcentagem.toFixed(2)}%`;
+
+            if (chart) chart.destroy();
+            const ctx = document.getElementById('graficoLucroPedido').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Lucro por Pedido (R$)',
+                        data: valores,
+                        backgroundColor: 'rgba(54, 162, 235, 0.85)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    plugins: {
+                        datalabels: {
+                            anchor: 'end',
+                            align: 'end',
+                            formatter: valor => `R$ ${brMoeda(valor)}`,
+                            color: function (context) {
+                                const valor = context.dataset.data[context.dataIndex];
+                                return valor >= 0 ? 'green' : 'red';
+                            },
+                            font: { weight: 'bold' }
+                        }
+                    }
+
+                    ,
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                },
+                plugins: [ChartDataLabels]
+            });
+        });
+    }
+
+    function carregarSelect2() {
+        $('#cliente').select2({
+            ajax: {
+                url: '/clientes-select2',
+                dataType: 'json',
+                processResults: data => ({ results: data })
+            },
+            placeholder: 'Selecione...',
+            width: '100%'
+        });
+
+        $('#remessa').select2({
+            ajax: {
+                url: '/monitor/remessas-disponiveis',
+                dataType: 'json',
+                processResults: data => ({ results: data })
+            },
+            placeholder: 'Selecione...',
+            width: '100%'
+        });
+
+        $('#nota').select2({
+            ajax: {
+                url: '/notas-fiscais-select2',
+                dataType: 'json',
+                processResults: data => ({ results: data })
+            },
+            placeholder: 'Selecione...',
+            width: '100%'
+        });
+    }
+
+    function limparFiltros() {
+        $('#cliente').val(null).trigger('change');
+        $('#remessa').val(null).trigger('change');
+        $('#nota').val(null).trigger('change');
+        $('#inicio').val('');
+        $('#fim').val('');
+        atualizarGrafico();
+    }
+
+    $(document).ready(function () {
+        carregarSelect2();
+        atualizarGrafico();
+
+        $('#quantidade, #cliente, #remessa, #nota, #inicio, #fim').on('change', atualizarGrafico);
+
+        $('#cliente').on('select2:select', function () {
+            $('#remessa').val(null).trigger('change');
+            $('#nota').val(null).trigger('change');
+            atualizarGrafico();
+        });
+
+        $('#remessa').on('select2:select', function () {
+            $('#cliente').val(null).trigger('change');
+            $('#nota').val(null).trigger('change');
+            atualizarGrafico();
+        });
+
+        $('#nota').on('select2:select', function () {
+            $('#cliente').val(null).trigger('change');
+            $('#remessa').val(null).trigger('change');
+            atualizarGrafico();
+        });
+    });
+</script>
+{% endblock %}

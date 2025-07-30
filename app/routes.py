@@ -5,7 +5,7 @@ from flask_login import current_user, login_required
 import pytz
 from app import db, csrf
 from app.models import Cor, Estado, FormulacaoSolado, FormulacaoSoladoFriso, Funcionario, Grade, Linha, LogAcao, Manutencao, ManutencaoMaquina, ManutencaoPeca, Maquina, MargemPorPedido, MargemPorPedidoReferencia, Matriz, MovimentacaoMatriz, Municipio, OrdemCompra, Peca, Permissao, PlanejamentoProducao, ProducaoDiaria, Referencia, Componente, CustoOperacional, ReferenciaAlca, ReferenciaComponentes, ReferenciaCustoOperacional, ReferenciaEmbalagem1, ReferenciaEmbalagem2, ReferenciaEmbalagem3, ReferenciaMaoDeObra, ReferenciaSolado, Remessa, Salario, MaoDeObra, Margem, TamanhoGrade, TamanhoMatriz, TamanhoMovimentacao, Tipo, TrocaHorario, TrocaMatriz, Usuario, hora_brasilia
-from app.forms import CorForm, DeleteForm, EstadoForm, FuncionarioForm, GradeForm, LinhaForm, ManutencaoForm, MaquinaForm, MargemForm, MargemPorPedidoForm, MargemPorPedidoReferenciaForm, MatrizForm, MovimentacaoMatrizForm, OrdemCompraForm, PecaForm, PlanejamentoProducaoForm, ProducaoDiariaForm, ReferenciaForm, ComponenteForm, CustoOperacionalForm, RemessaForm, SalarioForm, MaoDeObraForm, TipoForm, TrocaMatrizForm, UsuarioForm
+from app.forms import CorForm, DeleteForm, EstadoForm, ExcluirProducaoPorDataForm, FuncionarioForm, GradeForm, LinhaForm, ManutencaoForm, MaquinaForm, MargemForm, MargemPorPedidoForm, MargemPorPedidoReferenciaForm, MatrizForm, MovimentacaoMatrizForm, OrdemCompraForm, PecaForm, PlanejamentoProducaoForm, ProducaoDiariaForm, ReferenciaForm, ComponenteForm, CustoOperacionalForm, RemessaForm, SalarioForm, MaoDeObraForm, TipoForm, TrocaMatrizForm, UsuarioForm
 import os
 from flask import render_template, redirect, url_for, flash, request
 from app.models import Solado, Tamanho, Componente, FormulacaoSolado, Alca, TamanhoAlca, FormulacaoAlca, Colecao
@@ -20,7 +20,7 @@ import pandas as pd
 from flask import request, jsonify
 from werkzeug.utils import secure_filename
 from flask import current_app
-from app.utils import allowed_file, requer_permissao
+from app.utils import allowed_file, formatar_moeda, formatar_numero, requer_permissao
 from flask import g
 import random, string
 from sqlalchemy import case
@@ -28,7 +28,8 @@ from flask import render_template, make_response
 from weasyprint import HTML
 from io import BytesIO
 from sqlalchemy.orm import aliased
-
+from flask import jsonify, request
+from sqlalchemy import func
 
 
 
@@ -2143,16 +2144,28 @@ def excluir_margem(id):
 
 
 
+from sqlalchemy import or_
+
 @bp.route('/margens_pedido', methods=['GET'])
 @login_required
 @requer_permissao('margens', 'ver')
 def listar_margens_pedido():
-    filtro = request.args.get('filtro', '')
+    filtro = request.args.get('filtro', '').strip()
+
     if filtro:
-        margens = MargemPorPedido.query.filter(MargemPorPedido.pedido.ilike(f"%{filtro}%")).all()
+        margens = MargemPorPedido.query.filter(
+            or_(
+                MargemPorPedido.pedido.ilike(f'%{filtro}%'),
+                MargemPorPedido.remessa.ilike(f'%{filtro}%'),
+                MargemPorPedido.cliente.ilike(f'%{filtro}%'),
+                MargemPorPedido.nota_fiscal.ilike(f'%{filtro}%')
+            )
+        ).order_by(MargemPorPedido.id.desc()).all()
     else:
         margens = MargemPorPedido.query.order_by(MargemPorPedido.id.desc()).all()
+
     return render_template('margens_pedido.html', margens=margens)
+
 
 
 
@@ -2280,6 +2293,13 @@ def editar_margem_pedido(id):
 
         # Recalcular totais
         margem_pedido.calcular_totais()
+        # 🔹 Salva o log
+        log = LogAcao(
+            usuario_id=current_user.id,
+            usuario_nome=current_user.nome,
+            acao=f"Editou o Margem_Pedido: {margem_pedido.id} - Pedido: {margem_pedido.pedido}"
+        )
+        db.session.add(log)
         db.session.commit()
 
         flash("Margem por pedido editada com sucesso!", "success")
@@ -2292,6 +2312,67 @@ def editar_margem_pedido(id):
         referencias=referencias,
         margem_pedido=margem_pedido
     )
+
+#### COPIAR  #####
+@bp.route('/margem_pedido/copiar/<int:id>', methods=['GET'])
+@login_required
+@requer_permissao('margens', 'criar')
+def copiar_margem_pedido(id):
+    """ Copia uma margem por pedido existente """
+    margem_original = MargemPorPedido.query.get_or_404(id)
+
+    # Gera um sufixo aleatório de 4 caracteres (letras e números)
+    sufixo = ''.join(random.choices(string.ascii_lowercase + string.digits, k=4))
+
+    nova_margem = MargemPorPedido(
+        pedido=f"{margem_original.pedido}-{sufixo}-copia",
+        nota_fiscal=margem_original.nota_fiscal,
+        cliente=margem_original.cliente,
+        remessa=margem_original.remessa,
+        comissao_porcentagem=margem_original.comissao_porcentagem,
+        comissao_valor=margem_original.comissao_valor,
+        financeiro_porcentagem=margem_original.financeiro_porcentagem,
+        financeiro_valor=margem_original.financeiro_valor,
+        duvidosos_porcentagem=margem_original.duvidosos_porcentagem,
+        duvidosos_valor=margem_original.duvidosos_valor,
+        frete_porcentagem=margem_original.frete_porcentagem,
+        frete_valor=margem_original.frete_valor,
+        tributos_porcentagem=margem_original.tributos_porcentagem,
+        tributos_valor=margem_original.tributos_valor,
+        outros_porcentagem=margem_original.outros_porcentagem,
+        outros_valor=margem_original.outros_valor
+    )
+
+    db.session.add(nova_margem)
+    db.session.flush()  # Garante que nova_margem.id seja gerado
+
+    # Copiar referências vinculadas
+    for ref in margem_original.referencias:
+        nova_ref = MargemPorPedidoReferencia(
+            margem_pedido_id=nova_margem.id,
+            referencia_id=ref.referencia_id,
+            embalagem_escolhida=ref.embalagem_escolhida,
+            quantidade=ref.quantidade,
+            preco_venda=ref.preco_venda
+        )
+        nova_ref.calcular_totais()
+        db.session.add(nova_ref)
+
+    # Recalcular totais da nova margem
+    nova_margem.calcular_totais()
+
+    # Log de cópia
+    log = LogAcao(
+        usuario_id=current_user.id,
+        usuario_nome=current_user.nome,
+        acao=f"Copiou a Margem_Pedido: {margem_original.id} para nova margem {nova_margem.id}"
+    )
+    db.session.add(log)
+
+    db.session.commit()
+
+    flash("Margem por pedido copiada com sucesso!", "success")
+    return redirect(url_for('routes.editar_margem_pedido', id=nova_margem.id))
 
 
 
@@ -2309,14 +2390,27 @@ def ver_margem_pedido(id):
 @requer_permissao('margens', 'excluir')
 def excluir_margem_pedido(id):
     """ Exclui apenas a margem por pedido """
-    margem = MargemPorPedido.query.get_or_404(id)
+    margem_pedido = MargemPorPedido.query.get_or_404(id)
 
     try:
-        db.session.delete(margem)  
+        db.session.delete(margem_pedido)
+        # 🔹 Salva o log
+        log = LogAcao(
+            usuario_id=current_user.id,
+            usuario_nome=current_user.nome,
+            acao=f"Excluiu a Margem_Pedido: {margem_pedido.id} - Pedido: {margem_pedido.pedido}"
+        )
+        db.session.add(log)
         db.session.commit()
         flash("Margem por pedido excluída com sucesso!", "success")
     except Exception as e:
         db.session.rollback()
+        log = LogAcao(
+            usuario_id=current_user.id,
+            usuario_nome=current_user.nome,
+            acao=f"ERRO AO EXCLUIR Margem_Pedido: {margem_pedido.id} - Pedido: {margem_pedido.pedido}"
+        )
+        db.session.add(log)
         flash(f"Erro ao excluir margem: {str(e)}", "danger")
 
     return redirect(url_for('routes.listar_margens_pedido'))
@@ -2373,8 +2467,24 @@ def custo_remessa():
 
 
  ####  IMPORTAÇÕES   #######
+import re
 
+def extrair_codigo_central(codigo_raw):
+    """
+    Extrai o código principal da referência, ignorando prefixos/sufixos.
+    Exemplo: 'AB4VZ.KITEVA170B' → 'KITEVA170'
+    """
+    codigo_raw = str(codigo_raw).strip().upper()
 
+    # Regex: pega a parte entre o ponto e antes da letra final
+    match = re.search(r'\.([A-Z0-9]+)', codigo_raw)
+    if match:
+        base = match.group(1)
+        # Remove letra final se houver (ex: B, C, D)
+        if base[-1].isalpha() and base[:-1].isdigit() is False:
+            base = base[:-1]
+        return base
+    return codigo_raw
 @bp.route('/margem_pedido/importar', methods=['POST'])
 @login_required
 @requer_permissao('margens', 'editar')
@@ -2384,43 +2494,96 @@ def importar_referencias():
         return jsonify({"success": False, "error": "Nenhum arquivo enviado"})
 
     file = request.files['file']
-
     if file.filename == '' or not allowed_file(file.filename):
         return jsonify({"success": False, "error": "Arquivo inválido"})
 
     from werkzeug.utils import secure_filename
     import pandas as pd
     import os
+    import re
+
+    def extrair_codigo_central(codigo_raw):
+        codigo_raw = str(codigo_raw).strip().upper()
+        match = re.search(r'\.([A-Z0-9]+)', codigo_raw)
+        if match:
+            base = match.group(1)
+            if base[-1].isalpha() and base[:-1].isdigit() is False:
+                base = base[:-1]
+            return base
+        return codigo_raw
 
     filename = secure_filename(file.filename)
     filepath = os.path.join('app/static/uploads', filename)
     file.save(filepath)
 
-    # Lendo o arquivo e processando os dados
     try:
-        if filename.endswith('.xlsx'):
+        if filename.endswith(('.xlsx', '.xls')):
             df = pd.read_excel(filepath)
         else:
-            df = pd.read_csv(filepath, delimiter=";")  # Ajuste conforme necessário
+            df = pd.read_csv(filepath, delimiter=";")
 
-        referencias = []
+        df.columns = [col.strip() for col in df.columns]
+
+        referencias_dict = {}
+        referencias_caixa = {}
+        referencias_nao_encontradas = []
+
         for _, row in df.iterrows():
-            # Buscar a referência pelo código, e **não pelo ID**
-            referencia = Referencia.query.filter_by(codigo_referencia=row["Código Referência"]).first()
+            # Ignora linhas em branco ou com "Pedido:" na célula
+            if pd.isna(row["Referência"]) or pd.isna(row["Qtde"]) or pd.isna(row["Preço"]):
+                continue
+            if "pedido" in str(row["Referência"]).strip().lower():
+                continue
 
-            if referencia:
-                referencias.append({
-                    "codigo": referencia.codigo_referencia,
-                    "descricao": referencia.descricao,
-                    "quantidade": row["Quantidade"],
-                    "embalagem": row["Embalagem"],
-                    "preco_venda": row["Preço Venda"]
-                })
+            codigo_original = str(row["Referência"]).strip()
+            codigo_ref = extrair_codigo_central(codigo_original)
+            descricao = str(row["Descrição"]).strip()
+            quantidade = int(row["Qtde"])
+            preco_venda = float(row["Preço"])
 
-        return jsonify({"success": True, "referencias": referencias})
+            embalagem_raw = str(row["Embalagem"]).strip().upper()
+            if embalagem_raw.startswith("SACO"):
+                embalagem = "Saco"
+            elif embalagem_raw.startswith("CAIXA"):
+                embalagem = "caixa"
+            else:
+                embalagem = "Saco"
+
+            referencia = Referencia.query.filter_by(codigo_referencia=codigo_ref).first()
+            if not referencia:
+                referencias_nao_encontradas.append(codigo_ref)
+                continue
+
+            destino = referencias_caixa if embalagem == "caixa" else referencias_dict
+            if codigo_ref in destino:
+                destino[codigo_ref]["quantidade"] += quantidade
+            else:
+                destino[codigo_ref] = {
+                    "codigo": codigo_ref,
+                    "descricao": descricao,
+                    "quantidade": quantidade,
+                    "embalagem": embalagem,
+                    "preco_venda": preco_venda
+                }
+
+        if referencias_nao_encontradas:
+            lista = ", ".join(set(referencias_nao_encontradas))
+            return jsonify({
+                "success": False,
+                "error": f"As seguintes referências não possuem custo cadastrado no sistema: {lista}"
+            })
+
+        return jsonify({
+            "success": True,
+            "referencias": list(referencias_dict.values()),
+            "referencias_caixa": list(referencias_caixa.values())
+        })
 
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
+
+
+
 
 
 
@@ -4690,8 +4853,6 @@ def listar_prodfat():
         total_produzido=total_produzido
     )
 
-
-
 @bp.route('/planejamento/importar_prodfat', methods=['GET', 'POST'])
 @login_required
 @requer_permissao('controleproducao', 'criar')
@@ -4705,6 +4866,10 @@ def importar_producao_faturamento():
                 df = pd.read_excel(arquivo)
                 df.columns = df.columns.str.strip().str.upper()
 
+                # ✅ Corrigir remessas para sempre serem strings e evitar '2473.0'
+                if 'REMESSA' in df.columns:
+                    df['REMESSA'] = df['REMESSA'].apply(lambda x: str(int(float(x))) if pd.notna(x) and str(x).replace('.', '', 1).isdigit() and float(x).is_integer() else str(x).strip())
+
                 col_obrig = ['DATA', 'REMESSA', 'REF', 'QTD']
                 faltando = [col for col in col_obrig if col not in df.columns]
                 if faltando:
@@ -4713,10 +4878,11 @@ def importar_producao_faturamento():
 
                 total_inseridos = 0
                 total_nao_encontrados = 0
+                erros_detalhados = []
 
                 print("\n=== Iniciando importação de Produção Diária ===\n")
 
-                for _, row in df.iterrows():
+                for i, row in df.iterrows():
                     setor = row.get('SETOR', None)
                     if setor is not None:
                         setor = str(setor).strip()
@@ -4730,11 +4896,11 @@ def importar_producao_faturamento():
 
                     remessa = Remessa.query.filter(Remessa.codigo.ilike(remessa_codigo)).first()
                     if not remessa:
-                        print(f"❌ Remessa '{remessa_codigo}' não encontrada.")
+                        msg = f"❌ Linha {i+2}: Remessa '{remessa_codigo}' não encontrada."
+                        print(msg)
+                        erros_detalhados.append(msg)
                         total_nao_encontrados += 1
                         continue
-                    else:
-                        print(f"✅ Remessa encontrada: ID={remessa.id} | CODIGO={remessa.codigo}")
 
                     planejamento = PlanejamentoProducao.query.filter_by(
                         referencia=referencia,
@@ -4742,18 +4908,14 @@ def importar_producao_faturamento():
                     ).first()
 
                     if planejamento:
-                        print(f"✅ Planejamento encontrado: ID={planejamento.id}")
-
                         if setor:
-                            planejamento.setor = setor  # só atualiza se veio preenchido
+                            planejamento.setor = setor
 
-                        # Calcula faturamento com base no preço médio
                         if planejamento.preco_medio:
                             faturamento = round(float(planejamento.preco_medio) * qtd, 2)
                         else:
                             faturamento = 0.0
 
-                        # Cria registro de produção diária
                         prod_diaria = ProducaoDiaria(
                             planejamento_id=planejamento.id,
                             data_producao=data_producao,
@@ -4761,12 +4923,12 @@ def importar_producao_faturamento():
                             faturamento=faturamento
                         )
                         db.session.add(prod_diaria)
-
-                        print(f"✅ ProducaoDiaria inserida: QTD={qtd} | FATURAMENTO={faturamento}")
-
                         total_inseridos += 1
+                        print(f"✅ ProduçãoDiaria inserida: QTD={qtd} | FATURAMENTO={faturamento}")
                     else:
-                        print(f"❌ Planejamento não encontrado para REF '{referencia}' e REMESSA '{remessa.codigo}'")
+                        msg = f"❌ Linha {i+2}: Planejamento não encontrado para REF '{referencia}' na REMESSA '{remessa_codigo}'"
+                        print(msg)
+                        erros_detalhados.append(msg)
                         total_nao_encontrados += 1
 
                 db.session.commit()
@@ -4775,6 +4937,10 @@ def importar_producao_faturamento():
                 print(f"TOTAL NÃO ENCONTRADOS: {total_nao_encontrados}")
 
                 flash(f"Importação concluída! {total_inseridos} registros inseridos. {total_nao_encontrados} não encontrados.", "success")
+                
+                if erros_detalhados:
+                    for erro in erros_detalhados:
+                        flash(erro, "warning")
 
             except Exception as e:
                 flash(f"Erro ao importar: {str(e)}", "danger")
@@ -4782,6 +4948,7 @@ def importar_producao_faturamento():
         return redirect(url_for('routes.importar_producao_faturamento'))
 
     return render_template("importar_prodfat.html")
+
 
 
 @bp.route('/planejamento/relatorio_prodxfat_pdf')
@@ -4843,6 +5010,7 @@ def relatorio_prodxfat_pdf():
     response.headers["Content-Type"] = "application/pdf"
     response.headers["Content-Disposition"] = "inline; filename=relatorio_prodxfat.pdf"
     return response
+
 
 
 
@@ -4936,19 +5104,20 @@ def grafico_prodfat_img():
 
     for i, row in df.iterrows():
         # Faturamento (centro da barra)
-        fat_label = f"R$ {row['faturamento']:.2f}"
+        fat_label = formatar_moeda(row['faturamento'])
         ax1.text(i, row['faturamento'] * 0.5, fat_label,
                 ha='center', fontsize=9, color='black')
 
         # Produção (embaixo da barra)
-        prod_label = f"{int(row['producao'])} pares"
+        prod_label = f"{formatar_numero(row['producao'])} pares"
         ax1.text(i, -df['faturamento'].max() * 0.05, prod_label,
                 ha='center', fontsize=9, color='blue')
 
         # Preço médio (acima da barra)
-        preco_label = f"R$ {row['preco_medio']:.2f}"
+        preco_label = formatar_moeda(row['preco_medio'])
         ax1.text(i, row['faturamento'] + df['faturamento'].max() * 0.02, preco_label,
                 ha='center', fontsize=9, color='red')
+
 
     ax1.set_ylabel("Faturamento (R$)")
     ax1.set_title("Produção × Faturamento por Dia")
@@ -4992,11 +5161,15 @@ def nova_producao_diaria():
             flash('Planejamento não encontrado.', 'danger')
             return render_template('nova_producao_diaria.html', form=form)
 
+        # Garante que o preco_medio não seja None
+        preco = planejamento.preco_medio if planejamento.preco_medio else 0.0
+        faturamento = form.quantidade.data * preco
+
         producao = ProducaoDiaria(
             data_producao=form.data_producao.data,
             quantidade=form.quantidade.data,
             planejamento_id=planejamento.id,
-            faturamento=form.quantidade.data * planejamento.preco_medio
+            faturamento=faturamento
         )
         db.session.add(producao)
         db.session.commit()
@@ -5004,6 +5177,7 @@ def nova_producao_diaria():
         return redirect(url_for('routes.listar_prodfat'))
 
     return render_template('nova_producao_diaria.html', form=form)
+
 
 
 @bp.route('/producao_diaria/editar/<int:id>', methods=['GET', 'POST'])
@@ -5025,16 +5199,20 @@ def editar_producao_diaria(id):
             flash('Planejamento não encontrado.', 'danger')
             return render_template('editar_producao_diaria.html', form=form, producao=producao)
 
+        preco = planejamento.preco_medio if planejamento.preco_medio else 0.0
+        faturamento = form.quantidade.data * preco
+
         producao.data_producao = form.data_producao.data
         producao.quantidade = form.quantidade.data
         producao.planejamento_id = planejamento.id
-        producao.faturamento = form.quantidade.data * planejamento.preco_medio
+        producao.faturamento = faturamento
 
         db.session.commit()
         flash('Produção diária atualizada com sucesso.', 'success')
         return redirect(url_for('routes.ver_producao_diaria', id=producao.id))
 
     return render_template('editar_producao_diaria.html', form=form, producao=producao)
+
 
 
 
@@ -5050,6 +5228,29 @@ def excluir_producao_diaria(id):
     return redirect(url_for('routes.listar_prodfat'))
 
 
+@bp.route('/excluir_producao_por_data', methods=['GET', 'POST'])
+@login_required
+@requer_permissao('controleproducao', 'editar')
+def excluir_producao_por_data():
+    form = ExcluirProducaoPorDataForm()
+
+    if form.validate_on_submit():
+        data = form.data.data
+        registros = ProducaoDiaria.query.filter(
+            ProducaoDiaria.data_producao == data
+        ).all()
+
+        if not registros:
+            flash('Nenhum registro encontrado para a data de produção informada.', 'warning')
+        else:
+            for r in registros:
+                db.session.delete(r)
+            db.session.commit()
+            flash(f'{len(registros)} registro(s) com data de produção {data.strftime("%d/%m/%Y")} excluído(s) com sucesso.', 'success')
+
+        return redirect(url_for('routes.excluir_producao_por_data'))
+
+    return render_template('excluir_producao_por_data.html', form=form)
 
 ## TIPOS ##
 
@@ -5204,3 +5405,88 @@ def excluir_peca(id):
         flash(f"Erro inesperado ao excluir o componente: {str(e)}", "danger")
 
     return redirect(url_for('routes.listar_pecas'))
+
+
+#### GRAFICOS PARA SEU GLAIDSTON
+
+@bp.route('/monitor/margens')
+@login_required
+@requer_permissao('comercial', 'ver')
+def monitor_margens():
+    return render_template('monitor_margens.html')
+
+## API LUCRO PEDIDOS
+
+@bp.route('/monitor/lucro-pedidos')
+@login_required
+@requer_permissao('comercial', 'ver')
+def monitor_lucro_pedidos():
+    quantidade = int(request.args.get('quantidade', 5))
+    cliente = request.args.get('cliente')
+    nota = request.args.get('nota')
+    inicio = request.args.get('inicio')
+    fim = request.args.get('fim')
+    remessa = request.args.get('remessa')
+
+    query = MargemPorPedido.query
+
+    if remessa:
+        query = query.filter(MargemPorPedido.remessa == remessa)
+    if cliente:
+        query = query.filter(MargemPorPedido.cliente.ilike(f"%{cliente}%"))
+    if nota:
+        query = query.filter(MargemPorPedido.nota_fiscal.ilike(f"%{nota}%"))
+    if inicio:
+        query = query.filter(MargemPorPedido.data_criacao >= inicio)
+    if fim:
+        query = query.filter(MargemPorPedido.data_criacao <= fim)
+
+    margens = query.order_by(MargemPorPedido.id.desc()).limit(quantidade).all()
+    dados = [
+    {
+        "pedido": m.pedido,
+        "lucro": float(m.lucro_total or 0),
+        "faturamento": float(m.total_preco_venda or 0)  # ← esse é o campo do modelo
+    }
+    for m in margens
+    ]
+
+    return jsonify(dados)
+
+@bp.route('/clientes-select2')
+@login_required
+def clientes_select2():
+    clientes = (
+        db.session.query(MargemPorPedido.cliente)
+        .filter(MargemPorPedido.cliente != None)
+        .distinct()
+        .order_by(MargemPorPedido.cliente)
+        .all()
+    )
+    return jsonify([{"id": c.cliente, "text": c.cliente} for c in clientes])
+
+@bp.route('/notas-fiscais-select2')
+@login_required
+def notas_fiscais_select2():
+    notas = (
+        db.session.query(MargemPorPedido.nota_fiscal)
+        .filter(MargemPorPedido.nota_fiscal != None)
+        .distinct()
+        .order_by(MargemPorPedido.nota_fiscal)
+        .all()
+    )
+    return jsonify([{"id": n.nota_fiscal, "text": n.nota_fiscal} for n in notas])
+
+@bp.route('/monitor/remessas-disponiveis')
+@login_required
+@requer_permissao('comercial', 'ver')
+def remessas_disponiveis():
+    remessas = (
+        db.session.query(MargemPorPedido.remessa)
+        .filter(MargemPorPedido.remessa != None)
+        .distinct()
+        .order_by(MargemPorPedido.remessa.desc())
+        .all()
+    )
+    resultados = [{"id": r.remessa, "text": r.remessa} for r in remessas]
+    return jsonify(resultados)

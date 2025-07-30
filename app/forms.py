@@ -520,6 +520,10 @@ class ProducaoDiariaForm(FlaskForm):
     submit = SubmitField('Salvar')
 
 
+class ExcluirProducaoPorDataForm(FlaskForm):
+    data = DateField('Data da Produção', format='%Y-%m-%d', validators=[DataRequired()])
+    submit = SubmitField('Excluir Registros')
+
 
 
 ##### CADASTROS ##########

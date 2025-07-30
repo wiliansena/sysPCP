@@ -27,10 +27,10 @@
                         <th>Descrição</th>
                         <th>Embalagem</th>
                         <th>Quantidade</th>
+                        <th>Custo Unitário</th>
+                        <th>Total Custo</th>
                         <th>Preço de Venda</th>
                         <th>Total Preço Venda</th>
-                        <th>Total Custo</th>
-                        
                     </tr>
                 </thead>
                 <tbody>
@@ -40,9 +40,10 @@
                         <td>{{ referencia.referencia.descricao }}</td>
                         <td>{{ referencia.embalagem_escolhida }}</td>
                         <td>{{ referencia.quantidade }}</td>
-                        <td>R$ {{ "%.2f"|format(referencia.preco_venda) }}</td>
-                        <td>R$ {{ "%.2f"|format(referencia.total_preco_venda) }}</td>
-                        <td>R$ {{ "%.2f"|format(referencia.total_custo) }}</td>
+                        <td>R$ {{ referencia.preco_embalagem_escolhida|br_moeda }}</td>
+                        <td>R$ {{ referencia.total_custo|br_moeda }}</td>
+                        <td>R$ {{ referencia.preco_venda|br_moeda }}</td>
+                        <td>R$ {{ referencia.total_preco_venda|br_moeda }}</td>
                     </tr>
                     {% else %}
                     <tr>
@@ -69,64 +70,77 @@
                 <tbody>
                     <tr>
                         <td>Comissão</td>
-                        <td>{{ "%.2f"|format(margem.comissao_porcentagem) }}</td>
-                        <td>R$ {{ "%.2f"|format(margem.comissao_valor) }}</td>
+                        <td>{{ margem.comissao_porcentagem|br_moeda }}</td>
+                        <td>R$ {{ margem.comissao_valor|br_moeda }}</td>
                     </tr>
                     <tr>
                         <td>Financeiro</td>
-                        <td>{{ "%.2f"|format(margem.financeiro_porcentagem) }}</td>
-                        <td>R$ {{ "%.2f"|format(margem.financeiro_valor) }}</td>
+                        <td>{{ margem.financeiro_porcentagem|br_moeda }}</td>
+                        <td>R$ {{ margem.financeiro_valor|br_moeda }}</td>
                     </tr>
                     <tr>
                         <td>Duvidosos</td>
-                        <td>{{ "%.2f"|format(margem.duvidosos_porcentagem) }}</td>
-                        <td>R$ {{ "%.2f"|format(margem.duvidosos_valor) }}</td>
+                        <td>{{ margem.duvidosos_porcentagem|br_moeda }}</td>
+                        <td>R$ {{ margem.duvidosos_valor|br_moeda }}</td>
                     </tr>
                     <tr>
                         <td>Frete</td>
-                        <td>{{ "%.2f"|format(margem.frete_porcentagem) }}</td>
-                        <td>R$ {{ "%.2f"|format(margem.frete_valor) }}</td>
+                        <td>{{ margem.frete_porcentagem|br_moeda }}</td>
+                        <td>R$ {{ margem.frete_valor|br_moeda }}</td>
                     </tr>
                     <tr>
                         <td>Tributos</td>
-                        <td>{{ "%.2f"|format(margem.tributos_porcentagem) }}</td>
-                        <td>R$ {{ "%.2f"|format(margem.tributos_valor) }}</td>
+                        <td>{{ margem.tributos_porcentagem|br_moeda }}</td>
+                        <td>R$ {{ margem.tributos_valor|br_moeda }}</td>
                     </tr>
                     <tr>
                         <td>Outros</td>
-                        <td>{{ "%.2f"|format(margem.outros_porcentagem) }}</td>
-                        <td>R$ {{ "%.2f"|format(margem.outros_valor) }}</td>
+                        <td>{{ margem.outros_porcentagem|br_moeda }}</td>
+                        <td>R$ {{ margem.outros_valor|br_moeda }}</td>
                     </tr>
                     <tr class="table-warning">
                         <td><strong>Total Despesas</strong></td>
-                        <td><strong>{{ "%.2f"|format(margem.total_porcentagem) }}</strong></td>
-                        <td><strong>R$ {{ "%.2f"|format(margem.total_valor) }}</strong></td>
+                        <td><strong>{{ margem.total_porcentagem|br_moeda }}</strong></td>
+                        <td><strong>R$ {{ margem.total_valor|br_moeda }}</strong></td>
                     </tr>
                 </tbody>
             </table>
         </div>
     </div>
-
     <!-- 🔹 Totais -->
     <div class="card mb-3">
         <div class="card-body">
-            <h5 class="card-title">Totais</h5>
-            <div class="row">
-                <div class="col-md-3 col-sm-6">
-                    <p><strong>Total Preço Venda:</strong> R$ {{ "%.2f"|format(margem.total_preco_venda) }}</p>
-                </div>
-                <div class="col-md-3 col-sm-6">
-                    <p><strong>Total Custo:</strong> R$ {{ "%.2f"|format(margem.total_custo) }}</p>
-                </div>
-                <div class="col-md-3 col-sm-6">
-                    <p><strong>Lucro Total:</strong> R$ {{ "%.2f"|format(margem.lucro_total) }}</p>
-                </div>
-                <div class="col-md-3 col-sm-6">
-                    <p><strong>Margem Média:</strong> {{ "%.2f"|format(margem.margem_media) }}%</p>
-                </div>
+            <h5 class="card-title"><strong>TOTAIS</strong></h5>
+            <div class="table-responsive">
+                <table class="table table-bordered text-center">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>Total Custo</th>
+                            <th>Total Preço Venda</th>
+                            <th>Lucro Total</th>
+                            <th>Margem Média</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="table-warning">
+                            <td>R$ {{ margem.total_custo|br_moeda }}</td>
+                            <td>R$ {{ margem.total_preco_venda|br_moeda }}</td>
+                            <td>
+                                <strong
+                                    class="{% if margem.lucro_total >= 0 %}text-primary{% else %}text-danger{% endif %}">
+                                    R$ {{ margem.lucro_total|br_moeda }}
+                                </strong>
+                            </td>
+
+                            <td>{{ margem.margem_media|br_moeda }}%</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
+
+
 
 
     <!-- 🔹 Ações -->

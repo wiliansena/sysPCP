@@ -46,9 +46,9 @@
                 <td>{{ margem.remessa}}</td>
                 <td>{{ margem.nota_fiscal }}</td>
                 <td>{{ margem.cliente }}</td>
-                <td>R$ {{ "%.2f"|format(margem.total_preco_venda) }}</td>
-                <td>R$ {{ "%.2f"|format(margem.total_custo) }}</td>
-                <td>R$ {{ "%.2f"|format(margem.lucro_total) }}</td>
+                <td>R$ {{ margem.total_preco_venda|br_moeda }}</td>
+                <td>R$ {{ margem.total_custo|br_moeda }}</td>
+                <td>R$ {{ margem.lucro_total|br_moeda }}</td>
                 <td>{{ "%.2f"|format(margem.margem_media) }}%</td>
             </tr>
             {% endfor %}
@@ -59,15 +59,15 @@
     <table class="table table-bordered">
         <tr>
             <th>Total Preço Venda</th>
-            <td>R$ {{ "%.2f"|format(totais.total_preco_venda) }}</td>
+            <td>R$ {{ totais.total_preco_venda|br_moeda }}</td>
         </tr>
         <tr>
             <th>Total Custo</th>
-            <td>R$ {{ "%.2f"|format(totais.total_custo) }}</td>
+            <td>R$ {{ totais.total_custo|br_moeda }}</td>
         </tr>
         <tr>
             <th>Lucro Total</th>
-            <td>R$ {{ "%.2f"|format(totais.lucro_total) }}</td>
+            <td>R$ {{ totais.lucro_total|br_moeda }}</td>
         </tr>
         <tr>
             <th>Margem Média</th>

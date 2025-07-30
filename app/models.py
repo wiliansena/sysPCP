@@ -3,12 +3,10 @@ from flask_login import UserMixin
 from sqlalchemy.orm import relationship
 from app import db
 from decimal import Decimal, ROUND_HALF_UP, ROUND_CEILING
-from datetime import date, datetime, time
 from datetime import datetime
-import pytz
 
-def hora_brasilia():
-    return datetime.now(pytz.timezone('America/Sao_Paulo')).replace(microsecond=0)
+from app.utils_horas import hora_brasilia
+
 
 
 
@@ -749,7 +747,7 @@ class Margem(db.Model):
 
 class MargemPorPedido(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    pedido = db.Column(db.String(50), nullable=False)  # Número do pedido
+    pedido = db.Column(db.String(50),nullable=False,  unique=True)  # Número do pedido
     nota_fiscal = db.Column(db.String(50), nullable=True)
     cliente = db.Column(db.String(100), nullable=True)
     remessa = db.Column(db.String(20), nullable=True)
@@ -816,49 +814,56 @@ class MargemPorPedido(db.Model):
         self.margem_media = (self.lucro_total / self.total_preco_venda * 100) if self.total_preco_venda > 0 else 0
 
 
+from decimal import Decimal, ROUND_HALF_UP
+from app import db
+
 class MargemPorPedidoReferencia(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     margem_pedido_id = db.Column(db.Integer, db.ForeignKey('margem_por_pedido.id'), nullable=False)
     referencia_id = db.Column(db.Integer, db.ForeignKey('referencia.id'), nullable=False)
 
     quantidade = db.Column(db.Integer, nullable=False)
-    preco_venda = db.Column(db.Numeric(10,2), nullable=False)  # 🔹 Usuário digita o preço de venda
+    preco_venda = db.Column(db.Numeric(10,2), nullable=False)
     embalagem_escolhida = db.Column(db.String(20), nullable=False)
 
-    total_custo = db.Column(db.Numeric(10,2), nullable=False)  # 🔹 Agora sem despesas de venda
-    total_preco_venda = db.Column(db.Numeric(10,2), nullable=False)  # 🔹 Calculado por referência
+    total_custo = db.Column(db.Numeric(10,2), nullable=False)
+    total_preco_venda = db.Column(db.Numeric(10,2), nullable=False)
 
     referencia = db.relationship("Referencia")
 
     def calcular_totais(self):
-        """ 
-        Calcula o custo e preço de venda da referência no pedido.
-        """
-        # 🔹 Verifica se a referência está associada corretamente
+        """Calcula o custo e preço de venda da referência no pedido usando custo unitário arredondado."""
         if not self.referencia:
-            self.referencia = Referencia.query.get(self.referencia_id)  # 🔹 Tenta carregar manualmente
+            self.referencia = Referencia.query.get(self.referencia_id)
             if not self.referencia:
                 print(f"⚠️ ERRO: Referência ID {self.referencia_id} não encontrada no banco!")
-                return  # 🔹 Sai da função sem fazer cálculos se a referência não for encontrada
+                return
 
-        custo_unitario = Decimal(0)
+        # 🔹 Pega o valor já arredondado via property
+        custo_unitario = self.preco_embalagem_escolhida
 
-        # 🔹 Usa os preços de acordo com a embalagem escolhida
+        # 🔹 Calcula os totais com base no custo arredondado
+        self.total_custo = (custo_unitario * self.quantidade).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        self.total_preco_venda = (self.preco_venda * self.quantidade).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+        print(f"✔️ Ref {self.referencia_id} | Custo Unitário: {custo_unitario} | Total Custo: {self.total_custo} | Total Preço Venda: {self.total_preco_venda}")
+
+    @property
+    def preco_embalagem_escolhida(self):
+        """Retorna o custo da embalagem escolhida, arredondado para 2 casas decimais."""
+        if not self.referencia:
+            return Decimal(0)
+
+        valor = Decimal(0)
+
         if self.embalagem_escolhida.lower() == "cartucho":
-            custo_unitario = self.referencia.custo_total_embalagem1 or Decimal(0)
+            valor = self.referencia.custo_total_embalagem1 or Decimal(0)
         elif self.embalagem_escolhida.lower() == "colmeia":
-            custo_unitario = self.referencia.custo_total_embalagem2 or Decimal(0)
+            valor = self.referencia.custo_total_embalagem2 or Decimal(0)
         elif self.embalagem_escolhida.lower() == "saco":
-            custo_unitario = self.referencia.custo_total_embalagem3 or Decimal(0)
+            valor = self.referencia.custo_total_embalagem3 or Decimal(0)
 
-        # 🔹 Total custo = custo da embalagem * quantidade
-        self.total_custo = custo_unitario * self.quantidade
-
-        # 🔹 Total preço venda = preço unitário digitado * quantidade
-        self.total_preco_venda = self.preco_venda * self.quantidade
-
-        print(f"✔️ Cálculo feito: Ref {self.referencia_id} | Total Custo: {self.total_custo} | Total Preço Venda: {self.total_preco_venda}")
-
+        return valor.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 
 #### CONTROLE DE PRODUÇÃO   ########
@@ -1167,7 +1172,7 @@ class TamanhoGrade(db.Model):
 class Remessa(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     codigo = db.Column(db.String(20), nullable=False, unique=True)
-    descricao = db.Column(db.String(20), nullable=True)
+    descricao = db.Column(db.String(100), nullable=True)
     data_criacao = db.Column(db.DateTime, default=hora_brasilia)
     data_fechamento = db.Column(db.DateTime, nullable=True)
 
@@ -1224,12 +1229,14 @@ class ProducaoDiaria(db.Model):
 
     planejamento = db.relationship('PlanejamentoProducao', back_populates='producoes_diarias')
 
+    data_insercao = db.Column(db.DateTime, default=hora_brasilia, nullable=False)
+
 
     @property
     def faturamento_medio(self):
         if self.planejamento and self.planejamento.preco_medio:
-            return round(self.quantidade * self.planejamento.preco_medio, 2)
-        return 0.0
+            return (Decimal(self.quantidade) * self.planejamento.preco_medio).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        return Decimal('0.00')
 
 
 

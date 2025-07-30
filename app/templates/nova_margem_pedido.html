@@ -36,14 +36,14 @@
         <hr>
         <!-- Botão para Importar Arquivo -->
         <div class="alert alert-info">
-        <h5><strong>📦 Importar Pedido</strong></h5>
-        <p class="text-muted mb-3">Apenas arquivos <strong>.xlsx</strong> (Excel) são permitidos.</p>
-        <p> Colunas: <code>Código Referência | Descrição | Quantidade | Embalagem | Preço Venda</code></p>
-        <div class="d-flex align-items-center">
-            <input type="file" id="fileInput" class="form-control w-auto">
-            <button type="button" class="btn btn-success ms-2" onclick="importarArquivo()">
-                <i class="fas fa-upload me-1"></i>Importar</button>
-        </div>
+            <h5><strong>📦 Importar Pedido</strong></h5>
+            <p class="text-muted mb-3">Apenas arquivos <strong>.xlsx</strong> (Excel) são permitidos.</p>
+            <p> Colunas: <code> Referência | Descrição | Embalagem | Qtde | Preço</code></p>
+            <div class="d-flex align-items-center">
+                <input type="file" id="fileInput" class="form-control w-auto">
+                <button type="button" class="btn btn-success ms-2" onclick="importarArquivo()">
+                    <i class="fas fa-upload me-1"></i>Importar</button>
+            </div>
         </div>
         <br>
 
@@ -53,21 +53,21 @@
             <div class="card-body">
                 <h5 class="card-title">Referências Selecionadas</h5>
                 <div class="d-flex align-items-center gap-3">
-                    <button type="button" id="botaoSelecionarReferencias" class="btn btn-primary"
-                        data-bs-toggle="modal" data-bs-target="#modalReferencias">
+                    <button type="button" id="botaoSelecionarReferencias" class="btn btn-primary" data-bs-toggle="modal"
+                        data-bs-target="#modalReferencias">
                         Selecionar Referências
                     </button>
                     <span id="mensagem-importacao" class="text-danger fw-bold" style="display: none;">
                         Referências importadas. Edição manual desativada.
                     </span>
-                </div>                
+                </div>
                 <table class="table table-sm mt-3">
                     <thead>
                         <tr>
                             <th>Código Referência</th>
                             <th>Descrição</th>
-                            <th>Quantidade</th>
                             <th>Embalagem</th>
+                            <th>Quantidade</th>
                             <th>Preço Venda</th>
                             <th>Ação</th>
                         </tr>
@@ -81,6 +81,10 @@
         <div class="card mb-3">
             <div class="card-body">
                 <h5 class="card-title">Despesas de Venda</h5>
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="usar_padrao" onclick="preencherValoresPadrao()">
+                    <label class="form-check-label" for="usar_padrao"><strong>Usar valores padrão</strong></label>
+                </div>
                 <div class="row">
                     {% for field in [
                     ('comissao_porcentagem', 'comissao_valor'),
@@ -113,7 +117,7 @@
             <button type="submit" class="btn btn-success me-2"><i class="fas fa-save"></i> Salvar</button>
             <a href="{{ url_for('routes.listar_margens_pedido') }}" class="btn btn-secondary">Cancelar</a>
         </div>
-        
+
     </form>
 </div>
 
@@ -126,6 +130,11 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
             </div>
             <div class="modal-body">
+                <div class="mb-3">
+                    <input type="text" id="filtro-referencia" class="form-control"
+                        placeholder="🔍 Pesquisar referência ou descrição...">
+                </div>
+
                 <table class="table table-sm" id="referenciaTable">
                     <thead>
                         <tr>
@@ -144,8 +153,7 @@
                             <td>
                                 <button type="button" class="btn btn-success btn-sm selecionar-referencia"
                                     data-id="{{ referencia.id }}" data-codigo="{{ referencia.codigo_referencia }}"
-                                    data-descricao="{{ referencia.descricao }}"
-                                    data-tipo="referencia">
+                                    data-descricao="{{ referencia.descricao }}" data-tipo="referencia">
                                     Selecionar
                                 </button>
                             </td>
@@ -173,7 +181,6 @@
                 <input type='hidden' name='referencia_id[]' value='${codigo}'>  <!-- 🔹 Agora usa o código -->
                 <td>${codigo}</td>
                 <td>${descricao}</td>
-                <td><input type='number' name='quantidade_${codigo}' class='form-control' min='1' value='1'></td>
                 <td>
                     <select name='embalagem_${codigo}' class='form-select'>
                         <option value='Cartucho'>Cartucho</option>
@@ -181,17 +188,17 @@
                         <option value='Saco'>Saco</option>
                     </select>
                 </td>
+                <td><input type='number' name='quantidade_${codigo}' class='form-control' min='1' value='1'></td>
                 <td><input type='number' step='0.01' name='preco_venda_${codigo}' class='form-control'></td>
                 <td><button type='button' class='btn btn-danger btn-sm remove-referencia' data-codigo='${codigo}'>Remover</button></td>
             </tr>`;
 
             $("#referencias-selecionadas").append(row);
-          //  $("#modalReferencias").modal("hide");
+            //  $("#modalReferencias").modal("hide");
         });
 
     });
 </script>
-
 <!-- Script IMPORTAÇÃO -->
 <script>
     function importarArquivo() {
@@ -210,72 +217,112 @@
         })
         .then(response => response.json())
         .then(data => {
-            if (data.success) {
-                data.referencias.forEach(ref => {
+            if (!data.success) {
+                alert("Erro ao importar: " + (data.error || "Erro desconhecido"));
+                return;
+            }
+
+            // 🔹 Referências com embalagem definida (ex: saco)
+            data.referencias.forEach(ref => {
+                let row = `
+                <tr id='referencia_${ref.codigo}' class="table-warning" data-importado="true">
+                    <input type='hidden' name='referencia_id[]' value='${ref.codigo}'>
+                    <td>${ref.codigo}</td>
+                    <td>${ref.descricao}</td>
+                    <td>
+                        <select class='form-select' disabled>
+                            <option selected>${ref.embalagem}</option>
+                        </select>
+                        <input type='hidden' name='embalagem_${ref.codigo}' value='${ref.embalagem}'>
+                    </td>
+                    <td><input type='number' name='quantidade_${ref.codigo}' class='form-control' min='1' value='${ref.quantidade}' readonly></td>
+                    <td><input type='number' step='0.01' name='preco_venda_${ref.codigo}' class='form-control' value='${ref.preco_venda}' readonly></td>
+                    <td><button type='button' class='btn btn-danger btn-sm remove-referencia' data-codigo='${ref.codigo}' data-importado="true">Remover</button></td>
+                </tr>`;
+                document.getElementById("referencias-selecionadas").innerHTML += row;
+            });
+
+            // 🔹 Referências com embalagem = "CAIXA" → escolher entre cartucho ou colmeia
+            if (data.referencias_caixa && data.referencias_caixa.length > 0) {
+                let escolha = prompt("As embalagens que começam com 'CAIXA' devem ser tratadas como:\nDigite 'cartucho' ou 'colmeia'", "cartucho");
+
+                if (!["cartucho", "colmeia"].includes(escolha.toLowerCase())) {
+                    escolha = "cartucho"; // fallback
+                }
+
+                data.referencias_caixa.forEach(ref => {
                     let row = `
                     <tr id='referencia_${ref.codigo}' class="table-warning" data-importado="true">
                         <input type='hidden' name='referencia_id[]' value='${ref.codigo}'>
-
                         <td>${ref.codigo}</td>
                         <td>${ref.descricao}</td>
-
-                        <td>
-                            <input type='number' name='quantidade_${ref.codigo}' class='form-control' min='1' value='${ref.quantidade}' readonly>
-                        </td>
-
                         <td>
                             <select class='form-select' disabled>
-                                <option selected>${ref.embalagem}</option>
+                                <option selected>${escolha}</option>
                             </select>
-                            <input type='hidden' name='embalagem_${ref.codigo}' value='${ref.embalagem}'>
+                            <input type='hidden' name='embalagem_${ref.codigo}' value='${escolha}'>
                         </td>
-
-                        <td>
-                            <input type='number' step='0.01' name='preco_venda_${ref.codigo}' class='form-control' value='${ref.preco_venda}' readonly>
-                        </td>
-
-                        <td>
-                            <button type='button' class='btn btn-danger btn-sm remove-referencia' data-codigo='${ref.codigo}' data-importado="true">Remover</button>
-                        </td>
-                    </tr>
-                    `;
-
-
+                        <td><input type='number' name='quantidade_${ref.codigo}' class='form-control' min='1' value='${ref.quantidade}' readonly></td>
+                        <td><input type='number' step='0.01' name='preco_venda_${ref.codigo}' class='form-control' value='${ref.preco_venda}' readonly></td>
+                        <td><button type='button' class='btn btn-danger btn-sm remove-referencia' data-codigo='${ref.codigo}' data-importado="true">Remover</button></td>
+                    </tr>`;
                     document.getElementById("referencias-selecionadas").innerHTML += row;
                 });
-
-                // 🔒 Após importar, desabilita o botão de abrir o modal
-                document.querySelector("[data-bs-target='#modalReferencias']").disabled = true;
-                document.getElementById("botaoSelecionarReferencias").disabled = true;
-                document.getElementById("mensagem-importacao").style.display = "inline";
-
-            } else {
-                alert("Erro ao processar o arquivo.");
             }
+
+            // 🔒 Desativa o botão de abrir modal e mostra aviso de importação
+            document.querySelector("[data-bs-target='#modalReferencias']").disabled = true;
+            document.getElementById("botaoSelecionarReferencias").disabled = true;
+            document.getElementById("mensagem-importacao").style.display = "inline";
         })
-        .catch(error => console.error('Erro:', error));
+        .catch(error => {
+            console.error("Erro ao importar:", error);
+            alert("Erro ao processar o arquivo.");
+        });
     }
-
-
-    // Evento para remover referência da lista MANUAL OU IMPORTADA
-    document.addEventListener("click", function (event) {
-        if (event.target.classList.contains("remove-referencia")) {
-            let button = event.target;
-            let codigo = button.getAttribute("data-codigo");
-            let importado = button.getAttribute("data-importado") === "true";
-
-            if (importado) {
-                let confirmar = confirm("Essa referência veio de um arquivo importado.\nTem certeza que deseja removê-la?");
-                if (!confirmar) return;
-            }
-
-            // Remove a linha
-            document.getElementById(`referencia_${codigo}`).remove();
-
-        }
-    });
-
 </script>
 
+
+
+
+<script>
+    //FILTRO DE REFERENCIA, PESQUISA
+    document.getElementById("filtro-referencia").addEventListener("keyup", function () {
+        let filtro = this.value.toLowerCase();
+        let linhas = document.querySelectorAll("#referenciaTable tbody tr");
+
+        linhas.forEach(function (linha) {
+            let codigo = linha.cells[1]?.textContent.toLowerCase();
+            let descricao = linha.cells[2]?.textContent.toLowerCase();
+            if (codigo.includes(filtro) || descricao.includes(filtro)) {
+                linha.style.display = "";
+            } else {
+                linha.style.display = "none";
+            }
+        });
+    });
+</script>
+
+    <!--SCRIPT PARA PREENCHER DESPESAS DE VENDA AUTOMATICAMENTE COM VALOR PADRAO-->
+    <script>
+        function preencherValoresPadrao() {
+            const checkbox = document.getElementById('usar_padrao');
+            const campos = {
+                comissao_porcentagem: 8,
+                financeiro_porcentagem: 5,
+                duvidosos_porcentagem: 1.5,
+                frete_porcentagem: 7,
+                tributos_porcentagem: 10.68,
+                outros_porcentagem: 0.00
+            };
+
+            for (const campo in campos) {
+                const input = document.getElementById(campo);
+                if (input) {
+                    input.value = checkbox.checked ? campos[campo] : 0.00;
+                }
+            }
+        }
+    </script>
 
 {% endblock %}

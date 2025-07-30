@@ -95,6 +95,7 @@
             <a href="{{ url_for('routes.listar_margens_pedido') }}"><i class="fa-solid fa-receipt"></i> Margens por
                 Pedido</a>
             <a href="{{ url_for('routes.listar_margens') }}"><i class="fas fa-percent"></i> Margens por Referência</a>
+            <a href="{{ url_for('routes.monitor_margens') }}"><i class="fa-solid fa-chart-line"></i>Lucratividade</a>
         </div>
         {% endif %}
 
@@ -355,8 +356,26 @@
     });
 </script>
 
+<!--Bloco de scripts para extender em outras páginas (lucratividade,)-->
+{% block scripts %}
+{% endblock %}
 
+<!--script para formatar numeros BR no java script, no jinja e html está no utils-->>
 
+<script>
+  // Funções globais disponíveis em todas as páginas
+
+  function brMoeda(valor) {
+    return valor.toLocaleString('pt-BR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  }
+
+  function brNumero(valor) {
+    return parseInt(valor).toLocaleString('pt-BR');
+  }
+</script>
 
 
     <!-- Ativa o select2

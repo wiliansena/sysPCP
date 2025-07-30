@@ -763,3 +763,17 @@ body.hide-sidebar .content {
         margin-bottom: 4px !important;
     }
 }
+
+.form-check-input[type="checkbox"] {
+    accent-color: #007bff;             /* azul quando marcado */
+    border: 1.5px solid #999 !important;
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.form-check-input[type="checkbox"]:not(:checked) {
+    background-color: #f0f0f0; /* fundo cinza claro só quando desmarcado */
+}
+

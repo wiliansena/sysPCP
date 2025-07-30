@@ -23,7 +23,8 @@
 <table class="table table-bordered table-sm text-center align-middle" style="font-size: 12px;">
     <thead class="table-light">
         <tr>
-            <th>Data</th>
+            <th>Data produzida</th>
+            <th>Data inserida</th>
             <th>Remessa</th>
             <th>Linha</th>
             <th>Referência</th>
@@ -36,13 +37,14 @@
         {% for r in resultados %}
         <tr>
             <td>{{ r.data_producao.strftime('%d/%m/%Y') if r.data_producao }}</td>
+            <td>{{ r.data_insercao.strftime('%d/%m/%Y %H:%M') if r.data_insercao }}</td>
             <td>{{ r.planejamento.remessa.codigo }}</td>
             <td>{{ r.planejamento.linha.nome if r.planejamento.linha }}</td>
             <td>{{ r.planejamento.referencia }}</td>
             <td>{{ r.quantidade|br_numero }}</td>
             <td>
                 {% if r.planejamento.preco_medio is not none %}
-                {{ r.planejamento.preco_medio|br_moeda }}
+                {{ r.planejamento.preco_medio|br_moeda or 0 }}
                 {% else %}
                 -
                 {% endif %}
