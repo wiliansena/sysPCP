@@ -289,7 +289,9 @@ class Peca(db.Model):
 
 
 
+
 class Componente(db.Model):
+    __tablename__ = 'componente'
     id = db.Column(db.Integer, primary_key=True)
     codigo = db.Column(db.String(50), nullable=False)
     descricao = db.Column(db.String(200), nullable=False)
@@ -297,6 +299,59 @@ class Componente(db.Model):
     unidade_medida = db.Column(db.String(10), nullable=False)
     preco = db.Column(db.Numeric(10,4), nullable=False, default=Decimal(0))
 
+    # NOVO: fornecedor atual do componente (Colaborador)
+    # Se você já tem dados na tabela, recomendo começar com nullable=True
+    # e depois de preencher, migrar para nullable=False.
+    fornecedor_id = db.Column(
+        db.Integer,
+        db.ForeignKey('colaborador.id', ondelete="RESTRICT"),
+        index=True,
+        nullable=True  # coloque False quando todos os registros tiverem fornecedor
+    )
+    fornecedor = db.relationship('Colaborador', foreign_keys=[fornecedor_id])
+
+    cores = db.relationship(
+        'ComponenteCor',
+        backref='componente',
+        cascade='all, delete-orphan',
+        lazy='select'
+    )
+
+class ComponenteCor(db.Model):
+    __tablename__ = 'componentes_cores'
+    id = db.Column(db.Integer, primary_key=True)
+    componente_id = db.Column(db.Integer, db.ForeignKey('componente.id'), nullable=False, index=True)  # <- AQUI
+    cor_id        = db.Column(db.Integer, db.ForeignKey('cor.id'),        nullable=False, index=True)
+    quantidade    = db.Column(db.Numeric(12,2), default=Decimal('0.00'))
+
+    cor = db.relationship('Cor')
+
+
+class MovimentacaoComponente(db.Model):
+    __tablename__ = 'movimentos_componentes'
+    id            = db.Column(db.Integer, primary_key=True)
+    componente_id = db.Column(db.Integer, db.ForeignKey('componente.id'), nullable=False, index=True)  # <- AQUI
+    cor_id        = db.Column(db.Integer, db.ForeignKey('cor.id'),        nullable=False, index=True)
+    tipo          = db.Column(db.String(10), nullable=False)  # 'ENTRADA' | 'SAIDA'
+    quantidade    = db.Column(db.Numeric(12,2), nullable=False, default=Decimal('0.00'))
+    observacao    = db.Column(db.String(200))
+    criado_em     = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    componente = db.relationship('Componente')
+    cor        = db.relationship('Cor')
+
+class ComponentePrecoHistorico(db.Model):
+    __tablename__ = 'componentes_precos_historico'
+    id = db.Column(db.Integer, primary_key=True)
+    componente_id = db.Column(db.Integer, db.ForeignKey('componente.id'), nullable=False, index=True)
+    preco_anterior = db.Column(db.Numeric(10,4), nullable=False, default=Decimal('0.0000'))
+    preco_novo = db.Column(db.Numeric(10,4), nullable=False, default=Decimal('0.0000'))
+    origem = db.Column(db.String(20), nullable=False, default='importacao')  # 'importacao' | 'manual'
+    alterado_em = db.Column(db.DateTime, nullable=False, default=hora_brasilia)
+    usuario_id = db.Column(db.Integer, nullable=True)  # opcional: quem alterou (no caso manual)
+    usuario_nome = db.Column(db.String(120), nullable=True)  # <-- NOVO (opcional)
+
+    componente = db.relationship('Componente', backref='historico_precos')
 
 #SOLADO
 class Solado(db.Model):
@@ -872,9 +927,17 @@ class Maquina(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     codigo = db.Column(db.String(50), nullable=False)
     descricao = db.Column(db.String(200), nullable=False)
-    tipo = db.Column(db.String(50), nullable=False)
     status = db.Column(db.String(20), nullable=False, default="Ativa")  # Ativa/Inativa
     preco = db.Column(db.Numeric(10,4), nullable=False, default=Decimal(0))
+    tipo_id = db.Column(db.Integer, db.ForeignKey("tipo_maquina.id"))
+    tipo_maquina = db.relationship("TipoMaquina", back_populates="maquinas")
+
+class TipoMaquina(db.Model):
+    __tablename__ = "tipo_maquina"
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(50), unique=True, nullable=False)
+
+    maquinas = db.relationship("Maquina", back_populates="tipo_maquina")
 
 
 class TrocaHorario(db.Model):
@@ -1295,6 +1358,157 @@ class Empresa(db.Model):
 
 
 
+#### MATERIAIS  ######
+
+class Material(db.Model):
+    __tablename__ = 'materiais'
+
+    id = db.Column(db.Integer, primary_key=True)
+    descricao = db.Column(db.String(150), nullable=False)
+    tipo = db.Column(db.String(50), nullable=False)            # Ex.: tecido, couro, borracha
+    unidade_medida = db.Column(db.String(10), nullable=False)  # UND, M, KG, L
+    preco_unitario = db.Column(db.Numeric(10, 2), default=Decimal('0.00'), nullable=False)
+    observacao = db.Column(db.Text, nullable=True)
+
+    data_criacao = db.Column(db.DateTime, default=datetime.utcnow)
+    data_atualizacao = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    cores = db.relationship('MaterialCor', back_populates='material', cascade='all, delete-orphan')
+
+    def __repr__(self):
+        return f"<Material {self.descricao}>"
+
+    @property
+    def quantidade_total(self):
+        return sum([mc.quantidade or Decimal('0.00') for mc in self.cores])
+
+    @property
+    def valor_total(self):
+        return (self.preco_unitario or 0) * (self.quantidade_total or 0)
 
 
- 
+class MaterialCor(db.Model):
+    __tablename__ = 'materiais_cores'
+
+    id = db.Column(db.Integer, primary_key=True)
+    material_id = db.Column(db.Integer, db.ForeignKey('materiais.id'), nullable=False)
+    cor_id = db.Column(db.Integer, db.ForeignKey('cor.id'), nullable=False)
+    quantidade = db.Column(db.Numeric(10, 2), nullable=False, default=Decimal('0.00'))
+
+    material = db.relationship('Material', back_populates='cores')
+    cor = db.relationship('Cor')  # já existe no seu sistema
+
+    __table_args__ = (
+        db.UniqueConstraint('material_id', 'cor_id', name='uq_material_cor'),
+    )
+
+    def __repr__(self):
+        return f"<MaterialCor mat={self.material_id} cor={self.cor_id} q={self.quantidade}>"
+
+    @property
+    def valor_total(self):
+        if self.material and self.material.preco_unitario:
+            return (self.quantidade * self.material.preco_unitario).quantize(Decimal('0.01'))
+        return Decimal('0.00')
+    
+
+class MovimentacaoMaterial(db.Model):
+    __tablename__ = 'movimentacoes_materiais'
+    id = db.Column(db.Integer, primary_key=True)
+    material_id = db.Column(db.Integer, db.ForeignKey('materiais.id'), nullable=False)
+    cor_id = db.Column(db.Integer, db.ForeignKey('cor.id'), nullable=False)
+    tipo = db.Column(db.String(10), nullable=False)  # 'ENTRADA' ou 'SAIDA'
+    quantidade = db.Column(db.Numeric(10, 2), nullable=False, default=Decimal('0.00'))
+    observacao = db.Column(db.String(200))
+    criado_em = db.Column(db.DateTime, default=datetime.utcnow)
+
+    material = db.relationship('Material')
+    cor = db.relationship('Cor')
+
+
+
+###  COLABORADOR   ####
+class TipoColaborador(db.Model):
+    __tablename__ = 'tipo_colaborador'
+
+    id = db.Column(db.Integer, primary_key=True)
+    descricao = db.Column(db.String(100), nullable=False, unique=True)
+
+    colaboradores = db.relationship('Colaborador', back_populates='tipo', cascade="all, delete-orphan")
+
+    def __repr__(self):
+        return f"<TipoColaborador {self.descricao}>"
+
+class Colaborador(db.Model):
+    __tablename__ = 'colaborador'
+
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(150), nullable=False, index=True)
+    documento = db.Column(db.String(20), nullable=True, unique=True)  # CPF/CNPJ (sem máscara)
+    email = db.Column(db.String(120), nullable=True)
+    telefone = db.Column(db.String(20), nullable=True)
+
+    # Endereço (CEP para autocompletar via API de CEP)
+    cep = db.Column(db.String(9), nullable=True)
+    endereco = db.Column(db.String(200), nullable=True)
+    numero = db.Column(db.String(10), nullable=True)
+    complemento = db.Column(db.String(100), nullable=True)
+    bairro = db.Column(db.String(100), nullable=True)
+    cidade = db.Column(db.String(100), nullable=True)
+    uf = db.Column(db.String(2), nullable=True)
+
+    # Timestamps usando sua função (sem mixin)
+    criado_em = db.Column(db.DateTime, nullable=False, default=hora_brasilia)
+    atualizado_em = db.Column(db.DateTime, nullable=False, default=hora_brasilia, onupdate=hora_brasilia)
+
+    # Relacionamento com tipo
+    tipo_id = db.Column(db.Integer, db.ForeignKey('tipo_colaborador.id', ondelete="RESTRICT"), nullable=False, index=True)
+    tipo = db.relationship('TipoColaborador', back_populates='colaboradores')
+
+    def __repr__(self):
+        return f"<Colaborador {self.nome}>"
+
+class ProducaoRotativa(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    turno = db.Column(db.String(50))
+    data_producao = db.Column(db.Date, nullable=False)
+    producao_painel = db.Column(db.Integer, nullable=False, default=0)
+    pares_bons = db.Column(db.Integer, nullable=False, default=0)
+    imagem = db.Column(db.String(200))
+    observacao = db.Column(db.String(500), nullable=True)
+    maquina_id = db.Column(db.Integer, db.ForeignKey('maquina.id'), nullable=False)
+
+    maquina = db.relationship("Maquina")
+
+    __table_args__ = (
+        db.UniqueConstraint('maquina_id', 'data_producao', 'turno',
+                            name='uq_rotativa_maquina_data_turno'),
+        db.Index('ix_rotativa_maquina_data_turno',
+                 'maquina_id', 'data_producao', 'turno'),
+    )
+
+
+
+class ProducaoConvencional(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    data_producao = db.Column(db.Date, nullable=False)
+    data_insercao = db.Column(db.DateTime, default=hora_brasilia, nullable=False)
+    producao_geral_alca = db.Column(db.Integer, nullable=False, default=0)
+    producao_solado_turno_a = db.Column(db.Integer, nullable=False, default=0)
+    producao_solado_turno_b = db.Column(db.Integer, nullable=False, default=0)
+    producao_solado_turno_c = db.Column(db.Integer, nullable=False, default=0)
+    imagem = db.Column(db.String(200))
+    observacao = db.Column(db.String(500), nullable=True)
+
+    __table_args__ = (
+        db.UniqueConstraint('data_producao', name='uq_convencional_data'),
+        db.Index('ix_convencional_data', 'data_producao'),
+    )
+
+    @property
+    def producao_solado_total(self):
+        return (
+            (self.producao_solado_turno_a or 0)
+            + (self.producao_solado_turno_b or 0)
+            + (self.producao_solado_turno_c or 0)
+        )

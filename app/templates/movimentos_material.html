@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center">
+        <h3>Movimentações — {{ material.descricao }}</h3>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('routes.listar_materiais') }}" class="btn btn-secondary">
+                Voltar
+            </a>
+        </div>
+    </div>
+    <p class="text-muted mb-2">Unidade: {{ material.unidade_medida }} | Preço unit.: R$ {{
+        '{:,.2f}'.format(material.preco_unitario or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</p>
+
+    <hr>
+    <h5>Lançar movimentação</h5>
+    <form method="POST" action="{{ url_for('routes.movimentar_material', material_id=material.id) }}"
+        class="row g-2 align-items-end">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="col-md-3">
+            <label class="form-label">Tipo</label>
+            <select name="tipo" class="form-select">
+                <option value="ENTRADA">Entrada</option>
+                <option value="SAIDA">Saída</option>
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Cor</label>
+            <select name="cor_id" id="cor_id" class="form-select select2" data-placeholder="Selecione a cor">
+                {% for c in cores %}
+                <option value="{{ c.id }}">{{ c.nome }}</option>
+                {% endfor %}
+            </select>
+            {% if cores|length == 0 %}
+            <small class="text-muted">Nenhuma cor vinculada a este material.</small>
+            {% endif %}
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Quantidade</label>
+            <input type="text" name="quantidade" class="form-control" placeholder="0,00" inputmode="decimal">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Observação</label>
+            <input type="text" name="observacao" class="form-control" placeholder="Opcional">
+        </div>
+        <div class="col-12">
+            <button class="btn btn-success"><i class="bi bi-plus-circle"></i> Lançar</button>
+        </div>
+    </form>
+
+
+
+    <hr>
+    <h5>Saldo por cor</h5>
+    <div class="table-responsive">
+        <table class="table table-bordered align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Cor</th>
+                    <th class="text-end">Quantidade</th>
+                    <th class="text-end">Valor Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in rows_saldo %}
+                <tr>
+                    <td>{{ r.cor_nome }}</td>
+                    <td class="text-end">{{ r.q|br_numero }}</td>
+                    <td class="text-end">{{ r.v|br_moeda }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="3" class="text-center text-muted">Nenhuma cor vinculada.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr class="table-light">
+                    <th>Total</th>
+                    <th class="text-end">{{ total_q|br_numero }}</th>
+                    <th class="text-end">{{ total_v|br_moeda }}</th>
+                </tr>
+            </tfoot>
+
+
+        </table>
+    </div>
+
+    <hr>
+    <h5>Últimas movimentações</h5>
+    <div class="table-responsive">
+        <table class="table table-striped align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>#</th>
+                    <th>Data/Hora</th>
+                    <th>Tipo</th>
+                    <th>Cor</th>
+                    <th class="text-end">Quantidade</th>
+                    <th>Observação</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in movimentos %}
+                <tr>
+                    <td>{{ m.id }}</td>
+                    <td>{{ m.criado_em.strftime('%d/%m/%Y %H:%M') }}</td>
+                    <td>
+                        {% if m.tipo == 'ENTRADA' %}
+                        <span class="badge bg-success">Entrada</span>
+                        {% else %}
+                        <span class="badge bg-danger">Saída</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ m.cor.nome }}</td>
+                    <td class="text-end">{{ '{:,.2f}'.format(m.quantidade or 0).replace(',', 'X').replace('.',
+                        ',').replace('X', '.') }}</td>
+                    <td>{{ m.observacao or '' }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted">Ainda não há movimentações.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

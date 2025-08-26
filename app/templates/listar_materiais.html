@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>Materiais</h3>
+    <a href="{{ url_for('routes.novo_material') }}" class="btn btn-primary">
+      <i class="fas fa-plus"></i> Novo Material
+    </a>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-striped align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>ID</th>
+          <th>Descrição</th>
+          <th>Tipo</th>
+          <th>UM</th>
+          <th class="text-end">Preço Unit.</th>
+          <th class="text-end">Qtd Total</th>
+          <th class="text-end">Valor Total</th>
+          <th class="text-center" style="width: 220px;">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in materiais %}
+        {% set qtd_total = (m.quantidade_total or 0) %}
+        {% set val_total = (m.preco_unitario or 0) * qtd_total %}
+        <tr>
+          <td>{{ m.id }}</td>
+          <td><a href="{{ url_for('routes.ver_material', id=m.id) }}">{{ m.descricao }}</a></td>
+          <td>{{ m.tipo }}</td>
+          <td>{{ m.unidade_medida }}</td>
+          <td class="text-end">R$ {{ '{:,.2f}'.format(m.preco_unitario or 0).replace(',', 'X').replace('.',
+            ',').replace('X', '.') }}</td>
+          <td class="text-end">{{ '{:,.2f}'.format(qtd_total).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+          </td>
+          <td class="text-end">R$ {{ '{:,.2f}'.format(val_total).replace(',', 'X').replace('.', ',').replace('X', '.')
+            }}</td>
+          <td class="text-center">
+            <a href="{{ url_for('routes.editar_material', id=m.id) }}" class="btn btn-warning btn-sm">
+            <i class="fas fa-edit"></i>
+          </a>
+            <a href="{{ url_for('routes.listar_movimentos_material', material_id=m.id) }}"
+              class="btn btn-info btn-sm">
+            <i class="fas fa-exchange-alt"></i>
+            </a>
+
+            <form method="POST" action="{{ url_for('routes.excluir_material', id=m.id) }}" style="display:inline;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="btn btn-sm btn-danger"
+                onclick="return confirm('Excluir o material {{ m.descricao }}?');">
+                <i class="fas fa-trash-alt"></i>
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="8" class="text-center text-muted">Nenhum material cadastrado.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

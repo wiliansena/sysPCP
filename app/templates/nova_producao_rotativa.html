@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>PRODUÇÃO ROTATIVA</h2>
+<form method="POST" enctype="multipart/form-data">
+    {{ form.hidden_tag() }}
+
+    <div class="mb-3">
+        {{ form.turno.label(class="form-label") }}
+        {% if turno_fixo %}
+        <div class="input-group">
+            <span class="input-group-text 
+                             {% if turno_fixo.upper() == 'DIA' %}bg-warning text-dark
+                             {% elif turno_fixo.upper() == 'NOITE' %}bg-dark text-white
+                             {% else %}bg-light{% endif %}">
+                {% if turno_fixo.upper() == 'DIA' %}
+                <i class="fas fa-sun"></i>
+                {% elif turno_fixo.upper() == 'NOITE' %}
+                <i class="fas fa-moon"></i>
+                {% else %}
+                <i class="fas fa-clock"></i>
+                {% endif %}
+            </span>
+            <input type="text"
+                class="form-control fw-bold text-center {% if turno_fixo.upper() == 'DIA' %}bg-warning border-warning text-dark{% elif turno_fixo.upper() == 'NOITE' %}bg-dark border-dark text-white{% endif %}"
+                value="{{ turno_fixo }}" readonly>
+        </div>
+        <input type="hidden" name="{{ form.turno.name }}" value="{{ turno_fixo }}">
+        {% else %}
+        {{ form.turno(class="form-select") }}
+        {% endif %}
+    </div>
+
+    <div class="mb-3">
+        {{ form.maquina_id.label(class="form-label") }}
+        {{ form.maquina_id(class="form-select select2") }}
+    </div>
+
+    <div class="col-md-4">
+        {{ form.data_producao.label(class="form-label") }}
+        {{ form.data_producao(class="form-control") }}
+    </div>
+    <hr>
+    <div class="mb-3">
+        {{ form.producao_painel.label(class="form-label") }}
+        {{ form.producao_painel(class="form-control") }}
+        <small class="text-muted">
+            (Se vazio, será preenchido com Pares Bons + 10%)
+        </small>
+    </div>
+
+
+    <div class="mb-3">
+        {{ form.pares_bons.label(class="form-label") }}
+        {{ form.pares_bons(class="form-control") }}
+    </div>
+
+    <hr>
+
+    <div class="col-md-6 mb-3">
+        {{ form.imagem.label(class="form-label") }}
+        {{ form.imagem(class="form-control") }}
+    </div>
+
+    <hr>
+
+    <div class="mb-3">
+        {{ form.observacao.label(class="form-label") }}
+        {{ form.observacao(class="form-control") }}
+    </div>
+
+    <button type="submit" class="btn btn-success">
+        <i class="fas fa-save"></i> Salvar
+    </button>
+    <a href="{{ url_for('routes.listar_producoes_rotativas') }}" class="btn btn-secondary">Cancelar</a>
+</form>
+{% endblock %}

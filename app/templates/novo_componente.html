@@ -1,92 +1,99 @@
 {% extends "base.html" %}
 
 {% block content %}
-
 <div class="card mt-4 shadow-sm">
-    <div class="alert alert-info">
-      <h6 class="card-title mb-3">📥 Importar Componentes (.xlsx)</h6>
-      <p class="text-muted mb-3">Apenas arquivos <strong>.xlsx</strong> (Excel) são permitidos.</p>
-      <p class="text-muted mb-3">Colunas: <code>|codigo |descricao |tipo |unidade_medida| preco|</code></p>
-      <form method="POST" action="{{ url_for('routes.importar_componentes') }}" enctype="multipart/form-data">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <div class="row g-2 align-items-center">
-          <div class="col-auto">
-            <input type="file" name="file" accept=".xls,.xlsx" class="form-control form-control-sm" required>
-          </div>
-          <div class="col-auto">
-            <button type="submit" class="btn btn-sm btn-primary">
-              <i class="fas fa-upload me-1"></i> Importar
-            </button>
-          </div>
+  <div class="alert alert-info">
+    <h6 class="card-title mb-3">📥 Importar Componentes (.xlsx)</h6>
+    <p class="text-muted mb-3">Apenas arquivos <strong>.xlsx</strong> (Excel) são permitidos.</p>
+    <p class="text-muted mb-3">Colunas: <code>| codigo | descricao | tipo | unidade_medida | preco |</code></p>
+    <form method="POST" action="{{ url_for('routes.importar_componentes') }}" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="row g-2 align-items-center">
+        <div class="col-auto">
+          <input id="fileInput" type="file" name="file" accept=".xls,.xlsx" class="form-control form-control-sm" required>
         </div>
-      </form>
-    </div>
+        <div class="col-auto">
+          <button type="submit" class="btn btn-sm btn-primary">
+            <i class="fas fa-upload me-1"></i> Importar
+          </button>
+        </div>
+      </div>
+    </form>
   </div>
-  
-  
+</div>
+
 <hr>
 <h2>Novo Componente</h2>
 <hr>
-<form method="POST">
-    {{ form.hidden_tag() }}
 
-    <div class="mb-3">
-        {{ form.codigo.label(class="form-label") }}
-        {{ form.codigo(class="form-control") }}
-    </div>
+<form method="POST" action="{{ url_for('routes.novo_componente') }}">
+  {{ form.hidden_tag() }}
 
-    <div class="mb-3">
-        {{ form.descricao.label(class="form-label") }}
-        {{ form.descricao(class="form-control") }}
-    </div>
+  <div class="mb-3">
+    {{ form.codigo.label(class="form-label") }}
+    {{ form.codigo(class="form-control") }}
+  </div>
 
-    <div class="mb-3">
-        {{ form.tipo.label(class="form-label") }}
-        {{ form.tipo(class="form-select") }}
-    </div>
+  <div class="mb-3">
+    {{ form.descricao.label(class="form-label") }}
+    {{ form.descricao(class="form-control") }}
+  </div>
 
-    <div class="mb-3">
-        {{ form.unidade_medida.label(class="form-label") }}
-        {{ form.unidade_medida(class="form-select") }}
-    </div>
+  <div class="mb-3">
+    {{ form.tipo.label(class="form-label") }}
+    {{ form.tipo(class="form-select") }}
+  </div>
 
-    <div class="mb-3">
-        {{ form.preco.label(class="form-label") }}
-        {{ form.preco(class="form-control") }}
-    </div>
+  <div class="mb-3">
+    {{ form.unidade_medida.label(class="form-label") }}
+    {{ form.unidade_medida(class="form-select") }}
+  </div>
 
-    <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> {{ form.submit.label.text }}</button>
-    <a href="{{ url_for('routes.listar_componentes') }}" class="btn btn-secondary">Cancelar</a>
+  <div class="mb-3">
+    {{ form.preco.label(class="form-label") }}
+    {{ form.preco(class="form-control") }}
+  </div>
+
+  <hr>
+  <h5>Fornecedor (opcional)</h5>
+  <div class="mb-2">
+    <label class="form-label">Selecione o fornecedor</label>
+    <select name="fornecedor_id" class="form-select select2" data-placeholder="Selecione o fornecedor">
+      <option></option>
+      {% for forn in fornecedores %}
+        <option value="{{ forn.id }}">{{ forn.nome }}</option>
+      {% endfor %}
+    </select>
+    <small class="text-muted">Se nenhum fornecedor for selecionado, ficará <em>null</em>.</small>
+  </div>
+
+  <hr>
+  <h5>Cores do componente (opcional)</h5>
+  <div class="mb-2">
+    <label class="form-label">Selecione as cores</label>
+    <select name="cores[]" class="form-select select2" multiple data-placeholder="Selecione as cores">
+      {% for cor in cores %}
+        <option value="{{ cor.id }}">{{ cor.nome }}</option>
+      {% endfor %}
+    </select>
+    <small class="text-muted">
+      Se nenhuma cor for selecionada, será vinculada automaticamente a cor <em>“Sem cor”</em>.
+    </small>
+  </div>
+
+  <button type="submit" class="btn btn-success">
+    <i class="fas fa-save"></i> {{ form.submit.label.text }}
+  </button>
+  <a href="{{ url_for('routes.listar_componentes') }}" class="btn btn-secondary">Cancelar</a>
 </form>
 
 <script>
-    function importarComponentes() {
-        let fileInput = document.getElementById('fileInput');
-        let file = fileInput.files[0];
-
-        if (!file) {
-            alert('Por favor, selecione um arquivo.');
-            return;
-        }
-
-        let formData = new FormData();
-        formData.append("file", file);
-
-        fetch("{{ url_for('routes.importar_componentes') }}", {
-            method: "POST",
-            body: formData,
-            headers: {
-                "X-CSRFToken": "{{ csrf_token() }}"
-            },
-    credentials: "same-origin"
-        })
-            .then(() => {
-                window.location.href = "{{ url_for('routes.listar_componentes') }}";  // 🔹 Redireciona para listar componentes
-            })
-            .catch(error => console.error('Erro:', error));
-    }
+  document.addEventListener("DOMContentLoaded", function () {
+    $('.select2').select2({
+      width: '100%',
+      placeholder: 'Selecione',
+      allowClear: true
+    });
+  });
 </script>
-
-
-
 {% endblock %}

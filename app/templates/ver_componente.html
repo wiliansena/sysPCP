@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Detalhes do Componente</h2>
+<hr>
+
+<div class="card">
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-3">
+        <label class="form-label fw-bold">ID</label>
+        <div class="form-control-plaintext">{{ componente.id }}</div>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label fw-bold">Código</label>
+        <div class="form-control-plaintext">{{ componente.codigo }}</div>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label fw-bold">Tipo</label>
+        <div class="form-control-plaintext">{{ componente.tipo }}</div>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label fw-bold">Unidade</label>
+        <div class="form-control-plaintext">{{ componente.unidade_medida }}</div>
+      </div>
+
+      <div class="col-md-12">
+        <label class="form-label fw-bold">Descrição</label>
+        <div class="form-control-plaintext">{{ componente.descricao }}</div>
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label fw-bold">Preço</label>
+        <div class="form-control-plaintext">{{ componente.preco|br_moeda }}</div>
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label fw-bold">Fornecedor</label>
+        <div class="form-control-plaintext">
+          {% if componente.fornecedor %}
+            {{ componente.fornecedor.nome }} <span class="text-muted">(ID {{ componente.fornecedor.id }})</span>
+          {% else %}
+            <span class="text-muted">—</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="col-md-12">
+        <label class="form-label fw-bold">Cores vinculadas</label>
+        <div class="form-control-plaintext">
+          {% if componente.cores %}
+            {{ componente.cores | map(attribute='cor.nome') | join(', ') }}
+          {% else %}
+            <span class="text-muted">—</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-4 d-flex gap-2">
+      <a class="btn btn-outline-secondary" href="{{ url_for('routes.listar_componentes') }}">Voltar</a>
+      <a class="btn btn-primary" href="{{ url_for('routes.editar_componente', id=componente.id) }}">
+        <i class="fas fa-edit"></i> Editar
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

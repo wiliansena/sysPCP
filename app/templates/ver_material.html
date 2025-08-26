@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center">
+    <h3>{{ material.descricao }}</h3>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('routes.listar_materiais') }}" class="btn btn-secondary">
+        Voltar
+      </a>
+    </div>
+  </div>
+
+  <div class="row mt-3">
+    <div class="col-md-3">
+      <div class="mb-1"><strong>Tipo:</strong> {{ material.tipo }}</div>
+    </div>
+    <div class="col-md-3">
+      <div class="mb-1"><strong>Unidade:</strong> {{ material.unidade_medida }}</div>
+    </div>
+    <div class="col-md-3">
+      <div class="mb-1">
+        <strong>Preço unitário:</strong>
+        R$ {{ '{:,.2f}'.format(material.preco_unitario or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="mb-1"><strong>ID:</strong> #{{ material.id }}</div>
+    </div>
+  </div>
+
+  {% if material.observacao %}
+  <div class="mt-2">
+    <strong>Observação:</strong> {{ material.observacao }}
+  </div>
+  {% endif %}
+
+  <hr>
+  <h5>Cores e quantidades</h5>
+
+  <div class="table-responsive">
+    <table class="table table-bordered align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>Cor</th>
+          <th class="text-end">Quantidade</th>
+          <th class="text-end">Valor (cor)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% set total_q = 0 %}
+        {% set total_v = 0 %}
+        {% for mc in material.cores %}
+          {% set q = mc.quantidade or 0 %}
+          {% set v = q * (material.preco_unitario or 0) %}
+          {% set total_q = total_q + q %}
+          {% set total_v = total_v + v %}
+          <tr>
+            <td>{{ mc.cor.nome }}</td>
+            <td class="text-end">
+              {{ '{:,.2f}'.format(q).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+            </td>
+            <td class="text-end">
+              R$ {{ '{:,.2f}'.format(v).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+            </td>
+          </tr>
+        {% else %}
+          <tr>
+            <td colspan="3" class="text-center text-muted">Nenhuma cor vinculada a este material.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr class="table-light">
+          <th>Total</th>
+          <th class="text-end">
+            {{ '{:,.2f}'.format(total_q).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+          </th>
+          <th class="text-end">
+            R$ {{ '{:,.2f}'.format(total_v).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+          </th>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</div>
+{% endblock %}

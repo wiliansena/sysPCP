@@ -1,94 +1,178 @@
-{% extends 'base.html' %}
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Nova Manutenção</title>
 
-{% block content %}
-<h2>Nova Manutenção</h2>
-<hr>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/margens_mobile.css') }}">
 
-<form method="POST">
-    {{ form.hidden_tag() }}
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</head>
 
-    <!-- Status, Tipo e Prioridade -->
-    <div class="row">
+<body>
+  <!-- Cabeçalho estilo app -->
+  <header class="app-header">
+    <h1>Nova Manutenção</h1>
+  </header>
 
-        <div class="col-md-4 mb-3">
+  <div class="container mt-3">
+    <form method="POST" action="{{ url_for('routes.nova_manutencao') }}">
+      {{ form.hidden_tag() }}
+
+      <!-- Dados principais -->
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Dados da O.S.</h5>
+
+          <div class="mb-3">
             {{ form.titulo.label(class="form-label") }}
-            {{ form.titulo(class="form-control") }}
-        </div>
-        <div class="col-md-4 mb-3">
-            {{ form.status.label(class="form-label") }}
-            {{ form.status(class="form-select") }}
-        </div>
-        <div class="col-md-4 mb-3">
-            {{ form.tipo.label(class="form-label") }}
-            {{ form.tipo(class="form-select") }}
-        </div>
-        <div class="col-md-4 mb-3">
-            {{ form.prioridade.label(class="form-label") }}
-            {{ form.prioridade(class="form-select") }}
-        </div>
-    </div>
+            {{ form.titulo(class="form-control", placeholder="Título resumido") }}
+          </div>
 
-    <!-- Solicitante e Responsável -->
-    <div class="row">
-        <div class="col-md-6 mb-3">
-            <label>Solicitante</label>
-            <div class="input-group">
-                <input type="text" id="solicitante_nome" class="form-control" readonly>
-                <input type="hidden" name="solicitante_id" id="solicitante_id">
-                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalSolicitante" data-tipo="solicitante">Selecionar</button>
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              {{ form.status.label(class="form-label") }}
+              {{ form.status(class="form-select") }}
             </div>
-        </div>
-        <div class="col-md-6 mb-3">
-            <label>Responsável</label>
-            <div class="input-group">
-                <input type="text" id="responsavel_nome" class="form-control" readonly>
-                <input type="hidden" name="responsavel_id" id="responsavel_id">
-                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalResponsavel" data-tipo="responsavel">Selecionar</button>
+            <div class="col-md-4 mb-3">
+              {{ form.tipo.label(class="form-label") }}
+              {{ form.tipo(class="form-select") }}
             </div>
+            <div class="col-md-4 mb-3">
+              {{ form.prioridade.label(class="form-label") }}
+              {{ form.prioridade(class="form-select") }}
+            </div>
+          </div>
         </div>
-    </div>
+      </div>
 
-    <!-- Máquinas -->
-    <h5>Máquinas</h5>
-    <button type="button" class="btn btn-primary btn-sm mb-2" data-bs-toggle="modal" data-bs-target="#modalMaquinas">Adicionar</button>
-    <table class="table table-bordered" id="tabela-maquinas">
-        <thead>
-            <tr>
-                <th>Máquina</th>
-                <th>Ação</th>
-            </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
+      <!-- Pessoas -->
+      <div class="card mt-3">
+        <div class="card-body">
+          <h5 class="card-title">Pessoas</h5>
 
-    <!-- Peças -->
-    <h5>Peças</h5>
-    <button type="button" class="btn btn-primary btn-sm mb-2" data-bs-toggle="modal" data-bs-target="#modalPecas">Adicionar</button>
-    <table class="table table-bordered" id="tabela-pecas">
-        <thead>
-            <tr>
-                <th>Código</th>
-                <th>Descrição</th>
-                <th>Ação</th>
-            </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
+          <div class="mb-3">
+            <label class="form-label">Solicitante</label>
+            <div class="input-group">
+              <input type="text" id="solicitante_nome" class="form-control" readonly placeholder="Selecione o solicitante">
+              <input type="hidden" name="solicitante_id" id="solicitante_id">
+              <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalSolicitante" data-tipo="solicitante">
+                Selecionar
+              </button>
+            </div>
+          </div>
 
-    <!-- Descrição -->
-    <div class="mb-3">
-        {{ form.descricao.label(class="form-label") }}
-        {{ form.descricao(class="form-control", rows=3) }}
-    </div>
+          <div class="mb-0">
+            <label class="form-label">Responsável</label>
+            <div class="input-group">
+              <input type="text" id="responsavel_nome" class="form-control" readonly placeholder="Selecione o responsável">
+              <input type="hidden" name="responsavel_id" id="responsavel_id">
+              <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalResponsavel" data-tipo="responsavel">
+                Selecionar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
 
-    <button type="submit" class="btn btn-success">Salvar</button>
-    <a href="{{ url_for('routes.listar_manutencoes') }}" class="btn btn-secondary">Cancelar</a>
-</form>
+      <!-- Máquinas -->
+      <div class="card mt-3">
+        <div class="card-body">
+          <h5 class="card-title d-flex justify-content-between align-items-center">
+            <span>Máquinas</span>
+            <button type="button" class="btn btn-success ms-2" data-bs-toggle="modal" data-bs-target="#modalMaquinas">
+              <i class="fa fa-plus"></i> Adicionar
+            </button>
+          </h5>
 
-<!-- Modais -->
-{% include 'modais/modal_manutencao_funcionarios.html' %}
-{% include 'modais/modal_manutencao_maquinas.html' %}
-{% include 'modais/modal_manutencao_pecas.html' %}
+          <div class="table-responsive">
+            <table class="table table-sm table-bordered mb-0" id="tabela-maquinas">
+              <thead>
+                <tr>
+                  <th>Máquina</th>
+                  <th style="width: 90px;">Ação</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
 
-<script src="{{ url_for('static', filename='js/manutencao.js') }}"></script>
-{% endblock %}
+      <!-- Peças -->
+      <div class="card mt-3">
+        <div class="card-body">
+          <h5 class="card-title d-flex justify-content-between align-items-center">
+            <span>Peças</span>
+            <button type="button" class="btn btn-success ms-2" data-bs-toggle="modal" data-bs-target="#modalPecas">
+              <i class="fa fa-plus"></i> Adicionar
+            </button>
+          </h5>
+
+          <div class="table-responsive">
+            <table class="table table-sm table-bordered mb-0" id="tabela-pecas">
+              <thead>
+                <tr>
+                  <th>Código</th>
+                  <th>Descrição</th>
+                  <th style="width: 90px;">Ação</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Descrição -->
+      <div class="card mt-3">
+        <div class="card-body">
+          <h5 class="card-title">Descrição</h5>
+          {{ form.descricao(class="form-control", rows=4, placeholder="Descreva o problema, sintomas e observações") }}
+        </div>
+      </div>
+
+      <!-- Ações -->
+      <div class="d-grid gap-2 mt-4 mb-5">
+        <button type="submit" class="btn btn-success">
+          <i class="fas fa-save"></i> Salvar
+        </button>
+        <a href="{{ url_for('routes.listar_manutencoes') }}" class="btn btn-secondary">Cancelar</a>
+      </div>
+    </form>
+  </div>
+
+  <!-- Modais -->
+  {% include 'modais/modal_manutencao_funcionarios.html' %}
+  {% include 'modais/modal_manutencao_maquinas.html' %}
+  {% include 'modais/modal_manutencao_pecas.html' %}
+
+  <!-- JS específico -->
+  <script src="{{ url_for('static', filename='js/manutencao.js') }}"></script>
+
+  <!-- UX consistente como no exemplo de Margem -->
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      // Enter pula para o próximo campo
+      const inputs = document.querySelectorAll("input, select, textarea, button");
+      inputs.forEach((input, index) => {
+        input.addEventListener("keydown", function (e) {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            const next = inputs[index + 1];
+            if (next) next.focus();
+          }
+        });
+      });
+    });
+  </script>
+
+  <!-- Reimport para compatibilidade (mesmo do seu exemplo) -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/margens_mobile.css') }}">
+  <script src="{{ url_for('static', filename='js/formatacao_numeros.js') }}"></script>
+</body>
+</html>

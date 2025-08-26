@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Detalhes do Colaborador</h2>
+<hr>
+
+<div class="card">
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label fw-bold">Nome</label>
+        <div class="form-control-plaintext">{{ colaborador.nome }}</div>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label fw-bold">Documento</label>
+        <div class="form-control-plaintext">{{ colaborador.documento or '-' }}</div>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label fw-bold">Tipo</label>
+        <div class="form-control-plaintext">{{ colaborador.tipo.descricao if colaborador.tipo else '-' }}</div>
+      </div>
+
+      <div class="col-md-4">
+        <label class="form-label fw-bold">E-mail</label>
+        <div class="form-control-plaintext">{{ colaborador.email or '-' }}</div>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label fw-bold">Telefone</label>
+        <div class="form-control-plaintext">{{ colaborador.telefone or '-' }}</div>
+      </div>
+
+      <div class="col-md-4">
+        <label class="form-label fw-bold">CEP</label>
+        <div class="form-control-plaintext">{{ colaborador.cep or '-' }}</div>
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label fw-bold">Endereço</label>
+        <div class="form-control-plaintext">
+          {{ colaborador.endereco or '-' }}{% if colaborador.numero %}, {{ colaborador.numero }}{% endif %}
+        </div>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label fw-bold">Complemento</label>
+        <div class="form-control-plaintext">{{ colaborador.complemento or '-' }}</div>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label fw-bold">Bairro</label>
+        <div class="form-control-plaintext">{{ colaborador.bairro or '-' }}</div>
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label fw-bold">Cidade</label>
+        <div class="form-control-plaintext">{{ colaborador.cidade or '-' }}</div>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label fw-bold">UF</label>
+        <div class="form-control-plaintext">{{ colaborador.uf or '-' }}</div>
+      </div>
+    </div>
+
+    <div class="mt-4 d-flex gap-2">
+      <a class="btn btn-outline-secondary" href="{{ url_for('routes.listar_colaboradores') }}">Voltar</a>
+      <a class="btn btn-primary" href="{{ url_for('routes.editar_colaborador', id=colaborador.id) }}">
+        <i class="fas fa-edit"></i> Editar
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

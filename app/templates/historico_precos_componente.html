@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center">
+    <h3>Histórico de Preços — {{ componente.codigo }} — {{ componente.descricao }}</h3>
+    <a href="{{ url_for('routes.listar_componentes') }}" class="btn btn-outline-secondary">Voltar</a>
+  </div>
+  <hr>
+
+  <div class="table-responsive">
+    <table class="table table-striped align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>Data/Hora</th>
+          <th class="text-end">Preço Anterior</th>
+          <th class="text-end">Preço Novo</th>
+          <th>Origem</th>
+          <th>Usuário</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for h in historico %}
+        <tr>
+          <td>{{ h.alterado_em.strftime('%d/%m/%Y %H:%M') }}</td>
+          <td class="text-end">{{ h.preco_anterior|br_moeda }}</td>
+          <td class="text-end">{{ h.preco_novo|br_moeda }}</td>
+          <td>
+            {% if h.origem == 'importacao' %}<span class="badge bg-info">Importação</span>
+            {% else %}<span class="badge bg-secondary">Manual</span>{% endif %}
+          </td>
+          <td>{{ h.usuario_nome or '-' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-center text-muted">Sem histórico.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

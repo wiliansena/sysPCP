@@ -448,7 +448,7 @@ td .btn:last-child {
     }
 
     /* Remove efeitos de botões e elementos desnecessários na impressão */
-    .btn, .no-print, .navbar, .footer, .card-header, .top-bar {
+    .btn, .no-print, .navbar, .footer, .top-bar {
         display: none !important;
     }
 

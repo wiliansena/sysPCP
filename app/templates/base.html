@@ -71,18 +71,16 @@
         <a href="{{ url_for('routes.home') }}"><i class="fas fa-home"></i> Página Inicial</a>
         <hr>
 
-        <!-- Cadastros 
+        <!-- Cadastros -->
         {% if ('cadastro', 'ver') in g.permissoes %}
         <div class="sidebar-category" onclick="toggleMenu('cadastro')">
             <i class="fa-solid fa-address-card"></i> Cadastros
             <i class="fas fa-chevron-down"></i>
         </div>
         <div class="sidebar-submenu" id="cadastro">
-            <a href="{{ url_for('routes.listar_estados') }}"><i class="fa-solid fa-map-location-dot"></i> Estados </a>
-            <a href="{{ url_for('routes.listar_municipios') }}"><i class="fa-solid fa-location-dot"></i> Municipios </a>
-            <a href="{{ url_for('routes.listar_ceps') }}"><i class="fa-solid fa-location-dot"></i> CEPs </a>
+            <a href="{{ url_for('routes.listar_colaboradores') }}"> Colaboradores </a>
         </div>
-        {% endif %}-->
+        {% endif %}
 
         <!-- Planejamento de Custos -->
         {% if ('margens', 'ver') in g.permissoes %}
@@ -123,6 +121,7 @@
         </div>
         <div class="sidebar-submenu" id="componentes">
             <a href="{{ url_for('routes.listar_componentes') }}"><i class="fa-solid fa-cubes"></i> Componentes</a>
+            <a href="{{ url_for('routes.listar_materiais') }}"><i class="fas fa-clipboard-list"></i> Materiais</a>
         </div>
         {% endif %}
 
@@ -134,6 +133,12 @@
             <i class="fas fa-chevron-down"></i>
         </div>
         <div class="sidebar-submenu" id="controleproducao">
+            <a href="{{ url_for('routes.listar_producoes_rotativas') }}">
+                <i class="fas fa-sync-alt"></i> Produção Rotativas</a>
+                        <a href="{{ url_for('routes.listar_producoes_convencionais') }}">
+                <i class="fas fa-dice-d6"></i> Produção Convencionais</a>
+            <a href="{{ url_for('routes.listar_maquinas') }}"><i class="fa-solid fa-industry"></i> Máquinas</a>
+            <a href="{{ url_for('routes.listar_tipos_maquina') }}"><i class="fa-solid fa-industry"></i>Tipo de Máquinas</a>
             <a href="{{ url_for('routes.listar_matrizes') }}"><i class="fas fa-cube"></i> Matrizes</a>
             <a href="{{ url_for('routes.listar_remessas') }}"><i class="fa-solid fa-clipboard-list"></i> Remessas</a>
             <a href="{{ url_for('routes.listar_planejamentos') }}">
@@ -182,7 +187,7 @@
 
         {% endif %}
 
-                <!-- Administrativo -->
+                <!-- Administrativo 
         {% if ('administrativo', 'ver') in g.permissoes %}
         <div class="sidebar-category" onclick="toggleMenu('administrativo')">
             <i class="fa-solid fa-building"></i> Administrativo
@@ -194,7 +199,7 @@
             <a href="{{ url_for('routes.listar_ordemComprasKanban') }}"><i class="fa-solid fa-table-columns"></i>
                 Ordem de Compras Kanban</a>
         </div>
-        {% endif %}
+        {% endif %} -->
 
         <!-- Funcionários -->
         {% if ('funcionario', 'ver') in g.permissoes %}
@@ -251,26 +256,35 @@
     <script src="{{ url_for('static', filename='js/marcar_botoes_selecionados.js') }}"></script>
 
     <!--SCRIPT PARA ALTERAR A DIREÇÃO DO BOTÃO DE ESCONDER E APARECER O MENU LATERAL-->
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const toggleBtn = document.getElementById("toggleSidebar");
-            const toggleIcon = document.getElementById("toggleIcon");
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const toggleBtn = document.getElementById("toggleSidebar");
+        const toggleIcon = document.getElementById("toggleIcon");
 
-            toggleBtn.addEventListener("click", function () {
-                document.body.classList.toggle("hide-sidebar");
+        // 🔹 Recupera estado salvo (true = escondida, false = visível)
+        const sidebarHidden = localStorage.getItem("sidebarHidden") === "true";
+        if (sidebarHidden) {
+            document.body.classList.add("hide-sidebar");
+            toggleIcon.classList.remove("fa-angles-left");
+            toggleIcon.classList.add("fa-angles-right");
+        }
 
-                // Alternar ícone entre <<< e >>> usando angles
-                if (document.body.classList.contains("hide-sidebar")) {
-                    toggleIcon.classList.remove("fa-angles-left");
-                    toggleIcon.classList.add("fa-angles-right");
-                } else {
-                    toggleIcon.classList.remove("fa-angles-right");
-                    toggleIcon.classList.add("fa-angles-left");
-                }
-            });
+        toggleBtn.addEventListener("click", function () {
+            document.body.classList.toggle("hide-sidebar");
+
+            // Atualiza ícone
+            if (document.body.classList.contains("hide-sidebar")) {
+                toggleIcon.classList.remove("fa-angles-left");
+                toggleIcon.classList.add("fa-angles-right");
+                localStorage.setItem("sidebarHidden", "true"); // salva estado
+            } else {
+                toggleIcon.classList.remove("fa-angles-right");
+                toggleIcon.classList.add("fa-angles-left");
+                localStorage.setItem("sidebarHidden", "false"); // salva estado
+            }
         });
-    </script>
-
+    });
+</script>
 
     <script>
         window.addEventListener("resize", function () {
@@ -392,6 +406,29 @@
     -->
 
 
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    $('.select2').select2({
+        width: '100%',
+        placeholder: 'Selecione',
+        allowClear: true
+    }).on('select2:open', function () {
+        // Foca automaticamente no campo de busca
+        let busca = document.querySelector('.select2-container--open .select2-search__field');
+        if (busca) {
+            busca.focus();
+        }
+    });
+
+    // Permitir abrir com Enter também em selects single
+    $(document).on('keydown', '.select2-selection', function (e) {
+        if (e.key === "Enter" || e.keyCode === 13) {
+            $(this).closest('select').select2('open');
+            e.preventDefault();
+        }
+    });
+});
+</script>
 
 
 </body>

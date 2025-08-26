@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+  <h2><i class="fas fa-plus-circle me-2"></i> Nova Produção Convencional</h2>
+  <hr>
+
+  <form method="POST" enctype="multipart/form-data">
+    {{ form.hidden_tag() }}
+
+    <div class="col-md-4">
+      {{ form.data_producao.label(class="form-label") }}
+      {{ form.data_producao(class="form-control") }}
+    </div>
+<hr>
+    <div class="row">
+      <div class="col-md-3 mb-3">
+        {{ form.producao_geral_alca.label(class="form-label") }}
+        {{ form.producao_geral_alca(class="form-control") }}
+      </div>
+      <div class="col-md-3 mb-3">
+        {{ form.producao_solado_turno_a.label(class="form-label") }}
+        {{ form.producao_solado_turno_a(class="form-control") }}
+      </div>
+      <div class="col-md-3 mb-3">
+        {{ form.producao_solado_turno_b.label(class="form-label") }}
+        {{ form.producao_solado_turno_b(class="form-control") }}
+      </div>
+      <div class="col-md-3 mb-3">
+        {{ form.producao_solado_turno_c.label(class="form-label") }}
+        {{ form.producao_solado_turno_c(class="form-control") }}
+      </div>
+    </div>
+
+    <div class="mb-3">
+      {{ form.imagem.label(class="form-label") }}
+      {{ form.imagem(class="form-control") }}
+    </div>
+
+    <div class="mb-3">
+      {{ form.observacao.label(class="form-label") }}
+      {{ form.observacao(class="form-control", rows="3") }}
+    </div>
+
+    <button type="submit" class="btn btn-success">
+      <i class="fas fa-save"></i> Salvar
+    </button>
+    <a href="{{ url_for('routes.listar_producoes_convencionais') }}" class="btn btn-secondary">
+      <i class="fas fa-arrow-left"></i> Voltar
+    </a>
+  </form>
+</div>
+{% endblock %}

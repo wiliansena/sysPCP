@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Editar PRODUÇÃO ROTATIVA</h2>
+<form method="POST" enctype="multipart/form-data">
+  {{ form.hidden_tag() }}
+
+  <div class="mb-3">
+    {{ form.turno.label(class="form-label") }}
+    {{ form.turno(class="form-select", disabled=True) }}
+  </div>
+
+  <div class="mb-3">
+    {{ form.maquina_id.label(class="form-label") }}
+    {{ form.maquina_id(class="form-select select2", disabled=True) }}
+  </div>
+
+  <div class="col-md-4">
+    {{ form.data_producao.label(class="form-label") }}
+    {{ form.data_producao(class="form-control") }}
+  </div>
+<hr>
+  <div class="mb-3">
+    {{ form.producao_painel.label(class="form-label") }}
+    {{ form.producao_painel(class="form-control") }}
+  </div>
+
+  <div class="mb-3">
+    {{ form.pares_bons.label(class="form-label") }}
+    {{ form.pares_bons(class="form-control") }}
+  </div>
+
+  <hr>
+
+  <div class="mb-2">
+    <label class="form-label d-block">Imagem atual</label>
+    {% if imagem_url %}
+      <img src="{{ imagem_url }}" alt="Imagem atual" class="img-thumbnail" style="max-height:180px;">
+      <div class="text-muted small mt-1">Arquivo: {{ pr.imagem }}</div>
+    {% else %}
+      <div class="text-muted">Sem imagem enviada.</div>
+    {% endif %}
+  </div>
+
+  <div class="mb-3">
+    {{ form.imagem.label(class="form-label") }}
+    {{ form.imagem(class="form-control") }}
+    <div class="form-text">Envie um arquivo apenas se deseja substituir a imagem atual.</div>
+  </div>
+
+  <hr>
+
+  <div class="mb-3">
+    {{ form.observacao.label(class="form-label") }}
+    {{ form.observacao(class="form-control") }}
+  </div>
+
+  <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Salvar</button>
+  <a href="{{ url_for('routes.listar_producoes_rotativas') }}" class="btn btn-secondary">Cancelar</a>
+</form>
+{% endblock %}

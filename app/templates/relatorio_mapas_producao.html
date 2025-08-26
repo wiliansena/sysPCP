@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block content %}
+<h4 class="mt-3">Mapas de Produção (por máquina)</h4>
+
+<form method="GET" class="row g-3 mb-4">
+    <div class="col-md-3">
+        <label class="form-label mb-1">Início</label>
+        <input type="date" name="inicio" class="form-control" value="{{ inicio or '' }}">
+    </div>
+    <div class="col-md-3">
+        <label class="form-label mb-1">Fim</label>
+        <input type="date" name="fim" class="form-control" value="{{ fim or '' }}">
+    </div>
+    <div class="col-md-4">
+        <label class="form-label mb-1">Máquina</label>
+        <select name="maquina_id" class="form-select select2">
+            <option value="">Todas</option>
+            {% for mid, mcod in maquinas_opts %}
+            <option value="{{ mid }}" {{ 'selected' if maquina_id and (maquina_id|string==mid|string) else '' }}>
+                {{ mcod }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="col-12 d-flex justify-content-start gap-2">
+        <button class="btn btn-primary">
+            <i class="fas fa-filter me-1"></i> Filtrar
+        </button>
+        <a href="{{ url_for('routes.relatorio_mapas_producao') }}" class="btn btn-secondary">
+            Limpar
+        </a>
+    </div>
+    <hr>
+    <div class="col-12 d-flex justify-content-start gap-2">
+        <a class="btn btn-outline-danger" href="{{ url_for('routes.relatorio_mapas_producao_pdf',
+                   inicio=request.args.get('inicio'),
+                   fim=request.args.get('fim'),
+                   maquina_id=request.args.get('maquina_id')) }}" target="_blank">
+            <i class="fas fa-file-pdf me-1"></i> PDF
+        </a>
+        <button class="btn btn-primary" onclick="window.print()">
+            <i class="fa fa-print"></i> Imprimir
+        </button>
+
+    </div>
+
+</form>
+
+{% if maquinas|length == 0 %}
+<div class="alert alert-info">Nenhum registro encontrado para os filtros informados.</div>
+{% endif %}
+
+<div class="row g-3">
+    {% for m in maquinas %}
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100" style="background-color:#e7e3e3;">
+            <div class="card-header text-center fw-bold border border-warning bg-white position-relative">
+                {{ m.codigo }}
+                <span class="badge bg-secondary position-absolute end-0 top-50 translate-middle-y me-2">
+                    ID {{ m.id }}
+                </span>
+            </div>
+
+
+            <div class="card-body">
+                <div class="row g-3">
+                    <!-- Produção do painel -->
+                    <div class="col-md-6">
+                        <div class="border rounded">
+                            <div class="px-3 py-2 text-white fw-semibold" style="background-color:#0d6efd;">
+                                Produção do painel
+                            </div>
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span><i class="fas fa-sun text-warning me-1"></i> Dia</span>
+                                    <strong>{{ m.painel_dia|br_numero }}</strong>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span><i class="fas fa-moon text-dark me-1"></i> Noite</span>
+                                    <strong>{{ m.painel_noite|br_numero }}</strong>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between fw-bold">
+                                    <span>Total</span><span>{{ m.painel_total|br_numero }}</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Pares bons -->
+                    <div class="col-md-6">
+                        <div class="border rounded">
+                            <div class="px-3 py-2 text-white fw-semibold" style="background-color:#198754;">
+                                Pares bons
+                            </div>
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span><i class="fas fa-sun text-warning me-1"></i> Dia</span>
+                                    <strong>{{ m.pares_dia|br_numero }}</strong>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span><i class="fas fa-moon text-dark me-1"></i> Noite</span>
+                                    <strong>{{ m.pares_noite|br_numero }}</strong>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between fw-bold">
+                                    <span>Total</span><span>{{ m.pares_total|br_numero }}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between text-primary fw-bold">
+                                    <span>Qualidade</span>
+                                    <span>
+                                        {% if m.painel_total > 0 %}
+                                        {{ ((m.pares_total / m.painel_total) * 100)|round(2) }}%
+                                        {% else %}
+                                        -
+                                        {% endif %}
+                                    </span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                </div> <!-- row -->
+            </div> <!-- card-body -->
+        </div> <!-- card -->
+    </div>
+    {% endfor %}
+</div>
+
+<hr>
+<a href="{{ url_for('routes.listar_producoes_rotativas') }}" class="btn btn-secondary">Voltar</a>
+{% endblock %}

@@ -6,7 +6,7 @@ from wtforms.validators import DataRequired
 from wtforms import SelectField
 from flask_wtf import FlaskForm
 from wtforms import StringField, FloatField, IntegerField, FileField, FieldList, FormField, SubmitField
-from wtforms.validators import DataRequired, NumberRange, Optional
+from wtforms.validators import DataRequired, NumberRange, Optional, Email
 from datetime import date
 from wtforms.validators import DataRequired, Length
 from flask_wtf import FlaskForm
@@ -280,19 +280,17 @@ class MargemPorPedidoReferenciaForm(FlaskForm):
 ##### CONTROLE DE PRODUÇÃO    #########
 
 class MaquinaForm(FlaskForm):
-    codigo = StringField('Código', validators=[DataRequired()])
-    descricao = StringField('Descrição', validators=[DataRequired()])
-    tipo = SelectField('Tipo', choices=[('INJETORA/ROTATIVA', 'INJETORA/ROTATIVA'),
-                                        ('INJETORA/CONVENCIONAL', 'INJETORA/CONVENCIONAL'),
-                                        ('PINTURA', 'EMBALAGENS'),
-                                        ('CONFORMAÇÃO', 'CONFORMAÇÃO'),
-                                        ('EMBALADOR', 'EMBALADOR')], validators=[DataRequired()])
-    status = SelectField('Tipo', choices=[('ATIVA', 'ATIVA'),
-                                          ('INATIVA', 'INATIVA')
-                                          ], validators=[DataRequired()])
-    preco = FloatField('Preço')
-    
+    codigo = StringField('Código', validators=[DataRequired(), Length(max=50)])
+    descricao = StringField('Descrição', validators=[DataRequired(), Length(max=200)])
+    tipo_id = SelectField('Tipo de Máquina', coerce=int, validators=[DataRequired()])
+    status = SelectField('Status', choices=[('Ativa','Ativa'), ('Inativa','Inativa')], validators=[DataRequired()])
+    preco = DecimalField('Preço', places=4, validators=[DataRequired(), NumberRange(min=0)])
     submit = SubmitField('Salvar')
+
+class TipoMaquinaForm(FlaskForm):
+    nome = StringField('Nome', validators=[DataRequired(), Length(max=50)])
+    submit = SubmitField('Salvar')
+    
 
 class TrocaForm(FlaskForm):
     horario = StringField("Horário", render_kw={"readonly": True})
@@ -550,3 +548,95 @@ class CepForm(FlaskForm):
     estado_id = SelectField('Estado', coerce=int, validators=[DataRequired()])
 
     submit = SubmitField('Salvar')
+
+### MATERIAIS  #####
+
+UNIDADES = [('UND','UND'),('M','M'),('KG','KG'),('L','L')]
+TIPOS = [('TECIDOS','Tecidos'),('COURO','Couro'),('BORRACHA','Borracha'),('PLASTICO','Plástico'),('METAIS','Metais'),('OUTROS','Outros')]
+
+class MaterialForm(FlaskForm):
+    descricao = StringField('Descrição', validators=[DataRequired(), Length(max=150)])
+    tipo = SelectField('Tipo', choices=TIPOS, validators=[DataRequired()])
+    unidade_medida = SelectField('Unidade de Medida', choices=UNIDADES, validators=[DataRequired()])
+    preco_unitario = DecimalField('Preço Unitário', places=2, default=Decimal('0.00'))
+    observacao = TextAreaField('Observação', validators=[Optional(), Length(max=500)])
+    submit = SubmitField('Salvar')
+
+class MaterialCorForm(FlaskForm):
+    material_id = HiddenField(validators=[DataRequired()])
+    cor_id = SelectField('Cor', coerce=int, validators=[DataRequired()])
+    quantidade = DecimalField('Quantidade', places=2, default=Decimal('0.00'))
+    submit = SubmitField('Adicionar Cor')
+
+
+### COLABORADOR  ###
+# Lista de UFs do Brasil (para o SelectField)
+UF_CHOICES = [
+    ('', 'Selecione'),
+    ('AC','AC'),('AL','AL'),('AP','AP'),('AM','AM'),('BA','BA'),('CE','CE'),
+    ('DF','DF'),('ES','ES'),('GO','GO'),('MA','MA'),('MT','MT'),('MS','MS'),
+    ('MG','MG'),('PA','PA'),('PB','PB'),('PR','PR'),('PE','PE'),('PI','PI'),
+    ('RJ','RJ'),('RN','RN'),('RS','RS'),('RO','RO'),('RR','RR'),('SC','SC'),
+    ('SP','SP'),('SE','SE'),('TO','TO'),
+]
+
+class TipoColaboradorForm(FlaskForm):
+    descricao = StringField(
+        'Descrição',
+        validators=[DataRequired(message='Informe a descrição.'), Length(max=100)]
+    )
+    submit = SubmitField('Salvar')
+
+
+class ColaboradorForm(FlaskForm):
+    # Dados básicos
+    nome = StringField(
+        'Nome',
+        validators=[DataRequired(message='Informe o nome.'), Length(max=150)]
+    )
+    documento = StringField(
+        'Documento (CPF/CNPJ)',
+        validators=[Optional(), Length(max=20)]
+    )
+    email = StringField(
+        'E-mail',
+        validators=[Optional(), Email(message='E-mail inválido.'), Length(max=120)]
+    )
+    telefone = StringField(
+        'Telefone',
+        validators=[Optional(), Length(max=20)]
+    )
+
+    # Endereço
+    cep = StringField('CEP', validators=[Optional(), Length(max=9)])
+    endereco = StringField('Endereço', validators=[Optional(), Length(max=200)])
+    numero = StringField('Número', validators=[Optional(), Length(max=10)])
+    complemento = StringField('Complemento', validators=[Optional(), Length(max=100)])
+    bairro = StringField('Bairro', validators=[Optional(), Length(max=100)])
+    cidade = StringField('Cidade', validators=[Optional(), Length(max=100)])
+    uf = SelectField('UF', choices=UF_CHOICES, validators=[Optional()])
+
+    # Relacionamento
+    # Obs.: usar coerce=int para receber o ID do tipo vindo do Select2
+    tipo_id = SelectField('Tipo de Colaborador', coerce=int, validators=[DataRequired(message='Selecione o tipo.')])
+
+    submit = SubmitField('Salvar')
+
+class ProducaoRotativaForm(FlaskForm):
+    turno = SelectField('Turno', choices=[('DIA', 'DIA'), ('NOITE', 'NOITE')], validators=[DataRequired()])
+    data_producao = DateField('Data', format='%Y-%m-%d', validators=[DataRequired()])
+    producao_painel = IntegerField('Quantidade', validators=[Optional()])
+    pares_bons = IntegerField('Pares_bons', validators=[DataRequired()])
+    imagem = FileField('Imagem Produção', validators=[DataRequired()])
+    observacao = TextAreaField('Observação', validators=[Optional(), Length(max=500)])
+    maquina_id = SelectField('Maquina', coerce=int, validators=[DataRequired()])
+    submit = SubmitField('Salvar')
+
+class ProducaoConvencionalForm(FlaskForm):
+    data_producao = DateField('Data', format='%Y-%m-%d', validators=[DataRequired()])
+    producao_geral_alca = IntegerField('PRODUÇÃO GERAL ALÇA', validators=[Optional()])
+    producao_solado_turno_a = IntegerField('SOLADO TURNO_A', validators=[Optional()])
+    producao_solado_turno_b = IntegerField('SOLADO TURNO_B', validators=[Optional()])
+    producao_solado_turno_c = IntegerField('SOLADO TURNO_C', validators=[Optional()])
+    imagem = imagem = FileField('Imagem (FOLHA DE PRODUÇÃO)', validators=[DataRequired()])
+    observacao = TextAreaField('Observação', validators=[Optional(), Length(max=500)])

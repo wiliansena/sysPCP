@@ -4,8 +4,8 @@ from flask import Blueprint, jsonify, render_template, redirect, url_for, flash,
 from flask_login import current_user, login_required
 import pytz
 from app import db, csrf
-from app.models import Cor, Estado, FormulacaoSolado, FormulacaoSoladoFriso, Funcionario, Grade, Linha, LogAcao, Manutencao, ManutencaoMaquina, ManutencaoPeca, Maquina, MargemPorPedido, MargemPorPedidoReferencia, Matriz, MovimentacaoMatriz, Municipio, OrdemCompra, Peca, Permissao, PlanejamentoProducao, ProducaoDiaria, Referencia, Componente, CustoOperacional, ReferenciaAlca, ReferenciaComponentes, ReferenciaCustoOperacional, ReferenciaEmbalagem1, ReferenciaEmbalagem2, ReferenciaEmbalagem3, ReferenciaMaoDeObra, ReferenciaSolado, Remessa, Salario, MaoDeObra, Margem, TamanhoGrade, TamanhoMatriz, TamanhoMovimentacao, Tipo, TrocaHorario, TrocaMatriz, Usuario, hora_brasilia
-from app.forms import CorForm, DeleteForm, EstadoForm, ExcluirProducaoPorDataForm, FuncionarioForm, GradeForm, LinhaForm, ManutencaoForm, MaquinaForm, MargemForm, MargemPorPedidoForm, MargemPorPedidoReferenciaForm, MatrizForm, MovimentacaoMatrizForm, OrdemCompraForm, PecaForm, PlanejamentoProducaoForm, ProducaoDiariaForm, ReferenciaForm, ComponenteForm, CustoOperacionalForm, RemessaForm, SalarioForm, MaoDeObraForm, TipoForm, TrocaMatrizForm, UsuarioForm
+from app.models import Colaborador, ComponenteCor, ComponentePrecoHistorico, Cor, Estado, FormulacaoSolado, FormulacaoSoladoFriso, Funcionario, Grade, Linha, LogAcao, Manutencao, ManutencaoMaquina, ManutencaoPeca, Maquina, MargemPorPedido, MargemPorPedidoReferencia, Material, MaterialCor, Matriz, MovimentacaoComponente, MovimentacaoMaterial, MovimentacaoMatriz, Municipio, OrdemCompra, Peca, Permissao, PlanejamentoProducao, ProducaoConvencional, ProducaoDiaria, ProducaoRotativa, Referencia, Componente, CustoOperacional, ReferenciaAlca, ReferenciaComponentes, ReferenciaCustoOperacional, ReferenciaEmbalagem1, ReferenciaEmbalagem2, ReferenciaEmbalagem3, ReferenciaMaoDeObra, ReferenciaSolado, Remessa, Salario, MaoDeObra, Margem, TamanhoGrade, TamanhoMatriz, TamanhoMovimentacao, Tipo, TipoColaborador, TipoMaquina, TrocaHorario, TrocaMatriz, Usuario, hora_brasilia
+from app.forms import ColaboradorForm, CorForm, DeleteForm, EstadoForm, ExcluirProducaoPorDataForm, FuncionarioForm, GradeForm, LinhaForm, ManutencaoForm, MaquinaForm, MargemForm, MargemPorPedidoForm, MargemPorPedidoReferenciaForm, MaterialForm, MatrizForm, MovimentacaoMatrizForm, OrdemCompraForm, PecaForm, PlanejamentoProducaoForm, ProducaoConvencionalForm, ProducaoDiariaForm, ProducaoRotativaForm, ReferenciaForm, ComponenteForm, CustoOperacionalForm, RemessaForm, SalarioForm, MaoDeObraForm, TipoForm, TipoMaquinaForm, TrocaMatrizForm, UsuarioForm
 import os
 from flask import render_template, redirect, url_for, flash, request
 from app.models import Solado, Tamanho, Componente, FormulacaoSolado, Alca, TamanhoAlca, FormulacaoAlca, Colecao
@@ -30,7 +30,9 @@ from io import BytesIO
 from sqlalchemy.orm import aliased
 from flask import jsonify, request
 from sqlalchemy import func
-
+from flask_wtf.csrf import validate_csrf, CSRFError
+from sqlalchemy import asc, desc
+from flask import Response
 
 
 bp = Blueprint('routes', __name__)
@@ -143,8 +145,8 @@ def gerenciar_permissoes(id):
 
     categorias = ["cadastro","comercial","financeiro","administrativo","desenvolvimento","manutencao","margens",
                   "custoproducao", "componentes",
-                  "controleproducao", "maquinas",
-                  "funcionario", "relatorio", "usuarios", "trocar_senha"]
+                  "controleproducao",
+                  "funcionario", "usuarios", "trocar_senha"]
     acoes = ["criar", "ver", "editar", "excluir"]
 
     if request.method == "POST":
@@ -889,68 +891,224 @@ def excluir_colecao(id):
     return redirect(url_for('routes.listar_colecoes'))
 
 
+
 #COMPONENTES OK
 
+# ---------- helper: validar fornecedor ----------
+def _resolver_fornecedor_id(form_value: str | None) -> int | None:
+    """
+    Recebe o valor vindo do template (Select2/hidden) e retorna:
+      - int válido (ID de colaborador do tipo 'Fornecedor'), ou
+      - None se vazio/não informado.
+    Se o ID não existir ou não for do tipo 'Fornecedor', retorna None e o caller pode decidir o que fazer.
+    """
+    if not form_value:
+        return None
+    try:
+        fid = int(form_value)
+    except (TypeError, ValueError):
+        return None
+
+    # Verifica se o colaborador existe e tem tipo "Fornecedor" (case-insensitive)
+    colab = (db.session.query(Colaborador)
+             .join(TipoColaborador, Colaborador.tipo_id == TipoColaborador.id)
+             .filter(Colaborador.id == fid, TipoColaborador.descricao.ilike('%Fornecedor%'))
+             .first())
+    return colab.id if colab else None
+
+
+# ---------- LISTAGEM ----------
 @bp.route('/componentes', methods=['GET'])
 @login_required
 @requer_permissao('componentes', 'ver')
 def listar_componentes():
-    filtro = request.args.get('filtro', '')
+    # Filtros
+    codigo = (request.args.get('codigo') or '').strip()
+    descricao = (request.args.get('descricao') or '').strip()
+    tipo = (request.args.get('tipo') or '').strip()
 
-    if filtro == "TODOS":
-        componentes = Componente.query.order_by(Componente.id.desc()).all()
-    elif filtro:
-        componentes = Componente.query.filter(Componente.descricao.ilike(f"%{filtro}%")).order_by(Componente.id.desc()).all()
-    else:
-        componentes = []  # 🔹 Deixa a lista vazia se não houver filtro
+    # Paginação
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 25, type=int)
+    if per_page not in (10, 25, 50, 100):
+        per_page = 25
 
-    return render_template('componentes.html', componentes=componentes)
+    # Query base
+    q = Componente.query
 
+    if codigo:
+        q = q.filter(Componente.codigo.ilike(f"%{codigo}%"))
+    if descricao:
+        q = q.filter(Componente.descricao.ilike(f"%{descricao}%"))
+    if tipo:
+        q = q.filter(Componente.tipo.ilike(f"%{tipo}%"))
+
+    q = q.order_by(Componente.id.desc())
+
+    pagination = q.paginate(page=page, per_page=per_page, error_out=False)
+    componentes = pagination.items
+
+    return render_template(
+        'componentes.html',
+        componentes=componentes,
+        pagination=pagination,
+        per_page=per_page,
+        codigo=codigo,
+        descricao=descricao,
+        tipo=tipo
+    )
+
+@bp.route('/componente/<int:id>', methods=['GET'])
+@login_required
+@requer_permissao('componentes', 'ver')
+def ver_componente(id):
+    componente = (Componente.query
+                  .options(joinedload(Componente.cores).joinedload(ComponenteCor.cor))
+                  .get_or_404(id))
+    # fornecedor já acessível via componente.fornecedor (id/nome)
+    return render_template('ver_componente.html', componente=componente)
+
+
+# helper: fornecedores (somente colaborador do tipo "Fornecedor")
+def _listar_fornecedores():
+    return (db.session.query(Colaborador)
+            .join(TipoColaborador, Colaborador.tipo_id == TipoColaborador.id)
+            .filter(TipoColaborador.descricao.ilike('%fornecedor%'))
+            .order_by(Colaborador.nome.asc())
+            .all())
 
 @bp.route('/componente/novo', methods=['GET', 'POST'])
 @login_required
 @requer_permissao('componentes', 'criar')
 def novo_componente():
     form = ComponenteForm()
+    cores = Cor.query.order_by(Cor.nome.asc()).all()
+    fornecedores = _listar_fornecedores()  # <<< AQUI
+
     if form.validate_on_submit():
+        fornecedor_id = _resolver_fornecedor_id(request.form.get('fornecedor_id'))
         componente = Componente(
             codigo=form.codigo.data,
             tipo=form.tipo.data,
             descricao=form.descricao.data,
             unidade_medida=form.unidade_medida.data,
-            preco=form.preco.data if form.preco.data is not None else 0
+            preco=form.preco.data if form.preco.data is not None else Decimal('0'),
+            fornecedor_id=fornecedor_id
         )
         db.session.add(componente)
+        db.session.flush()
+
+        selecionadas = []
+        for x in request.form.getlist('cores[]'):
+            if x.isdigit():
+                selecionadas.append(int(x))
+        if not selecionadas:
+            sem_cor = Cor.query.filter(Cor.nome.ilike('Sem cor')).first()
+            if sem_cor:
+                selecionadas = [sem_cor.id]
+        for cor_id in selecionadas:
+            db.session.add(ComponenteCor(componente_id=componente.id, cor_id=cor_id, quantidade=Decimal('0.00')))
+
         db.session.commit()
         flash('Componente adicionado com sucesso!', 'success')
         return redirect(url_for('routes.listar_componentes'))
-    return render_template('novo_componente.html', form=form)
+
+    return render_template('novo_componente.html', form=form, cores=cores, fornecedores=fornecedores)  # <<< AQUI
 
 @bp.route('/componente/editar/<int:id>', methods=['GET', 'POST'])
 @login_required
 @requer_permissao('componentes', 'editar')
 def editar_componente(id):
-    componente = Componente.query.get_or_404(id)
+    componente = (Componente.query
+                  .options(joinedload(Componente.cores).joinedload(ComponenteCor.cor))
+                  .get_or_404(id))
+
     form = ComponenteForm(obj=componente)
-    
+    cores = Cor.query.order_by(Cor.nome.asc()).all()
+    fornecedores = _listar_fornecedores()  # <<< AQUI
+
+    existentes = {cc.cor_id: cc for cc in componente.cores}
+    vinculadas_ids = set(existentes.keys())
+
     if form.validate_on_submit():
         componente.codigo = form.codigo.data
         componente.tipo = form.tipo.data
         componente.descricao = form.descricao.data
         componente.unidade_medida = form.unidade_medida.data
-        componente.preco = form.preco.data
-        
+
+        fornecedor_id = _resolver_fornecedor_id(request.form.get('fornecedor_id'))
+        componente.fornecedor_id = fornecedor_id  # pode ser None
+
+        preco_ant = componente.preco or Decimal('0')
+        preco_novo = form.preco.data if form.preco.data is not None else Decimal('0')
+        if preco_ant != preco_novo:
+            db.session.add(ComponentePrecoHistorico(
+                componente_id=componente.id,
+                preco_anterior=preco_ant,
+                preco_novo=preco_novo,
+                origem='manual',
+                usuario_id=getattr(current_user, 'id', None),
+                usuario_nome=getattr(current_user, 'nome', None) or getattr(current_user, 'username', None)
+            ))
+            componente.preco = preco_novo
+            preco_msg = f" Preço alterado de {preco_ant} para {preco_novo}."
+        else:
+            preco_msg = ""
+
+        selecionadas = set()
+        for cid in request.form.getlist('cores[]'):
+            try:
+                selecionadas.add(int(cid))
+            except (TypeError, ValueError):
+                pass
+        if not selecionadas:
+            sem_cor = Cor.query.filter(Cor.nome.ilike('Sem cor')).first()
+            if sem_cor:
+                selecionadas = {sem_cor.id}
+
+        add_count = 0
+        for cor_id in selecionadas - vinculadas_ids:
+            db.session.add(ComponenteCor(componente_id=componente.id, cor_id=cor_id, quantidade=Decimal('0.00')))
+            add_count += 1
+
+        bloqueadas = []
+        for cor_id, cc in list(existentes.items()):
+            if cor_id not in selecionadas:
+                qtd = cc.quantidade or Decimal('0.00')
+                if qtd == 0:
+                    db.session.delete(cc)
+                else:
+                    bloqueadas.append(cc.cor.nome if cc.cor else f'Cor #{cor_id}')
+
         db.session.commit()
-        flash('Componente atualizado com sucesso!', 'success')
+
+        if bloqueadas:
+            flash(('Componente salvo.' + preco_msg +
+                   ' Não removi estas cores pois possuem saldo: ' + ', '.join(bloqueadas)).strip(), 'warning')
+        elif add_count or preco_msg or (fornecedor_id is not None):
+            extras = []
+            if add_count: extras.append(f'{add_count} cor(es) adicionada(s)')
+            if preco_msg: extras.append('preço atualizado')
+            if fornecedor_id is not None: extras.append('fornecedor atualizado')
+            flash(('Componente atualizado com sucesso: ' + ', '.join(extras) + '.').strip(), 'success')
+        else:
+            flash('Componente atualizado com sucesso!', 'success')
+
         return redirect(url_for('routes.listar_componentes'))
-    
-    return render_template('editar_componente.html', form=form, componente=componente)
+
+    return render_template('editar_componente.html',
+                           form=form,
+                           componente=componente,
+                           cores=cores,
+                           fornecedores=fornecedores,  # <<< AQUI
+                           vinculadas_ids=vinculadas_ids)
 
 
+# ---------- EXCLUIR ----------
 @bp.route('/componente/excluir/<int:id>', methods=['POST'])
 @login_required
 @requer_permissao('componentes', 'excluir')
-@csrf.exempt  # 🔹 Desativa CSRF apenas para essa rota
+@csrf.exempt  # mantém seu padrão atual
 def excluir_componente(id):
     componente = Componente.query.get_or_404(id)
 
@@ -961,8 +1119,6 @@ def excluir_componente(id):
 
     except IntegrityError:
         db.session.rollback()
-
-        # 🔹 Mensagem genérica sem listar onde o componente é usado
         flash("Erro: Este componente não pode ser excluído porque está sendo utilizado em outras tabelas do sistema.", "danger")
 
     except Exception as e:
@@ -970,6 +1126,243 @@ def excluir_componente(id):
         flash(f"Erro inesperado ao excluir o componente: {str(e)}", "danger")
 
     return redirect(url_for('routes.listar_componentes'))
+
+
+@bp.route('/importar_componentes', methods=['POST'])
+@login_required
+@requer_permissao('componentes', 'editar')
+def importar_componentes():
+    if 'file' not in request.files:
+        flash("Nenhum arquivo enviado.", "danger")
+        return redirect(url_for('routes.listar_componentes'))
+
+    file = request.files['file']
+    if file.filename == '':
+        flash("Arquivo inválido.", "danger")
+        return redirect(url_for('routes.listar_componentes'))
+
+    upload_folder = current_app.config.get('UPLOAD_FOLDER', '/tmp')
+    os.makedirs(upload_folder, exist_ok=True)
+
+    filename = secure_filename(file.filename)
+    filepath = os.path.join(upload_folder, filename)
+    file.save(filepath)
+
+    try:
+        df = pd.read_excel(filepath, dtype={'codigo': str})
+        atualizados = 0
+        criados = 0
+
+        # cor padrão "Sem cor"
+        sem_cor = Cor.query.filter(Cor.nome.ilike('Sem cor')).first()
+        if not sem_cor:
+            flash('A cor "Sem cor" não foi encontrada. Crie-a antes de importar.', 'danger')
+            return redirect(url_for('routes.listar_componentes'))
+
+        for _, row in df.iterrows():
+            codigo = (row.get('codigo') or '').strip()
+            descricao = (row.get('descricao') or '').strip()
+            tipo = (row.get('tipo') or '').strip()
+            unidade_medida = (row.get('unidade_medida') or '').strip()
+            # aceita "1,23" ou 1.23
+            preco = Decimal(str(row.get('preco', '0')).replace(',', '.'))
+
+            if not codigo:
+                continue  # ignora linha sem código
+
+            componente = Componente.query.filter_by(codigo=codigo).first()
+
+            if componente:
+                preco_ant = componente.preco or Decimal('0')
+                mudou_preco = (preco_ant != preco)
+
+                mudou_outros = (
+                    componente.descricao != descricao or
+                    componente.tipo != tipo or
+                    componente.unidade_medida != unidade_medida
+                )
+
+                # histórico se o preço mudou (com usuário da importação)
+                if mudou_preco:
+                    db.session.add(ComponentePrecoHistorico(
+                        componente_id=componente.id,
+                        preco_anterior=preco_ant,
+                        preco_novo=preco,
+                        origem='importacao',
+                        usuario_id=getattr(current_user, 'id', None),
+                        usuario_nome=getattr(current_user, 'nome', None) or getattr(current_user, 'username', None)
+                    ))
+
+                if mudou_preco or mudou_outros:
+                    componente.descricao = descricao
+                    componente.tipo = tipo
+                    componente.unidade_medida = unidade_medida
+                    componente.preco = preco
+                    atualizados += 1
+
+                # garante vínculo "Sem cor" se ainda não tiver nenhuma cor
+                tem_vinculo = ComponenteCor.query.filter_by(componente_id=componente.id).first()
+                if not tem_vinculo:
+                    db.session.add(ComponenteCor(
+                        componente_id=componente.id,
+                        cor_id=sem_cor.id,
+                        quantidade=Decimal('0.00')
+                    ))
+
+            else:
+                # cria novo
+                componente = Componente(
+                    codigo=codigo,
+                    descricao=descricao,
+                    tipo=tipo,
+                    unidade_medida=unidade_medida,
+                    preco=preco
+                )
+                db.session.add(componente)
+                db.session.flush()  # precisa do ID
+
+                # vincula "Sem cor"
+                db.session.add(ComponenteCor(
+                    componente_id=componente.id,
+                    cor_id=sem_cor.id,
+                    quantidade=Decimal('0.00')
+                ))
+
+                criados += 1
+
+        db.session.commit()
+        flash(f"Importação concluída! {criados} componentes criados, {atualizados} atualizados.", "success")
+
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Erro ao processar arquivo: {str(e)}", "danger")
+
+    finally:
+        try:
+            os.remove(filepath)
+        except Exception:
+            pass
+
+    return redirect(url_for('routes.listar_componentes'))
+
+##### MOVIMENTACAO COMPONENTE  #######
+
+
+@bp.route('/componente/<int:componente_id>/movimentos')
+@login_required
+@requer_permissao('componentes', 'ver')
+def listar_movimentos_componente(componente_id):
+    # Carrega componente + cores vinculadas
+    comp = (Componente.query
+            .options(joinedload(Componente.cores).joinedload(ComponenteCor.cor))
+            .get_or_404(componente_id))
+
+    # Últimas 50 movimentações (histórico)
+    movimentos = (MovimentacaoComponente.query
+                  .filter_by(componente_id=comp.id)
+                  .order_by(MovimentacaoComponente.id.desc())
+                  .limit(50)
+                  .all())
+
+    # Select de cor: somente cores vinculadas ao componente
+    cores_vinculadas = sorted([cc.cor for cc in comp.cores if cc.cor],
+                              key=lambda c: c.nome.lower())
+
+    # Monta linhas de saldo + totais no backend
+    rows_saldo = []
+    total_q = Decimal('0.00')
+    total_v = Decimal('0.00')
+    preco = comp.preco or Decimal('0.00')
+
+    for cc in sorted(comp.cores, key=lambda cc: (cc.cor.nome if cc.cor else '').lower()):
+        q = cc.quantidade or Decimal('0.00')
+        v = q * preco
+        rows_saldo.append({
+            "cor_nome": cc.cor.nome if cc.cor else "-",
+            "q": q,
+            "v": v
+        })
+        total_q += q
+        total_v += v
+
+    return render_template('movimentos_componente.html',
+                           componente=comp,
+                           movimentos=movimentos,
+                           cores=cores_vinculadas,
+                           rows_saldo=rows_saldo,
+                           total_q=total_q,
+                           total_v=total_v)
+
+
+@bp.route('/componente/<int:componente_id>/movimentar', methods=['POST'])
+@login_required
+@requer_permissao('componentes', 'editar')
+def movimentar_componente(componente_id):
+    comp = Componente.query.get_or_404(componente_id)
+
+    tipo = (request.form.get('tipo') or '').upper()   # ENTRADA | SAIDA
+    cor_id = request.form.get('cor_id', type=int)
+    qtd_raw = (request.form.get('quantidade') or '').strip()
+    observacao = (request.form.get('observacao') or '').strip() or None
+
+    if tipo not in ('ENTRADA', 'SAIDA') or not cor_id:
+        flash('Dados de movimentação incompletos.', 'danger')
+        return redirect(url_for('routes.listar_movimentos_componente', componente_id=comp.id))
+
+    try:
+        quantidade = Decimal(qtd_raw.replace(',', '.'))
+    except InvalidOperation:
+        flash('Quantidade inválida.', 'danger')
+        return redirect(url_for('routes.listar_movimentos_componente', componente_id=comp.id))
+
+    if quantidade <= 0:
+        flash('Quantidade deve ser maior que zero.', 'danger')
+        return redirect(url_for('routes.listar_movimentos_componente', componente_id=comp.id))
+
+    # Garante que a cor é vinculada ao componente
+    cc = ComponenteCor.query.filter_by(componente_id=comp.id, cor_id=cor_id).first()
+    if not cc:
+        flash('Esta cor não está vinculada a este componente.', 'warning')
+        return redirect(url_for('routes.listar_movimentos_componente', componente_id=comp.id))
+
+    saldo_atual = cc.quantidade or Decimal('0.00')
+
+    # Bloqueia saída acima do saldo
+    if tipo == 'SAIDA' and quantidade > saldo_atual:
+        flash('Saída maior que o saldo disponível para essa cor.', 'warning')
+        return redirect(url_for('routes.listar_movimentos_componente', componente_id=comp.id))
+
+    # Aplica no saldo
+    cc.quantidade = (saldo_atual + quantidade) if tipo == 'ENTRADA' else (saldo_atual - quantidade)
+
+    # Registra histórico
+    db.session.add(MovimentacaoComponente(
+        componente_id=comp.id,
+        cor_id=cor_id,
+        tipo=tipo,
+        quantidade=quantidade,
+        observacao=observacao
+    ))
+
+    db.session.commit()
+    flash(f'{tipo.title()} registrada com sucesso.', 'success')
+    return redirect(url_for('routes.listar_movimentos_componente', componente_id=comp.id))
+
+
+### HISTÓRICO DE PREÇO DO COMPONENTE #####
+
+@bp.route('/componente/<int:componente_id>/precos')
+@login_required
+@requer_permissao('componentes', 'ver')
+def historico_precos_componente(componente_id):
+    componente = Componente.query.get_or_404(componente_id)
+    hist = (ComponentePrecoHistorico.query
+            .filter_by(componente_id=componente.id)
+            .order_by(ComponentePrecoHistorico.alterado_em.desc())
+            .all())
+    return render_template('historico_precos_componente.html',
+                           componente=componente, historico=hist)
+
 
 #CUSTOS OPERACIONAIS ROTAS!
 @bp.route('/custos')
@@ -2586,141 +2979,138 @@ def importar_referencias():
 
 
 
-
-
-@bp.route('/importar_componentes', methods=['POST'])
-@login_required
-@requer_permissao('componentes', 'editar')
-def importar_componentes():
-    if 'file' not in request.files:
-        flash("Nenhum arquivo enviado.", "danger")
-        return redirect(url_for('routes.listar_componentes'))  # Redireciona de volta
-
-    file = request.files['file']
-
-    if file.filename == '':
-        flash("Arquivo inválido.", "danger")
-        return redirect(url_for('routes.listar_componentes'))
-
-    filename = secure_filename(file.filename)
-    filepath = os.path.join(UPLOAD_FOLDER, filename)
-    file.save(filepath)
-
-    try:
-        df = pd.read_excel(filepath, dtype={'codigo': str})
-        atualizados = 0
-        criados = 0
-
-        for _, row in df.iterrows():
-            codigo = row['codigo']
-            descricao = row['descricao']
-            tipo = row['tipo']
-            unidade_medida = row['unidade_medida']
-            preco = Decimal(str(row['preco']).replace(',', '.'))
-
-            componente = Componente.query.filter_by(codigo=codigo).first()
-
-            if componente:
-                # 📌 Verifica se os valores realmente mudaram antes de atualizar
-                if (
-                    componente.descricao != descricao or
-                    componente.tipo != tipo or
-                    componente.unidade_medida != unidade_medida or
-                    componente.preco != preco
-                ):
-                    componente.descricao = descricao
-                    componente.tipo = tipo
-                    componente.unidade_medida = unidade_medida
-                    componente.preco = preco
-                    atualizados += 1
-            else:
-                # 📌 Cria um novo componente se não existir
-                novo_componente = Componente(
-                    codigo=codigo,
-                    descricao=descricao,
-                    tipo=tipo,
-                    unidade_medida=unidade_medida,
-                    preco=preco
-                )
-                db.session.add(novo_componente)
-                criados += 1
-
-        db.session.commit()
-        flash(f"Importação concluída! {criados} componentes criados, {atualizados} atualizados.", "success")
-
-    except Exception as e:
-        flash(f"Erro ao processar arquivo: {str(e)}", "danger")
-
-    finally:
-        os.remove(filepath)  # Remove o arquivo temporário
-
-    return redirect(url_for('routes.listar_componentes'))  # 🔹 Redireciona corretamente para listar componentes
-
-
-
-
-
 #########  CONTROLE DE PRODUÇÃO ##########
+# --------- TIPO MÁQUINA ---------
+
+@bp.route('/tipos_maquina')
+@login_required
+@requer_permissao('controleproducao', 'ver')
+def listar_tipos_maquina():
+    q = (request.args.get('q') or '').strip()
+    query = TipoMaquina.query
+    if q:
+        query = query.filter(TipoMaquina.nome.ilike(f'%{q}%'))
+    tipos = query.order_by(TipoMaquina.nome.asc()).all()
+    return render_template('listar_tipos_maquina.html', tipos=tipos, q=q)
+
+@bp.route('/tipos_maquina/novo', methods=['GET','POST'])
+@login_required
+@requer_permissao('controleproducao', 'criar')
+def novo_tipo_maquina():
+    form = TipoMaquinaForm()
+    if form.validate_on_submit():
+        tm = TipoMaquina(nome=form.nome.data.strip())
+        db.session.add(tm)
+        db.session.commit()
+        flash('Tipo criado com sucesso!', 'success')
+        return redirect(url_for('routes.listar_tipos_maquina'))
+    return render_template('novo_tipo_maquina.html', form=form)
+
+@bp.route('/tipos_maquina/editar/<int:id>', methods=['GET','POST'])
+@login_required
+@requer_permissao('controleproducao', 'editar')
+def editar_tipo_maquina(id):
+    tm = TipoMaquina.query.get_or_404(id)
+    form = TipoMaquinaForm(obj=tm)
+    form._editing_id = id  # permite manter o mesmo nome sem bloquear
+    if form.validate_on_submit():
+        # checagem extra case-insensitive
+        existe = (db.session.query(TipoMaquina.id)
+                  .filter(func.lower(TipoMaquina.nome) == func.lower(form.nome.data.strip()),
+                          TipoMaquina.id != id).first())
+        if existe:
+            flash('Já existe um tipo com esse nome.', 'danger')
+            return render_template('editar_tipo_maquina.html', form=form, tm=tm)
+
+        tm.nome = form.nome.data.strip()
+        db.session.commit()
+        flash('Tipo atualizado com sucesso!', 'success')
+        return redirect(url_for('routes.listar_tipos_maquina'))
+    return render_template('editar_tipo_maquina.html', form=form, tm=tm)
+
+@bp.route('/tipos_maquina/excluir/<int:id>', methods=['POST'])
+@login_required
+@requer_permissao('controleproducao', 'excluir')
+def excluir_tipo_maquina(id):
+    token = request.form.get('csrf_token', '')
+    try:
+        validate_csrf(token)
+    except CSRFError:
+        flash('Falha na validação do CSRF.', 'danger')
+        return redirect(url_for('routes.listar_tipos_maquina'))
+
+    if (request.form.get('confirm_text') or '').strip().lower() != 'excluir':
+        flash('Você precisa digitar "excluir" para confirmar.', 'warning')
+        return redirect(url_for('routes.listar_tipos_maquina'))
+
+    tm = TipoMaquina.query.get_or_404(id)
+
+    if Maquina.query.filter_by(tipo_id=tm.id).first():
+        flash('Não é possível excluir: existem máquinas vinculadas a este tipo.', 'danger')
+        return redirect(url_for('routes.listar_tipos_maquina'))
+
+    db.session.delete(tm)
+    db.session.commit()
+    flash('Tipo excluído com sucesso!', 'success')
+    return redirect(url_for('routes.listar_tipos_maquina'))
+
 
 @bp.route('/maquinas', methods=['GET'])
 @login_required
-@requer_permissao('maquinas', 'ver')
+@requer_permissao('controleproducao', 'ver')
 def listar_maquinas():
     """ Lista todas as máquinas cadastradas """
     filtro = request.args.get('filtro', '')
     maquinas = Maquina.query.filter(Maquina.descricao.ilike(f"%{filtro}%")).order_by(Maquina.id.desc()).all()
     return render_template('maquinas.html', maquinas=maquinas)
 
+# --------- MÁQUINA (novo/editar) ---------
 
+def _tipos_choices():
+    return [(t.id, t.nome) for t in TipoMaquina.query.order_by(TipoMaquina.nome).all()]
 
-
-@bp.route('/maquina/nova', methods=['GET', 'POST'])
+@bp.route('/maquinas/novo', methods=['GET','POST'])
 @login_required
-@requer_permissao('maquinas', 'criar')
+@requer_permissao('controleproducao', 'criar')
 def nova_maquina():
     form = MaquinaForm()
+    form.tipo_id.choices = _tipos_choices()
     if form.validate_on_submit():
-        maquina = Maquina(
-            codigo=form.codigo.data,
-            descricao=form.descricao.data,
-            tipo=form.tipo.data,
+        m = Maquina(
+            codigo=form.codigo.data.strip(),
+            descricao=form.descricao.data.strip(),
+            tipo_id=form.tipo_id.data,
             status=form.status.data,
             preco=form.preco.data
-            
         )
-        db.session.add(maquina)
+        db.session.add(m)
         db.session.commit()
-        flash('Maquina adicionada com sucesso!', 'success')
+        flash('Máquina criada com sucesso!', 'success')
         return redirect(url_for('routes.listar_maquinas'))
     return render_template('nova_maquina.html', form=form)
 
-
-@bp.route('/maquina/editar/<int:id>', methods=['GET', 'POST'])
+@bp.route('/maquinas/editar/<int:id>', methods=['GET','POST'])
 @login_required
-@requer_permissao('maquinas', 'editar')
+@requer_permissao('controleproducao', 'editar')
 def editar_maquina(id):
-    """ Edita uma máquina existente """
-    maquina = Maquina.query.get_or_404(id)
-    form = MaquinaForm(obj=maquina)
-
+    m = Maquina.query.get_or_404(id)
+    form = MaquinaForm(obj=m)
+    form.tipo_id.choices = _tipos_choices()
     if form.validate_on_submit():
-        maquina.codigo = form.codigo.data
-        maquina.descricao = form.descricao.data
-        maquina.tipo = form.tipo.data
-        maquina.status = form.status.data
-        maquina.preco = form.preco.data
-
+        m.codigo = form.codigo.data.strip()
+        m.descricao = form.descricao.data.strip()
+        m.tipo_id = form.tipo_id.data
+        m.status = form.status.data
+        m.preco = form.preco.data
         db.session.commit()
         flash('Máquina atualizada com sucesso!', 'success')
         return redirect(url_for('routes.listar_maquinas'))
-
-    return render_template('editar_maquina.html', form=form, maquina=maquina)
-
+    return render_template('editar_maquina.html', form=form, maq=m)
 
 
 @bp.route('/maquina/excluir/<int:id>', methods=['POST'])
 @login_required
-@requer_permissao('maquinas', 'excluir')
+@requer_permissao('controleproducao', 'excluir')
 def excluir_maquina(id):
     """ Exclui uma máquina do sistema """
     maquina = Maquina.query.get_or_404(id)
@@ -3257,6 +3647,9 @@ def zerar_matriz(id):
 
 
 # 🔹 Excluir Matriz
+from flask_wtf.csrf import validate_csrf
+from wtforms.validators import ValidationError
+
 @bp.route('/matriz/excluir/<int:id>', methods=['POST'])
 @login_required
 @requer_permissao('controleproducao', 'excluir')
@@ -3264,32 +3657,36 @@ def excluir_matriz(id):
     from app.models import Matriz, MovimentacaoMatriz, TrocaHorario
     from flask import request, flash, redirect, url_for
 
-    matriz = Matriz.query.get_or_404(id)
+    # ✅ Validação CSRF manual
+    token = request.form.get('csrf_token')
+    try:
+        validate_csrf(token)
+    except ValidationError:
+        flash('Erro de segurança: CSRF token inválido ou ausente.', 'danger')
+        return redirect(url_for('routes.listar_matrizes'))
 
+    # ✅ Validação do campo "excluir"
     confirmacao = request.form.get('confirmacao', '').strip().lower()
     if confirmacao != 'excluir':
         flash('Confirmação inválida. Digite "excluir" para confirmar.', 'danger')
         return redirect(url_for('routes.listar_matrizes'))
 
-    # 🔹 Verificar se tem movimentações
-    movimentacoes_existentes = MovimentacaoMatriz.query.filter_by(matriz_id=matriz.id).first()
+    matriz = Matriz.query.get_or_404(id)
 
-    # 🔹 Verificar se tem trocas
-    trocas_existentes = TrocaHorario.query.filter_by(matriz_id=matriz.id).first()
-
-    if movimentacoes_existentes:
-        flash('Não é possível excluir a matriz. Existem movimentações registradas. Utilize a opção "Zerar Matriz" primeiro.', 'danger')
+    # ✅ Verificações
+    if MovimentacaoMatriz.query.filter_by(matriz_id=matriz.id).first():
+        flash('Não é possível excluir: existem movimentações registradas.', 'danger')
         return redirect(url_for('routes.listar_matrizes'))
 
-    if trocas_existentes:
-        flash('Não é possível excluir a matriz. Existem trocas registradas para esta matriz.', 'danger')
+    if TrocaHorario.query.filter_by(matriz_id=matriz.id).first():
+        flash('Não é possível excluir: existem trocas registradas.', 'danger')
         return redirect(url_for('routes.listar_matrizes'))
 
-    # 🔹 Se não tiver movimentações nem trocas, pode excluir
     db.session.delete(matriz)
     db.session.commit()
     flash('Matriz excluída com sucesso!', 'success')
     return redirect(url_for('routes.listar_matrizes'))
+
 
 
 
@@ -3827,6 +4224,7 @@ def excluir_ordemCompra(id):
 
 @bp.route('/manutencoes')
 @login_required
+@requer_permissao('manutencao', 'ver')
 def listar_manutencoes():
     manutencoes_query = Manutencao.query.options(
         db.joinedload(Manutencao.solicitante)
@@ -5490,3 +5888,1180 @@ def remessas_disponiveis():
     )
     resultados = [{"id": r.remessa, "text": r.remessa} for r in remessas]
     return jsonify(resultados)
+
+
+
+######  MATERIAIS   ####
+from sqlalchemy.orm import joinedload
+from decimal import Decimal, InvalidOperation
+
+
+# LISTAR
+@bp.route('/materiais')
+@login_required
+@requer_permissao('comercial', 'ver')
+def listar_materiais():
+    materiais = (Material.query
+                 .options(joinedload(Material.cores).joinedload(MaterialCor.cor))
+                 .order_by(Material.id.desc())
+                 .all())
+    return render_template('listar_materiais.html', materiais=materiais)
+
+
+# NOVO — cria Material e (opcional) cores + quantidades num único POST
+@bp.route('/material/novo', methods=['GET', 'POST'])
+@login_required
+@requer_permissao('comercial', 'criar')
+def novo_material():
+    form = MaterialForm()
+    cores = Cor.query.order_by(Cor.nome.asc()).all()
+
+    if form.validate_on_submit():
+        material = Material(
+            descricao=form.descricao.data.strip(),
+            tipo=form.tipo.data,
+            unidade_medida=form.unidade_medida.data,
+            preco_unitario=form.preco_unitario.data or Decimal('0.00'),
+            observacao=(form.observacao.data or '').strip() or None
+        )
+        db.session.add(material)
+        db.session.flush()
+
+        selecionadas = [int(x) for x in request.form.getlist('cores[]') if x.isdigit()]
+
+        if selecionadas:
+            for cor_id in selecionadas:
+                db.session.add(MaterialCor(material_id=material.id, cor_id=cor_id, quantidade=Decimal('0.00')))
+        else:
+            sem_cor = Cor.query.filter(Cor.nome.ilike('Sem cor')).first()
+            if sem_cor:
+                db.session.add(MaterialCor(material_id=material.id, cor_id=sem_cor.id, quantidade=Decimal('0.00')))
+
+        db.session.commit()
+        flash('Material criado com sucesso!', 'success')
+        return redirect(url_for('routes.ver_material', id=material.id))
+
+    return render_template('novo_material.html', form=form, cores=cores)
+
+
+
+
+
+
+#Editar material
+@bp.route('/material/editar/<int:id>', methods=['GET', 'POST'])
+@login_required
+@requer_permissao('comercial', 'editar')
+def editar_material(id):
+    material = Material.query.get_or_404(id)
+    form = MaterialForm(obj=material)
+
+    cores = Cor.query.order_by(Cor.nome.asc()).all()
+    existentes = {mc.cor_id: mc for mc in material.cores}
+    vinculadas_ids = set(existentes.keys())
+
+    if form.validate_on_submit():
+        material.descricao = form.descricao.data.strip()
+        material.tipo = form.tipo.data
+        material.unidade_medida = form.unidade_medida.data
+        material.preco_unitario = form.preco_unitario.data or Decimal('0.00')
+        material.observacao = (form.observacao.data or '').strip() or None
+
+        selecionadas = set()
+        for cid in request.form.getlist('cores[]'):
+            try:
+                selecionadas.add(int(cid))
+            except (TypeError, ValueError):
+                pass
+
+        # Se nenhuma cor selecionada, força "Sem cor"
+        if not selecionadas:
+            sem_cor = Cor.query.filter(Cor.nome.ilike('Sem cor')).first()
+            if sem_cor:
+                selecionadas = {sem_cor.id}
+
+        finais = selecionadas
+
+        # Adicionar novas
+        for cor_id in finais - vinculadas_ids:
+            db.session.add(MaterialCor(material_id=material.id, cor_id=cor_id, quantidade=Decimal('0.00')))
+
+        # Remover as que saíram (só se quantidade == 0)
+        bloqueadas = []
+        for cor_id, mc in list(existentes.items()):
+            if cor_id not in finais:
+                if (mc.quantidade or Decimal('0.00')) == 0:
+                    db.session.delete(mc)
+                else:
+                    bloqueadas.append(mc.cor.nome if mc.cor else f'Cor #{cor_id}')
+
+        db.session.commit()
+
+        if bloqueadas:
+            flash('Material salvo, mas não removi estas cores pois possuem quantidade: ' + ', '.join(bloqueadas), 'warning')
+        else:
+            flash('Material atualizado com sucesso!', 'success')
+
+        return redirect(url_for('routes.ver_material', id=material.id))
+
+    vinculadas_ids = set(mc.cor_id for mc in material.cores)
+    return render_template('editar_material.html', form=form, material=material, cores=cores, vinculadas_ids=vinculadas_ids)
+
+
+# VER — detalhamento por cor
+@bp.route('/material/<int:id>')
+@login_required
+@requer_permissao('comercial', 'ver')
+def ver_material(id):
+    material = (Material.query
+                .options(joinedload(Material.cores).joinedload(MaterialCor.cor))
+                .get_or_404(id))
+    return render_template('ver_material.html', material=material)
+
+
+# EXCLUIR — form simples com CSRF
+@bp.route('/material/excluir/<int:id>', methods=['POST'])
+@login_required
+@requer_permissao('comercial', 'excluir')
+def excluir_material(id):
+    material = Material.query.get_or_404(id)
+    db.session.delete(material)
+    db.session.commit()
+    flash('Material excluído com sucesso!', 'success')
+    return redirect(url_for('routes.listar_materiais'))
+
+
+
+#### MOVIMENTAÇÃO MATERIAIS  ####
+
+def _get_mc(material_id, cor_id):
+    mc = MaterialCor.query.filter_by(material_id=material_id, cor_id=cor_id).first()
+    if not mc:
+        mc = MaterialCor(material_id=material_id, cor_id=cor_id, quantidade=Decimal('0.00'))
+        db.session.add(mc)
+        db.session.flush()
+    return mc
+
+@bp.route('/material/<int:material_id>/movimentos')
+@login_required
+@requer_permissao('comercial', 'ver')
+def listar_movimentos_material(material_id):
+    material = (Material.query
+                .options(joinedload(Material.cores).joinedload(MaterialCor.cor))
+                .get_or_404(material_id))
+
+    movimentos = (MovimentacaoMaterial.query
+                  .filter_by(material_id=material.id)
+                  .order_by(MovimentacaoMaterial.id.desc())
+                  .limit(50)
+                  .all())
+
+    # apenas cores VINCULADAS para o select
+    cores_vinculadas = sorted(
+        [mc.cor for mc in material.cores if mc.cor],
+        key=lambda c: c.nome.lower()
+    )
+
+    # monta linhas e totais
+    preco = material.preco_unitario or Decimal('0.00')
+    rows_saldo = []
+    for mc in sorted(material.cores, key=lambda mc: (mc.cor.nome if mc.cor else '').lower()):
+        q = mc.quantidade or Decimal('0.00')
+        v = q * preco
+        rows_saldo.append({
+            "cor_nome": mc.cor.nome if mc.cor else "-",
+            "q": q,
+            "v": v,
+        })
+
+    # >>> totais calculados DEPOIS de montar as linhas
+    total_q = sum((r["q"] for r in rows_saldo), Decimal('0.00'))
+    total_v = sum((r["v"] for r in rows_saldo), Decimal('0.00'))
+
+    return render_template(
+        'movimentos_material.html',
+        material=material,
+        movimentos=movimentos,
+        cores=cores_vinculadas,
+        rows_saldo=rows_saldo,
+        total_q=total_q,
+        total_v=total_v,
+    )
+
+@bp.route('/material/<int:material_id>/movimentar', methods=['POST'])
+@login_required
+@requer_permissao('comercial', 'editar')
+def movimentar_material(material_id):
+    material = Material.query.get_or_404(material_id)
+
+    tipo = (request.form.get('tipo') or '').upper()
+    cor_id = request.form.get('cor_id', type=int)
+    qtd_raw = (request.form.get('quantidade') or '').strip()
+    observacao = (request.form.get('observacao') or '').strip() or None
+
+    if tipo not in ('ENTRADA', 'SAIDA') or not cor_id:
+        flash('Dados de movimentação incompletos.', 'danger')
+        return redirect(url_for('routes.listar_movimentos_material', material_id=material.id))
+
+    try:
+        quantidade = Decimal(qtd_raw.replace(',', '.'))
+    except InvalidOperation:
+        flash('Quantidade inválida.', 'danger')
+        return redirect(url_for('routes.listar_movimentos_material', material_id=material.id))
+
+    if quantidade <= 0:
+        flash('Quantidade deve ser maior que zero.', 'danger')
+        return redirect(url_for('routes.listar_movimentos_material', material_id=material.id))
+
+    # 🔒 Garante que a cor pertence ao material (não cria vínculo novo aqui)
+    mc = MaterialCor.query.filter_by(material_id=material.id, cor_id=cor_id).first()
+    if not mc:
+        flash('Esta cor não está vinculada a este material.', 'warning')
+        return redirect(url_for('routes.listar_movimentos_material', material_id=material.id))
+
+    saldo_atual = mc.quantidade or Decimal('0.00')
+
+    if tipo == 'SAIDA' and quantidade > saldo_atual:
+        flash('Saída maior que o saldo disponível para essa cor.', 'warning')
+        return redirect(url_for('routes.listar_movimentos_material', material_id=material.id))
+
+    # Aplica
+    mc.quantidade = (saldo_atual + quantidade) if tipo == 'ENTRADA' else (saldo_atual - quantidade)
+
+    # Histórico
+    db.session.add(MovimentacaoMaterial(
+        material_id=material.id,
+        cor_id=cor_id,
+        tipo=tipo,
+        quantidade=quantidade,
+        observacao=observacao
+    ))
+    db.session.commit()
+
+    flash(f'{tipo.title()} registrada com sucesso.', 'success')
+    return redirect(url_for('routes.listar_movimentos_material', material_id=material.id))
+
+
+### COLABORADOR  ###
+# --------------------------------------------
+# Listagem (comum)
+# --------------------------------------------
+@bp.route('/colaboradores')
+@login_required
+@requer_permissao('comercial', 'ver')
+def listar_colaboradores():
+    colaboradores = Colaborador.query.order_by(Colaborador.nome.asc()).all()
+    tipos = TipoColaborador.query.order_by(TipoColaborador.descricao.asc()).all()  # opcional para filtro na tela
+    return render_template('listar_colaboradores.html', colaboradores=colaboradores, tipos=tipos)
+
+# --------------------------------------------
+# Novo
+# --------------------------------------------
+@bp.route('/colaborador/novo', methods=['GET', 'POST'])
+@login_required
+@requer_permissao('comercial', 'criar')
+def novo_colaborador():
+    form = ColaboradorForm()
+    # Popular o select de tipos (o Select2 é só no template)
+    tipos = TipoColaborador.query.order_by(TipoColaborador.descricao.asc()).all()
+    form.tipo_id.choices = [(t.id, t.descricao) for t in tipos]
+
+    if form.validate_on_submit():
+        try:
+            novo = Colaborador(
+                nome=form.nome.data.strip(),
+                documento=(form.documento.data or '').strip() or None,
+                email=(form.email.data or '').strip() or None,
+                telefone=(form.telefone.data or '').strip() or None,
+                cep=(form.cep.data or '').strip() or None,
+                endereco=(form.endereco.data or '').strip() or None,
+                numero=(form.numero.data or '').strip() or None,
+                complemento=(form.complemento.data or '').strip() or None,
+                bairro=(form.bairro.data or '').strip() or None,
+                cidade=(form.cidade.data or '').strip() or None,
+                uf=(form.uf.data or '').strip() or None,
+                tipo_id=form.tipo_id.data,
+            )
+            db.session.add(novo)
+            db.session.commit()
+            flash('Colaborador cadastrado com sucesso!', 'success')
+            return redirect(url_for('routes.listar_colaboradores'))
+        except IntegrityError:
+            db.session.rollback()
+            flash('Documento (CPF/CNPJ) já cadastrado para outro colaborador.', 'danger')
+        except SQLAlchemyError:
+            db.session.rollback()
+            flash('Erro ao salvar colaborador.', 'danger')
+
+    return render_template('novo_colaborador.html', form=form)
+
+# --------------------------------------------
+# Editar
+# --------------------------------------------
+@bp.route('/colaborador/editar/<int:id>', methods=['GET', 'POST'])
+@login_required
+@requer_permissao('comercial', 'editar')
+def editar_colaborador(id):
+    colaborador = Colaborador.query.get_or_404(id)
+    form = ColaboradorForm(obj=colaborador)
+
+    # Popular tipos para o select (Select2 só no template)
+    tipos = TipoColaborador.query.order_by(TipoColaborador.descricao.asc()).all()
+    form.tipo_id.choices = [(t.id, t.descricao) for t in tipos]
+
+    if form.validate_on_submit():
+        try:
+            colaborador.nome = form.nome.data.strip()
+            colaborador.documento = (form.documento.data or '').strip() or None
+            colaborador.email = (form.email.data or '').strip() or None
+            colaborador.telefone = (form.telefone.data or '').strip() or None
+            colaborador.cep = (form.cep.data or '').strip() or None
+            colaborador.endereco = (form.endereco.data or '').strip() or None
+            colaborador.numero = (form.numero.data or '').strip() or None
+            colaborador.complemento = (form.complemento.data or '').strip() or None
+            colaborador.bairro = (form.bairro.data or '').strip() or None
+            colaborador.cidade = (form.cidade.data or '').strip() or None
+            colaborador.uf = (form.uf.data or '').strip() or None
+            colaborador.tipo_id = form.tipo_id.data
+
+            db.session.commit()
+            flash('Colaborador atualizado com sucesso!', 'success')
+            return redirect(url_for('routes.listar_colaboradores'))
+        except IntegrityError:
+            db.session.rollback()
+            flash('Documento (CPF/CNPJ) já utilizado por outro colaborador.', 'danger')
+        except SQLAlchemyError:
+            db.session.rollback()
+            flash('Erro ao atualizar colaborador.', 'danger')
+
+    return render_template('editar_colaborador.html', form=form, colaborador=colaborador)
+
+# --------------------------------------------
+# Ver (detalhes)
+# --------------------------------------------
+@bp.route('/colaborador/<int:id>')
+@login_required
+@requer_permissao('comercial', 'ver')
+def ver_colaborador(id):
+    colaborador = Colaborador.query.get_or_404(id)
+    return render_template('ver_colaborador.html', colaborador=colaborador)
+
+# --------------------------------------------
+# Excluir (confirmação "excluir" + CSRF)
+# --------------------------------------------
+@bp.route('/colaborador/excluir/<int:id>', methods=['POST'])
+@login_required
+@requer_permissao('comercial', 'excluir')
+def excluir_colaborador(id):
+    colaborador = Colaborador.query.get_or_404(id)
+
+    # Padrão do seu sistema: validação manual do CSRF vinda do modal
+    token = request.form.get('csrf_token', '')
+    try:
+        validate_csrf(token)
+    except CSRFError:
+        flash('Falha no CSRF. Recarregue a página e tente novamente.', 'danger')
+        return redirect(url_for('routes.listar_colaboradores'))
+
+    confirm_text = (request.form.get('confirm_text') or '').strip().lower()
+    if confirm_text != 'excluir':
+        flash('Digite "excluir" para confirmar.', 'warning')
+        return redirect(url_for('routes.listar_colaboradores'))
+
+    try:
+        db.session.delete(colaborador)
+        db.session.commit()
+        flash('Colaborador excluído com sucesso!', 'success')
+    except SQLAlchemyError:
+        db.session.rollback()
+        flash('Erro ao excluir colaborador. Verifique vínculos.', 'danger')
+
+    return redirect(url_for('routes.listar_colaboradores'))
+
+
+### PRODUCAO ROTATIVA  ###
+
+
+from urllib.parse import urlencode
+
+@bp.route('/producoes_rotativas', methods=['GET'])
+@login_required
+@requer_permissao('controleproducao', 'ver')
+def listar_producoes_rotativas():
+    from sqlalchemy import func
+    from datetime import datetime
+
+    # Parâmetros de filtro
+    f_turno    = (request.args.get('turno') or '').strip().upper()
+    f_dia_str  = (request.args.get('dia') or '').strip()
+    f_maquina  = (request.args.get('maquina_id') or '').strip()
+
+    # Parâmetros de paginação
+    try:
+        page = int(request.args.get('page', 1))
+    except ValueError:
+        page = 1
+    try:
+        per_page = int(request.args.get('per_page', 10))
+    except ValueError:
+        per_page = 10
+    per_page = max(5, min(per_page, 100))  # sanidade
+
+    # Query base
+    query = ProducaoRotativa.query
+
+    # Filtros
+    if f_turno in ('DIA', 'NOITE'):
+        query = query.filter(func.upper(ProducaoRotativa.turno) == f_turno)
+
+    if f_dia_str:
+        try:
+            dia_dt = datetime.strptime(f_dia_str, '%Y-%m-%d').date()
+            query = query.filter(func.date(ProducaoRotativa.data_producao) == dia_dt)
+        except ValueError:
+            pass
+
+    if f_maquina.isdigit():
+        query = query.filter(ProducaoRotativa.maquina_id == int(f_maquina))
+
+    query = query.order_by(ProducaoRotativa.id.desc())
+
+    # Paginação
+    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+    producoes_rotativas = pagination.items
+
+
+        # carregar MAQUINAS FILTRADAS ROT
+    maquinas = [
+    (m.id, f"{m.codigo} - {m.descricao}")
+    for m in Maquina.query
+        .filter(Maquina.codigo.like("ROT%"))
+        .order_by(Maquina.codigo.asc())
+        .all()]
+
+    # Query string sem o parâmetro 'page' (pra montar os links)
+    qs_dict = request.args.to_dict()
+    qs_dict.pop('page', None)
+    qs_no_page = urlencode(qs_dict)
+
+    return render_template(
+        'listar_producoes_rotativas.html',
+        producoes_rotativas=producoes_rotativas,
+        maquinas=maquinas,
+        pagination=pagination,
+        per_page=per_page,
+        qs_no_page=qs_no_page  # ex.: "turno=DIA&dia=2025-08-01&maquina_id=3"
+    )
+
+@bp.route('/producaorotativa/nova', methods=['GET', 'POST'])
+@login_required
+@requer_permissao('controleproducao', 'criar')
+def nova_producao_rotativa():
+    form = ProducaoRotativaForm()
+    form.maquina_id.choices = [(m.id, m.codigo) for m in Maquina.query.order_by(Maquina.codigo.asc()).all()]
+
+    # turno livre (sem turno_fixo)
+    turno_fixo = None
+
+    if form.validate_on_submit():
+        # Upload padrão do sistema (só se vier arquivo)
+        imagem_filename = None
+        if form.imagem.data and hasattr(form.imagem.data, 'filename') and form.imagem.data.filename:
+            imagem_filename = secure_filename(form.imagem.data.filename)
+            caminho_imagem = os.path.join(current_app.config['UPLOAD_FOLDER'], imagem_filename)
+            form.imagem.data.save(caminho_imagem)
+
+        nova_producaorotativa = ProducaoRotativa(
+            turno=form.turno.data,
+            data_producao=form.data_producao.data,
+            producao_painel=form.producao_painel.data,
+            pares_bons=form.pares_bons.data,
+            imagem=imagem_filename,   # None se não enviou
+            observacao=form.observacao.data,
+            maquina_id=form.maquina_id.data
+        )
+        db.session.add(nova_producaorotativa)
+        db.session.commit()
+        flash("Produção da Rotativa cadastrada com sucesso!", "success")
+        return redirect(url_for('routes.listar_producoes_rotativas'))
+
+    return render_template('nova_producao_rotativa.html', form=form, turno_fixo=turno_fixo)
+
+
+@bp.route('/producaorotativa/nova/dia', methods=['GET', 'POST'])
+@login_required
+@requer_permissao('controleproducao', 'criar')
+def nova_producao_rotativa_dia():
+    form = ProducaoRotativaForm()
+    # carregar MAQUINAS FILTRADAS ROT
+    form.maquina_id.choices = [
+        (m.id, f"{m.codigo} - {m.descricao}")
+        for m in Maquina.query
+            .filter(Maquina.codigo.like("ROT%"))
+            .order_by(Maquina.codigo.asc())
+            .all()
+    ]
+
+    turno_fixo = "DIA"
+    if request.method == 'GET':
+        form.turno.data = turno_fixo  # trava visualmente no template
+
+    if form.validate_on_submit():
+        # --- valida duplicidade (máquina + data + turno) ---
+        existe = ProducaoRotativa.query.filter(
+            ProducaoRotativa.maquina_id == form.maquina_id.data,
+            func.date(ProducaoRotativa.data_producao) == form.data_producao.data,
+            func.upper(ProducaoRotativa.turno) == turno_fixo
+        ).first()
+        if existe:
+            flash("Já existe produção cadastrada para essa Máquina/Dia/Turno (DIA).", "warning")
+            return render_template('nova_producao_rotativa.html', form=form, turno_fixo=turno_fixo)
+
+        # ---------- Regra: autocompletar produção_painel com 110% de pares_bons ----------
+        painel_val = form.producao_painel.data
+        pares_val  = form.pares_bons.data
+
+        # considera "em branco" quando None ou 0
+        if (painel_val is None or painel_val == 0) and (pares_val is not None and pares_val > 0):
+            painel_val = int(round(pares_val * 1.10))
+            flash(f"Produção do painel estava em branco. Preenchido automaticamente com 110% dos pares bons ({painel_val}).", "info")
+
+        # Upload padrão do sistema (só se vier arquivo)
+        imagem_filename = None
+        if form.imagem.data and hasattr(form.imagem.data, 'filename') and form.imagem.data.filename:
+            upload_folder = current_app.config['UPLOAD_FOLDER']
+            os.makedirs(upload_folder, exist_ok=True)
+            imagem_filename = secure_filename(form.imagem.data.filename)
+            caminho_imagem = os.path.join(upload_folder, imagem_filename)
+            form.imagem.data.save(caminho_imagem)
+
+        nova_producaorotativa = ProducaoRotativa(
+            turno=turno_fixo,  # trava o turno
+            data_producao=form.data_producao.data,
+            producao_painel=painel_val,
+            pares_bons=pares_val,
+            imagem=imagem_filename,
+            observacao=form.observacao.data,
+            maquina_id=form.maquina_id.data
+        )
+
+        db.session.add(nova_producaorotativa)
+        try:
+            db.session.commit()
+            flash("Produção da Rotativa (DIA) cadastrada com sucesso!", "success")
+            return redirect(url_for('routes.listar_producoes_rotativas'))
+        except IntegrityError:
+            db.session.rollback()
+            flash("Duplicidade detectada (Máquina/Dia/Turno DIA).", "danger")
+
+    return render_template('nova_producao_rotativa.html', form=form, turno_fixo=turno_fixo)
+
+
+@bp.route('/producaorotativa/nova/noite', methods=['GET', 'POST'])
+@login_required
+@requer_permissao('controleproducao', 'criar')
+def nova_producao_rotativa_noite():
+    form = ProducaoRotativaForm()
+    # carregar MAQUINAS FILTRADAS ROT
+    form.maquina_id.choices = [
+        (m.id, f"{m.codigo} - {m.descricao}")
+        for m in Maquina.query
+            .filter(Maquina.codigo.like("ROT%"))
+            .order_by(Maquina.codigo.asc())
+            .all()
+    ]
+
+    turno_fixo = "NOITE"
+    if request.method == 'GET':
+        form.turno.data = turno_fixo  # trava visualmente no template
+
+    if form.validate_on_submit():
+        # --- valida duplicidade (máquina + data + turno) ---
+        existe = ProducaoRotativa.query.filter(
+            ProducaoRotativa.maquina_id == form.maquina_id.data,
+            func.date(ProducaoRotativa.data_producao) == form.data_producao.data,
+            func.upper(ProducaoRotativa.turno) == turno_fixo
+        ).first()
+        if existe:
+            flash("Já existe produção cadastrada para essa Máquina/Dia/Turno (NOITE).", "warning")
+            return render_template('nova_producao_rotativa.html', form=form, turno_fixo=turno_fixo)
+
+        # ---------- Regra: autocompletar produção_painel com 110% de pares_bons ----------
+        painel_val = form.producao_painel.data
+        pares_val  = form.pares_bons.data
+
+        if (painel_val is None or painel_val == 0) and (pares_val is not None and pares_val > 0):
+            painel_val = int(round(pares_val * 1.10))
+            flash(f"Produção do painel estava em branco. Preenchido automaticamente com valor de pares bons + 10%", "info")
+
+        # Upload padrão do sistema (só se vier arquivo)
+        imagem_filename = None
+        if form.imagem.data and hasattr(form.imagem.data, 'filename') and form.imagem.data.filename:
+            upload_folder = current_app.config['UPLOAD_FOLDER']
+            os.makedirs(upload_folder, exist_ok=True)
+            imagem_filename = secure_filename(form.imagem.data.filename)
+            caminho_imagem = os.path.join(upload_folder, imagem_filename)
+            form.imagem.data.save(caminho_imagem)
+
+        nova_producaorotativa = ProducaoRotativa(
+            turno=turno_fixo,  # trava o turno
+            data_producao=form.data_producao.data,
+            producao_painel=painel_val,
+            pares_bons=pares_val,
+            imagem=imagem_filename,
+            observacao=form.observacao.data,
+            maquina_id=form.maquina_id.data
+        )
+
+        db.session.add(nova_producaorotativa)
+        try:
+            db.session.commit()
+            flash("Produção da Rotativa (NOITE) cadastrada com sucesso!", "success")
+            return redirect(url_for('routes.listar_producoes_rotativas'))
+        except IntegrityError:
+            db.session.rollback()
+            flash("Duplicidade detectada (Máquina/Dia/Turno NOITE).", "danger")
+
+    return render_template('nova_producao_rotativa.html', form=form, turno_fixo=turno_fixo)
+
+@bp.route('/producao_rotativa/editar/<int:id>', methods=['GET', 'POST'])
+@login_required
+@requer_permissao('controleproducao', 'editar')
+def editar_producao_rotativa(id):
+    pr = ProducaoRotativa.query.get_or_404(id)
+    form = ProducaoRotativaForm(obj=pr)
+
+    # carregar MAQUINAS FILTRADAS ROT
+    form.maquina_id.choices = [
+    (m.id, f"{m.codigo} - {m.descricao}")
+    for m in Maquina.query
+        .filter(Maquina.codigo.like("ROT%"))
+        .order_by(Maquina.codigo.asc())
+        .all()]
+
+    if form.validate_on_submit():
+        # Normaliza turno para comparação
+        turno_val = (form.turno.data or '').upper()
+
+        # 🔒 Validação de duplicidade (desconsidera o próprio registro)
+        existe = ProducaoRotativa.query.filter(
+            ProducaoRotativa.id != pr.id,
+            ProducaoRotativa.maquina_id == form.maquina_id.data,
+            func.date(ProducaoRotativa.data_producao) == form.data_producao.data,
+            func.upper(ProducaoRotativa.turno) == turno_val
+        ).first()
+
+        if existe:
+            flash("Já existe produção para essa Máquina/Dia/Turno.", "warning")
+            imagem_url = url_for('static', filename=f'uploads/{pr.imagem}') if pr.imagem else None
+            return render_template('editar_producao_rotativa.html', form=form, pr=pr, imagem_url=imagem_url)
+
+        # Atualiza campos
+        pr.turno = turno_val
+        pr.data_producao = form.data_producao.data
+        pr.producao_painel = form.producao_painel.data
+        pr.pares_bons = form.pares_bons.data
+        pr.observacao = form.observacao.data
+        pr.maquina_id = form.maquina_id.data
+
+        # Upload da imagem (somente se enviado novo arquivo)
+        if form.imagem.data and hasattr(form.imagem.data, "filename") and form.imagem.data.filename:
+            upload_folder = current_app.config['UPLOAD_FOLDER']
+            os.makedirs(upload_folder, exist_ok=True)
+            imagem_filename = secure_filename(form.imagem.data.filename)
+            caminho_imagem = os.path.join(upload_folder, imagem_filename)
+            form.imagem.data.save(caminho_imagem)
+            pr.imagem = imagem_filename
+
+        # Log
+        log = LogAcao(
+            usuario_id=current_user.id,
+            usuario_nome=current_user.nome,
+            acao=f"Editou a Produção: {pr.id} da Rotativa: {pr.maquina.codigo}"
+        )
+        db.session.add(log)
+
+        # Commit com proteção à constraint única do BD
+        try:
+            db.session.commit()
+            flash("Produção atualizada!", "success")
+            return redirect(url_for('routes.listar_producoes_rotativas'))
+        except IntegrityError:
+            db.session.rollback()
+            flash("Duplicidade detectada (Máquina/Dia/Turno).", "danger")
+
+    # URL para preview no template
+    imagem_url = url_for('static', filename=f'uploads/{pr.imagem}') if pr.imagem else None
+    return render_template('editar_producao_rotativa.html', form=form, pr=pr, imagem_url=imagem_url)
+
+
+
+@bp.route('/producao_rotativa/excluir/<int:id>', methods=['POST'])
+@login_required
+@requer_permissao('controleproducao', 'excluir')
+def excluir_producao_rotativa(id):
+    pr = ProducaoRotativa.query.get_or_404(id)
+
+    try:
+        db.session.delete(pr)
+        db.session.commit()
+        flash('Produção da Rotativa excluída com sucesso!', 'success')
+
+    except IntegrityError:
+        db.session.rollback()
+        flash("Erro ao excluir Produção!", "danger")
+
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Erro inesperado ao excluir a produção da rotativa: {str(e)}", "danger")
+
+    return redirect(url_for('routes.listar_producoes_rotativas'))
+
+@bp.route('/relatorios/rotativas/totais', methods=['GET'])
+@login_required
+@requer_permissao('controleproducao', 'ver')
+def relatorio_totais_rotativas():
+    from sqlalchemy import func, case
+    from datetime import datetime
+
+    # filtros
+    f_inicio  = request.args.get('inicio')      # 'YYYY-MM-DD'
+    f_fim     = request.args.get('fim')         # 'YYYY-MM-DD'
+    f_maquina = request.args.get('maquina_id')  # id da máquina
+
+    inicio = datetime.strptime(f_inicio, '%Y-%m-%d').date() if f_inicio else None
+    fim    = datetime.strptime(f_fim, '%Y-%m-%d').date() if f_fim else None
+    maquina_id = int(f_maquina) if f_maquina else None
+
+    turno_up = func.upper(ProducaoRotativa.turno)
+    prod_painel = func.coalesce(ProducaoRotativa.producao_painel, 0)
+    pares_bons  = func.coalesce(ProducaoRotativa.pares_bons, 0)
+
+    q = db.session.query(
+        func.coalesce(func.sum(prod_painel), 0).label("painel_total"),
+        func.coalesce(func.sum(pares_bons), 0).label("pares_total"),
+        func.coalesce(func.sum(case((turno_up == 'DIA',   prod_painel), else_=0)), 0).label("painel_dia"),
+        func.coalesce(func.sum(case((turno_up == 'NOITE', prod_painel), else_=0)), 0).label("painel_noite"),
+        func.coalesce(func.sum(case((turno_up == 'DIA',   pares_bons),  else_=0)), 0).label("pares_dia"),
+        func.coalesce(func.sum(case((turno_up == 'NOITE', pares_bons),  else_=0)), 0).label("pares_noite"),
+    )
+
+    if inicio:
+        q = q.filter(ProducaoRotativa.data_producao >= inicio)
+    if fim:
+        q = q.filter(ProducaoRotativa.data_producao <= fim)
+    if maquina_id:
+        q = q.filter(ProducaoRotativa.maquina_id == maquina_id)
+
+    totais = q.one()._asdict()
+
+    # 🔽 máquinas para o select2
+    #select de máquinas (id, codigo) FILTRO ROT
+    maquinas = [(m.id, f"{m.codigo} - {m.descricao}") for m in Maquina.query
+        .filter(Maquina.codigo.like("ROT%"))
+        .order_by(Maquina.codigo.asc())
+        .all()]
+
+    return render_template(
+        "relatorio_totais_rotativas.html",
+        totais=totais,
+        inicio=f_inicio, fim=f_fim,
+        maquina_id=f_maquina,
+        maquinas=maquinas
+    )
+
+@bp.route('/relatorios/rotativas/mapas', methods=['GET'])
+@login_required
+@requer_permissao('controleproducao', 'ver')
+def relatorio_mapas_producao():
+    from sqlalchemy import func, case
+    from datetime import datetime
+
+    f_inicio  = request.args.get('inicio')       # 'YYYY-MM-DD'
+    f_fim     = request.args.get('fim')          # 'YYYY-MM-DD'
+    f_maquina = request.args.get('maquina_id')   # opcional (mostra só 1 máquina)
+    inicio = datetime.strptime(f_inicio, '%Y-%m-%d').date() if f_inicio else None
+    fim    = datetime.strptime(f_fim, '%Y-%m-%d').date() if f_fim else None
+    maquina_id = int(f_maquina) if f_maquina else None
+
+    # >>> buscamos a máquina selecionada (para o cabeçalho de impressão)
+    maquina_sel = Maquina.query.get(maquina_id) if maquina_id else None
+
+    turno_up   = func.upper(ProducaoRotativa.turno)
+    painel     = func.coalesce(ProducaoRotativa.producao_painel, 0)
+    pares      = func.coalesce(ProducaoRotativa.pares_bons, 0)
+
+    query = (db.session.query(
+                Maquina.id.label('m_id'),
+                Maquina.codigo.label('m_codigo'),
+                func.coalesce(func.sum(case((turno_up == 'DIA',   painel), else_=0)), 0).label('painel_dia'),
+                func.coalesce(func.sum(case((turno_up == 'NOITE', painel), else_=0)), 0).label('painel_noite'),
+                func.coalesce(func.sum(painel), 0).label('painel_total'),
+                func.coalesce(func.sum(case((turno_up == 'DIA',   pares), else_=0)), 0).label('pares_dia'),
+                func.coalesce(func.sum(case((turno_up == 'NOITE', pares), else_=0)), 0).label('pares_noite'),
+                func.coalesce(func.sum(pares), 0).label('pares_total'),
+            )
+            .join(Maquina, Maquina.id == ProducaoRotativa.maquina_id)
+            # >>> garante que esta rota só mostre máquinas ROT
+            .filter(Maquina.codigo.like("ROT%"))
+    )
+
+    if inicio:
+        query = query.filter(ProducaoRotativa.data_producao >= inicio)
+    if fim:
+        query = query.filter(ProducaoRotativa.data_producao <= fim)
+    if maquina_id:
+        query = query.filter(ProducaoRotativa.maquina_id == maquina_id)
+
+    query = query.group_by(Maquina.id, Maquina.codigo).order_by(Maquina.codigo.asc())
+    rows = query.all()
+
+    maquinas_data = [{
+        "id": r.m_id,
+        "codigo": r.m_codigo,
+        "painel_dia":   int(r.painel_dia or 0),
+        "painel_noite": int(r.painel_noite or 0),
+        "painel_total": int(r.painel_total or 0),
+        "pares_dia":    int(r.pares_dia or 0),
+        "pares_noite":  int(r.pares_noite or 0),
+        "pares_total":  int(r.pares_total or 0),
+    } for r in rows]
+
+    # opções para o filtro select2 (somente ROT)
+    maquinas_opts = [(m.id, f"{m.codigo} - {m.descricao}") for m in Maquina.query
+        .filter(Maquina.codigo.like("ROT%"))
+        .order_by(Maquina.codigo.asc())
+        .all()]
+
+    return render_template(
+        "relatorio_mapas_producao.html",
+        maquinas=maquinas_data,
+        maquinas_opts=maquinas_opts,
+        inicio=f_inicio, fim=f_fim, maquina_id=f_maquina,
+        maquina_sel=maquina_sel    # >>> novo
+    )
+
+
+@bp.route('/relatorios/rotativas/mapas/pdf', methods=['GET'])
+@login_required
+@requer_permissao('controleproducao', 'ver')
+def relatorio_mapas_producao_pdf():
+    from sqlalchemy import func, case
+    from datetime import datetime
+    from flask import render_template, make_response, request, url_for
+    # WeasyPrint
+    from weasyprint import HTML
+
+    f_inicio  = request.args.get('inicio')       # 'YYYY-MM-DD'
+    f_fim     = request.args.get('fim')          # 'YYYY-MM-DD'
+    f_maquina = request.args.get('maquina_id')   # opcional
+
+    inicio = datetime.strptime(f_inicio, '%Y-%m-%d').date() if f_inicio else None
+    fim    = datetime.strptime(f_fim, '%Y-%m-%d').date() if f_fim else None
+    maquina_id = int(f_maquina) if f_maquina else None
+
+    turno_up = func.upper(ProducaoRotativa.turno)
+    painel   = func.coalesce(ProducaoRotativa.producao_painel, 0)
+    pares    = func.coalesce(ProducaoRotativa.pares_bons, 0)
+
+    q = (db.session.query(
+            Maquina.id.label('m_id'),
+            Maquina.codigo.label('m_codigo'),
+            func.coalesce(func.sum(case((turno_up == 'DIA',   painel), else_=0)), 0).label('painel_dia'),
+            func.coalesce(func.sum(case((turno_up == 'NOITE', painel), else_=0)), 0).label('painel_noite'),
+            func.coalesce(func.sum(painel), 0).label('painel_total'),
+            func.coalesce(func.sum(case((turno_up == 'DIA',   pares), else_=0)), 0).label('pares_dia'),
+            func.coalesce(func.sum(case((turno_up == 'NOITE', pares), else_=0)), 0).label('pares_noite'),
+            func.coalesce(func.sum(pares), 0).label('pares_total'),
+        )
+        .join(Maquina, Maquina.id == ProducaoRotativa.maquina_id)
+    )
+
+    if inicio:
+        q = q.filter(ProducaoRotativa.data_producao >= inicio)
+    if fim:
+        q = q.filter(ProducaoRotativa.data_producao <= fim)
+    if maquina_id:
+        q = q.filter(ProducaoRotativa.maquina_id == maquina_id)
+
+    q = q.group_by(Maquina.id, Maquina.codigo).order_by(Maquina.codigo.asc())
+    rows = q.all()
+
+    maquinas = [{
+        "id": r.m_id,
+        "codigo": r.m_codigo,
+        "painel_dia":   int(r.painel_dia or 0),
+        "painel_noite": int(r.painel_noite or 0),
+        "painel_total": int(r.painel_total or 0),
+        "pares_dia":    int(r.pares_dia or 0),
+        "pares_noite":  int(r.pares_noite or 0),
+        "pares_total":  int(r.pares_total or 0),
+    } for r in rows]
+
+    maquina_nome = None
+    if maquina_id:
+        m = Maquina.query.get(maquina_id)
+        maquina_nome = m.codigo if m else None
+
+    # Renderiza HTML
+    html_str = render_template(
+        'relatorio_mapas_producao_pdf.html',
+        maquinas=maquinas,
+        inicio=f_inicio, fim=f_fim,
+        maquina_id=f_maquina,
+        maquina_nome=maquina_nome
+    )
+
+    # Converte para PDF
+    pdf = HTML(string=html_str, base_url=request.root_url).write_pdf()
+
+    # Resposta
+    resp = make_response(pdf)
+    resp.headers['Content-Type'] = 'application/pdf'
+    resp.headers['Content-Disposition'] = 'inline; filename=mapas_producao.pdf'
+    return resp
+
+
+### CONVENCIONAIS
+
+@bp.route('/producao_convencionais', methods=['GET'])
+@login_required
+@requer_permissao('controleproducao', 'ver')
+def listar_producoes_convencionais():
+    from datetime import datetime
+    from sqlalchemy import func
+
+    # Filtros (datas no formato YYYY-MM-DD vindas do input type="date")
+    f_inicio = (request.args.get('inicio') or '').strip()
+    f_fim    = (request.args.get('fim') or '').strip()
+
+    # Paginação
+    try:
+        page = int(request.args.get('page', 1))
+    except ValueError:
+        page = 1
+    try:
+        per_page = int(request.args.get('per_page', 25))
+    except ValueError:
+        per_page = 25
+    per_page = max(10, min(per_page, 100))  # sanidade
+
+    # Query base
+    query = ProducaoConvencional.query
+
+    # Aplica filtros de data_producao (funciona para Date/DateTime)
+    if f_inicio:
+        try:
+            dt_inicio = datetime.strptime(f_inicio, '%Y-%m-%d').date()
+            query = query.filter(func.date(ProducaoConvencional.data_producao) >= dt_inicio)
+        except ValueError:
+            pass
+
+    if f_fim:
+        try:
+            dt_fim = datetime.strptime(f_fim, '%Y-%m-%d').date()
+            query = query.filter(func.date(ProducaoConvencional.data_producao) <= dt_fim)
+        except ValueError:
+            pass
+
+    query = query.order_by(ProducaoConvencional.id.desc())
+
+    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+    prod_convencionais = pagination.items
+
+    return render_template(
+        'listar_producoes_convencionais.html',
+        prod_convencionais=prod_convencionais,
+        pagination=pagination,
+        per_page=per_page,
+        inicio=f_inicio,
+        fim=f_fim
+    )
+
+@bp.route('/producao_convencional/relatorio', methods=['GET'])
+@login_required
+@requer_permissao('controleproducao', 'ver')
+def relatorio_producoes_convencionais():
+    from datetime import datetime
+    from sqlalchemy import desc
+    from weasyprint import HTML, CSS
+    import os
+
+    inicio_str = request.args.get('inicio') or ""
+    fim_str    = request.args.get('fim') or ""
+    pdf_flag   = request.args.get('pdf', '0') == '1'
+
+    # parse para date (ou None)
+    di = None
+    df = None
+    try:
+        if inicio_str:
+            di = datetime.strptime(inicio_str, "%Y-%m-%d").date()
+    except ValueError:
+        di = None
+    try:
+        if fim_str:
+            df = datetime.strptime(fim_str, "%Y-%m-%d").date()
+    except ValueError:
+        df = None
+
+    # filtro
+    q = ProducaoConvencional.query
+    if di:
+        q = q.filter(ProducaoConvencional.data_producao >= di)
+    if df:
+        q = q.filter(ProducaoConvencional.data_producao <= df)
+
+    itens = q.order_by(desc(ProducaoConvencional.data_producao),
+                       desc(ProducaoConvencional.id)).all()
+
+    totais = {
+        "alca": sum((i.producao_geral_alca or 0) for i in itens),
+        "a":    sum((i.producao_solado_turno_a or 0) for i in itens),
+        "b":    sum((i.producao_solado_turno_b or 0) for i in itens),
+        "c":    sum((i.producao_solado_turno_c or 0) for i in itens),
+    }
+    totais["solado_total"] = totais["a"] + totais["b"] + totais["c"]
+
+    # 🔑 passe objetos date para o template
+    html = render_template(
+        "relatorio_producoes_convencionais.html",
+        itens=itens,
+        inicio=di,
+        fim=df,
+        totais=totais,
+    )
+
+    if not pdf_flag:
+        return html
+
+    # PDF – importante: base_url para a logo/estáticos funcionarem
+    css_path = os.path.join(current_app.root_path, "static", "css", "paginas3.css")
+    styles = [CSS(filename=css_path)] if os.path.exists(css_path) else []
+
+    pdf_bytes = HTML(string=html, base_url=request.url_root).write_pdf(stylesheets=styles)
+    filename = f"relatorio_convencionais_{inicio_str or 'inicio'}_{fim_str or 'fim'}.pdf"
+    return Response(pdf_bytes, mimetype="application/pdf",
+                    headers={"Content-Disposition": f'inline; filename="{filename}"'})
+
+
+@bp.route('/producao_convencional/nova', methods=['GET', 'POST'])
+@login_required
+@requer_permissao('controleproducao', 'criar')
+def nova_producao_convencional():
+    form = ProducaoConvencionalForm()
+    
+    if form.validate_on_submit():
+        # 🔒 Verifica duplicidade por data
+        existe = ProducaoConvencional.query.filter(
+            func.date(ProducaoConvencional.data_producao) == form.data_producao.data
+        ).first()
+        if existe:
+            flash("Já existe produção convencional cadastrada para este dia.", "warning")
+            return render_template('nova_producao_convencional.html', form=form)
+
+        # Upload padrão do sistema (só se vier arquivo)
+        imagem_filename = None
+        if form.imagem.data and hasattr(form.imagem.data, 'filename') and form.imagem.data.filename:
+            upload_folder = current_app.config['UPLOAD_FOLDER']
+            os.makedirs(upload_folder, exist_ok=True)
+            imagem_filename = secure_filename(form.imagem.data.filename)
+            caminho_imagem = os.path.join(upload_folder, imagem_filename)
+            form.imagem.data.save(caminho_imagem)
+
+        nova_prod_conv = ProducaoConvencional(
+            data_producao=form.data_producao.data,
+            producao_geral_alca=form.producao_geral_alca.data or 0,
+            producao_solado_turno_a=form.producao_solado_turno_a.data or 0,
+            producao_solado_turno_b=form.producao_solado_turno_b.data or 0,
+            producao_solado_turno_c=form.producao_solado_turno_c.data or 0,
+            observacao=form.observacao.data,
+            imagem=imagem_filename
+        )
+
+        db.session.add(nova_prod_conv)
+        try:
+            db.session.commit()
+            flash("Produção Convencional cadastrada com sucesso!", "success")
+            return redirect(url_for('routes.listar_producoes_convencionais'))
+        except IntegrityError:
+            db.session.rollback()
+            flash("Duplicidade detectada (Data).", "danger")
+            # volta para o form mantendo os dados preenchidos
+            return render_template('nova_producao_convencional.html', form=form)
+
+    return render_template('nova_producao_convencional.html', form=form)
+
+
+@bp.route('/producao_convencional/editar/<int:id>', methods=['GET', 'POST'])
+@login_required
+@requer_permissao('controleproducao', 'editar')
+def editar_producao_convencional(id):
+    pc = ProducaoConvencional.query.get_or_404(id)
+    form = ProducaoConvencionalForm(obj=pc)
+
+    if form.validate_on_submit():
+        # 🔒 Verifica duplicidade por data (excluindo o próprio registro)
+        existe = ProducaoConvencional.query.filter(
+            ProducaoConvencional.id != pc.id,
+            func.date(ProducaoConvencional.data_producao) == form.data_producao.data
+        ).first()
+        if existe:
+            flash("Já existe produção convencional cadastrada para este dia.", "warning")
+            return render_template('editar_producao_convencional.html', form=form, pc=pc)
+
+        pc.data_producao = form.data_producao.data
+        pc.producao_geral_alca = form.producao_geral_alca.data or 0
+        pc.producao_solado_turno_a = form.producao_solado_turno_a.data or 0
+        pc.producao_solado_turno_b = form.producao_solado_turno_b.data or 0
+        pc.producao_solado_turno_c = form.producao_solado_turno_c.data or 0
+        pc.observacao = form.observacao.data
+
+        # só atualiza se realmente enviou novo arquivo
+        if form.imagem.data and hasattr(form.imagem.data, "filename") and form.imagem.data.filename:
+            upload_folder = current_app.config['UPLOAD_FOLDER']
+            os.makedirs(upload_folder, exist_ok=True)
+            imagem_filename = secure_filename(form.imagem.data.filename)
+            caminho_imagem = os.path.join(upload_folder, imagem_filename)
+            form.imagem.data.save(caminho_imagem)
+            pc.imagem = imagem_filename
+        
+        log = LogAcao(
+            usuario_id=current_user.id,
+            usuario_nome=current_user.nome,
+            acao=f"Editou a Produção Convencional: {pc.id}"
+        )
+        db.session.add(log)
+
+        try:
+            db.session.commit()
+            flash("Produção Convencional atualizada!", "success")
+            return redirect(url_for('routes.listar_producoes_convencionais'))
+        except IntegrityError:
+            db.session.rollback()
+            flash("Duplicidade detectada (Data).", "danger")
+            return render_template('editar_producao_convencional.html', form=form, pc=pc)
+    
+    return render_template('editar_producao_convencional.html', form=form, pc=pc)
+
+
+@bp.route('/producao_convencional/excluir/<int:id>', methods=['POST'])
+@login_required
+@requer_permissao('controleproducao', 'excluir')
+def excluir_producao_convencional(id):
+    pc = ProducaoConvencional.query.get_or_404(id)
+
+    try:
+        db.session.delete(pc)
+        db.session.commit()
+        flash('Produção Convencional excluída com sucesso!', 'success')
+
+    except IntegrityError:
+        db.session.rollback()
+        flash("Erro ao excluir Produção!", "danger")
+
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Erro inesperado ao excluir a produção Convencional: {str(e)}", "danger")
+
+    return redirect(url_for('routes.listar_producoes_convencionais'))

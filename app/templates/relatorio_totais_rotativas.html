@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block content %}
+<h4 class="mt-3">Totais — Produções Rotativas</h4>
+
+<form method="GET" class="row g-3 mb-4">
+    <div class="col-md-3">
+        <label class="form-label mb-1">Início</label>
+        <input type="date" name="inicio" class="form-control" value="{{ inicio or '' }}">
+    </div>
+    <div class="col-md-3">
+        <label class="form-label mb-1">Fim</label>
+        <input type="date" name="fim" class="form-control" value="{{ fim or '' }}">
+    </div>
+    <div class="col-md-4">
+        <label class="form-label mb-1">Máquina</label>
+        <select name="maquina_id" class="form-select select2">
+            <option value="">Todas</option>
+            {% for mid, mcod in maquinas %}
+            <option value="{{ mid }}" {{ 'selected' if maquina_id and (maquina_id|string==mid|string) else '' }}>
+                {{ mcod }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <!-- Botões embaixo -->
+    <div class="col-12 d-flex justify-content-start gap-2 mt-2">
+        <button class="btn btn-primary">
+            <i class="fas fa-filter me-1"></i> Filtrar
+        </button>
+        <a href="{{ url_for('routes.relatorio_totais_rotativas') }}" class="btn btn-secondary">
+            Limpar
+        </a>
+    </div>
+</form>
+<div class="row g-3">
+    <!-- Produção do painel -->
+    <div class="col-md-6">
+        <div class="card h-100 border-0 shadow-sm">
+            <!-- header azul -->
+            <div class="card-header text-white fw-semibold" style="background-color:#0d6efd;">
+                Produção do painel
+            </div>
+            <!-- body azul claro -->
+            <div class="card-body" style="background-color:#0d6efd;">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span><i class="fas fa-sun text-warning me-1"></i> Dia</span>
+                        <strong>{{ totais.painel_dia }}</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span><i class="fas fa-moon text-dark me-1"></i> Noite</span>
+                        <strong>{{ totais.painel_noite }}</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between fw-bold">
+                        <span>Total</span>
+                        <span>{{ totais.painel_total }}</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pares bons -->
+    <div class="col-md-6">
+        <div class="card h-100 border-0 shadow-sm">
+            <!-- header verde -->
+            <div class="card-header text-white fw-semibold" style="background-color:#198754;">
+                Pares bons
+            </div>
+            <!-- body verde claro -->
+            <div class="card-body" style="background-color:#198754;">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span><i class="fas fa-sun text-warning me-1"></i> Dia</span>
+                        <strong>{{ totais.pares_dia }}</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span><i class="fas fa-moon text-dark me-1"></i> Noite</span>
+                        <strong>{{ totais.pares_noite }}</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between fw-bold">
+                        <span>Total</span>
+                        <span>{{ totais.pares_total }}</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+<hr>
+<a href="{{ url_for('routes.listar_producoes_rotativas') }}" class="btn btn-secondary">Voltar</a>
+
+{% endblock %}

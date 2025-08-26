@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Novo Colaborador</h2>
+<hr>
+
+<form method="POST">
+  {{ form.hidden_tag() }}
+
+  <div class="row g-3">
+    <div class="col-md-6">
+      <label class="form-label">Nome</label>
+      {{ form.nome(class="form-control", placeholder="Nome") }}
+      {% for e in form.nome.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Documento (CPF/CNPJ)</label>
+      {{ form.documento(class="form-control", placeholder="Somente números") }}
+      {% for e in form.documento.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Tipo de Colaborador</label>
+      {{ form.tipo_id(class="form-select", id="tipo_id") }}
+      {% for e in form.tipo_id.errors %}{% if e %}<div class="text-danger small">{{ e }}</div>{% endif %}{% endfor %}
+    </div>
+
+    <div class="col-md-4">
+      <label class="form-label">E-mail</label>
+      {{ form.email(class="form-control", placeholder="email@exemplo.com") }}
+      {% for e in form.email.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Telefone</label>
+      {{ form.telefone(class="form-control", placeholder="(00) 00000-0000") }}
+      {% for e in form.telefone.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+    </div>
+
+    <div class="col-md-4">
+      <label class="form-label">CEP</label>
+      {{ form.cep(class="form-control", id="cep", placeholder="00000-000") }}
+      {% for e in form.cep.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+    </div>
+
+    <div class="col-md-6">
+      <label class="form-label">Endereço</label>
+      {{ form.endereco(class="form-control") }}
+    </div>
+    <div class="col-md-2">
+      <label class="form-label">Número</label>
+      {{ form.numero(class="form-control") }}
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Complemento</label>
+      {{ form.complemento(class="form-control") }}
+    </div>
+
+    <div class="col-md-4">
+      <label class="form-label">Bairro</label>
+      {{ form.bairro(class="form-control") }}
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Cidade</label>
+      {{ form.cidade(class="form-control", id="cidade") }}
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">UF</label>
+      {{ form.uf(class="form-select", id="uf") }}
+    </div>
+  </div>
+
+  <div class="mt-4 d-flex gap-2">
+    <a href="{{ url_for('routes.listar_colaboradores') }}" class="btn btn-outline-secondary">Cancelar</a>
+    {{ form.submit(class="btn btn-primary", value="Salvar") }}
+  </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<!-- Select2 (remova se já incluído em base.html) -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+  // Ativa Select2 no Tipo
+  window.addEventListener('DOMContentLoaded', () => {
+    const $tipo = $('#tipo_id');
+    if ($tipo.length) {
+      $tipo.select2({ width: '100%', placeholder: 'Selecione...' });
+    }
+  });
+
+  // ViaCEP: preenche endereço/bairro/cidade/uf
+  async function buscarCEP(cep) {
+    cep = cep.replace(/\D/g, '');
+    if (cep.length !== 8) return;
+
+    try {
+      const resp = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+      if (!resp.ok) return;
+      const data = await resp.json();
+      if (data.erro) return;
+
+      const logradouro = data.logradouro || '';
+      const bairro = data.bairro || '';
+      const localidade = data.localidade || '';
+      const uf = data.uf || '';
+
+      document.getElementById('cidade').value = localidade;
+      document.getElementById('uf').value = uf;
+      document.getElementById('cep').value = data.cep || document.getElementById('cep').value;
+
+      const endInput = document.getElementById('{{ form.endereco.id }}');
+      const bairroInput = document.getElementById('{{ form.bairro.id }}');
+      if (endInput) endInput.value = logradouro;
+      if (bairroInput) bairroInput.value = bairro;
+    } catch (e) {
+      console.error('Erro ao buscar CEP:', e);
+    }
+  }
+
+  const cepInput = document.getElementById('cep');
+  if (cepInput) {
+    cepInput.addEventListener('blur', () => buscarCEP(cepInput.value));
+  }
+</script>
+{% endblock %}

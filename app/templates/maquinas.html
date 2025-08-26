@@ -24,8 +24,8 @@
     <thead>
         <tr>
             <th>Código</th>
-            <th>Descrição</th>
             <th>Tipo</th>
+            <th>Descrição</th>
             <th>Status</th>
             <th>Preço</th>
             <th>Ações</th>
@@ -35,10 +35,10 @@
         {% for maquina in maquinas %}
         <tr>
             <td>{{ maquina.codigo }}</td>
+            <td>{{ maquina.tipo_maquina.nome }}</td>
             <td>{{ maquina.descricao }}</td>
-            <td>{{ maquina.tipo }}</td>
             <td>{{ maquina.status }}</td>
-            <td class="preco-formatado">R$ {{ "%.2f"|format(maquina.preco) }}</td>
+            <td class="preco-formatado">R$ {{ maquina.preco|br_moeda }}</td>
             <td>
                 <a href="{{ url_for('routes.editar_maquina', id=maquina.id) }}" class="btn btn-warning btn-sm">
                     <i class="fas fa-edit"></i> Editar</a>

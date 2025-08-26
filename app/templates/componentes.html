@@ -1,69 +1,157 @@
 {% extends "base.html" %}
-
 {% block content %}
-<h2>COMPONENTES</h2>
-<br>
-<a href="{{ url_for('routes.novo_componente') }}" class="btn btn-success mb-3"><i class="fas fa-plus"></i> Adicionar</a>
-<hr>
 
-<!-- 🔎 Campo de busca -->
-<div class="row mb-3">
-    <div class="col-md-4"> <!-- Define um tamanho menor para o campo -->
-        <form method="GET" action="{{ url_for('routes.listar_componentes') }}" class="d-flex gap-2">
-            <input type="text" name="filtro" class="form-control form-control-sm" placeholder="Buscar Descrição"
-                value="{{ request.args.get('filtro', '') }}">
-            <button type="submit" class="btn btn-primary btn-sm">Buscar</button>
-            <a href="{{ url_for('routes.listar_componentes') }}" class="btn btn-secondary btn-sm">
-                <i class="fas fa-sync-alt"></i> <!-- Ícone de atualização -->
-            </a>
-        </form>
-
-
-    </div>
+<div class="d-flex justify-content-between align-items-center mt-3 mb-2">
+  <h2>Componentes</h2>
+  <a href="{{ url_for('routes.novo_componente') }}" class="btn btn-success">
+    <i class="fas fa-plus"></i> Adicionar
+  </a>
 </div>
 
-<h5>Filtrar Componente</h5>
-<a href="{{ url_for('routes.listar_componentes', filtro='TODOS') }}" class="btn btn-dark">TODOS</a>
-<a href="{{ url_for('routes.listar_componentes', filtro='PVC') }}" class="btn btn-dark">PVC</a>
-<a href="{{ url_for('routes.listar_componentes', filtro='ENF EMB') }}" class="btn btn-dark">ENF EMB</a>
-<a href="{{ url_for('routes.listar_componentes', filtro='ENF ABS') }}" class="btn btn-dark">ENF ABS</a>
-<a href="{{ url_for('routes.listar_componentes', filtro='ENF') }}" class="btn btn-dark">ENF</a>
-<a href="{{ url_for('routes.listar_componentes', filtro='PIG') }}" class="btn btn-dark">PIG</a>
-<a href="{{ url_for('routes.listar_componentes', filtro='TINTA') }}" class="btn btn-dark">TINTA</a>
+<!-- Busca limpa -->
+<form method="GET" action="{{ url_for('routes.listar_componentes') }}" class="row g-2 mb-3">
+  <div class="col-sm-3">
+    <label class="form-label">Código</label>
+    <input type="text" name="codigo" value="{{ codigo }}" class="form-control form-control-sm" placeholder="Ex.: 00123">
+  </div>
+  <div class="col-sm-4">
+    <label class="form-label">Descrição</label>
+    <input type="text" name="descricao" value="{{ descricao }}" class="form-control form-control-sm"
+      placeholder="Ex.: Fita crepe">
+  </div>
+  <div class="col-sm-3">
+    <label class="form-label">Tipo</label>
+    <input type="text" name="tipo" value="{{ tipo }}" class="form-control form-control-sm"
+      placeholder="Ex.: ENF, PVC, TINTA">
+  </div>
+  <div class="col-sm-2">
+    <label class="form-label">Por página</label>
+    <select name="per_page" class="form-select form-select-sm" onchange="this.form.submit()">
+      {% for n in [10,25,50,100] %}
+      <option value="{{ n }}" {% if per_page==n %}selected{% endif %}>{{ n }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-12 d-flex gap-2 mt-2">
+    <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-search"></i> Buscar</button>
+    <a href="{{ url_for('routes.listar_componentes') }}" class="btn btn-secondary btn-sm">
+      <i class="fas fa-eraser"></i> Limpar
+    </a>
+  </div>
+</form>
 
-<table class="table table-striped mt-3">
-    <thead>
-        <tr>
-            <th>Código</th>
-            <th>Descrição</th>
-            <th>Tipo</th>
-            <th>UN / MED</th>
-            <th>Preço</th>
-            <th>Ações</th>
-        </tr>
+<div class="table-responsive">
+  <table class="table table-striped align-middle">
+    <thead class="table-light">
+      <tr>
+        <th style="width: 90px;">Código</th>
+        <th>Descrição</th>
+        <th style="width: 140px;">Tipo</th>
+        <th style="width: 120px;">UN</th>
+        <th class="text-end" style="width: 140px;">Preço</th>
+        <th class="text-center" style="width: 280px;">Ações</th>
+      </tr>
     </thead>
     <tbody>
-        {% for componente in componentes %}
-        <tr>
-            <td>{{ componente.codigo }}</td>
-            <td>{{ componente.descricao }}</td>
-            <td>{{ componente.tipo }}</td>
-            <td>{{ componente.unidade_medida }}</td>
-            <td>R$ {{ "%.2f"|format(componente.preco) }}</td>
-            <td>
-                <a href="{{ url_for('routes.editar_componente', id=componente.id) }}"
-                    class="btn btn-warning btn-sm">
-                    <i class="fas fa-edit"></i> Editar</a>
-                <form action="{{ url_for('routes.excluir_componente', id=componente.id) }}" method="post"
-                    style="display:inline;">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button type="submit" class="btn btn-danger btn-sm"
-                        onclick="return confirm('Tem certeza que deseja excluir?')">
-                        <i class="fas fa-trash-alt"></i> Excluir</button>
-                </form>
-            </td>
-        </tr>
-        {% endfor %}
+      {% for componente in componentes %}
+      <tr>
+        <td>{{ componente.codigo }}</td>
+        <td>{{ componente.descricao }}</td>
+        <td>{{ componente.tipo }}</td>
+        <td>{{ componente.unidade_medida }}</td>
+        <td class="text-end">{{ componente.preco|br_moeda }}</td>
+        <td class="text-center">
+          <a href="{{ url_for('routes.ver_componente', id=componente.id) }}" class="btn btn-info btn-sm">
+            <i class="fas fa-eye"></i>
+          </a>
+        <a href="{{ url_for('routes.editar_componente', id=componente.id) }}" class="btn btn-warning btn-sm">
+          <i class="fas fa-edit"></i>
+        </a>
+        <a href="{{ url_for('routes.listar_movimentos_componente', componente_id=componente.id) }}"
+          class="btn btn-info btn-sm">
+          <i class="fas fa-exchange-alt"></i>
+        </a>
+        <a href="{{ url_for('routes.historico_precos_componente', componente_id=componente.id) }}"
+          class="btn btn-outline-dark btn-sm">
+          <i class="bi bi-clock-history"></i>
+        </a>
+
+        <form action="{{ url_for('routes.excluir_componente', id=componente.id) }}" method="post"
+          style="display:inline;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-danger btn-sm"
+            onclick="return confirm('Tem certeza que deseja excluir?')">
+            <i class="fas fa-trash-alt"></i>
+          </button>
+        </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="6" class="text-center text-muted">Nenhum componente encontrado.</td>
+      </tr>
+      {% endfor %}
     </tbody>
-</table>
+  </table>
+</div>
+
+<!-- Paginação -->
+{% if pagination.pages > 1 %}
+<nav aria-label="Paginação" class="d-flex justify-content-between align-items-center">
+  <span class="text-muted">
+    Página {{ pagination.page }} de {{ pagination.pages }} — Total: {{ pagination.total }}
+  </span>
+  <ul class="pagination pagination-sm mb-0">
+    <!-- Primeiro / Anterior -->
+    <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+      <a class="page-link" href="{{ url_for('routes.listar_componentes',
+                          page=1,
+                          per_page=per_page,
+                          codigo=codigo,
+                          descricao=descricao,
+                          tipo=tipo) }}">« Primeiro</a>
+    </li>
+    <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+      <a class="page-link" href="{{ url_for('routes.listar_componentes',
+                          page=pagination.prev_num if pagination.has_prev else 1,
+                          per_page=per_page,
+                          codigo=codigo,
+                          descricao=descricao,
+                          tipo=tipo) }}">‹ Anterior</a>
+    </li>
+
+    <!-- Números de páginas (janela de 5) -->
+    {% set start = pagination.page - 2 if pagination.page - 2 > 1 else 1 %}
+    {% set end = pagination.page + 2 if pagination.page + 2 < pagination.pages else pagination.pages %} {% for p in
+      range(start, end + 1) %} <li class="page-item {% if p == pagination.page %}active{% endif %}">
+      <a class="page-link" href="{{ url_for('routes.listar_componentes',
+                            page=p,
+                            per_page=per_page,
+                            codigo=codigo,
+                            descricao=descricao,
+                            tipo=tipo) }}">{{ p }}</a>
+      </li>
+      {% endfor %}
+
+      <!-- Próximo / Último -->
+      <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+        <a class="page-link" href="{{ url_for('routes.listar_componentes',
+                          page=pagination.next_num if pagination.has_next else pagination.pages,
+                          per_page=per_page,
+                          codigo=codigo,
+                          descricao=descricao,
+                          tipo=tipo) }}">Próximo ›</a>
+      </li>
+      <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+        <a class="page-link" href="{{ url_for('routes.listar_componentes',
+                          page=pagination.pages,
+                          per_page=per_page,
+                          codigo=codigo,
+                          descricao=descricao,
+                          tipo=tipo) }}">Último »</a>
+      </li>
+  </ul>
+</nav>
+{% endif %}
+
 {% endblock %}

@@ -10,15 +10,15 @@
         {{ form.codigo.label(class="form-label") }}
         {{ form.codigo(class="form-control", readonly=True) }} <!-- Código não pode ser alterado -->
     </div>
+    <div class="mb-3">
+        <label class="form-label">Tipo de Máquina</label>
+        {{ form.tipo_id(class_="form-select select2") }}
+        {% for e in form.tipo_id.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+    </div>
 
     <div class="mb-3">
         {{ form.descricao.label(class="form-label") }}
         {{ form.descricao(class="form-control") }}
-    </div>
-
-    <div class="mb-3">
-        {{ form.tipo.label(class="form-label") }}
-        {{ form.tipo(class="form-select") }}
     </div>
 
     <div class="mb-3">

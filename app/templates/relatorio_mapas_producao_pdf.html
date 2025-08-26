@@ -1,0 +1,129 @@
+{% extends "base_relatorio_pdf.html" %}
+{% block content %}
+
+<style>
+  h2 {
+    text-align: center;
+    margin: 8px 0 10px 0;
+  }
+
+  .meta {
+    margin: 8px 0 12px 0;
+  }
+
+  .header-machine {
+    font-weight: bold;
+    border: 1px solid #000;
+    padding: 6px 8px;
+    margin-top: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .badge {
+    border: 1px solid #000;
+    padding: 2px 6px;
+    font-size: 11px;
+  }
+
+  .section-title {
+    background: #f0f0f0;
+    font-weight: bold;
+    padding: 6px 8px;
+    border: 1px solid #000;
+    border-bottom: none;
+    margin-top: 8px;
+  }
+
+  .section-card {
+    border: 1px solid #000;
+    border-top: none;
+    padding: 0;
+    margin-bottom: 12px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  th,
+  td {
+    border: 1px solid #000;
+    padding: 5px;
+    text-align: center;
+  }
+
+  thead th {
+    background: #fafafa;
+  }
+
+  tfoot th {
+    font-weight: bold;
+  }
+</style>
+
+<h2>Mapas de Produção (por máquina)</h2>
+<div class="meta">
+  Período:
+  {{ inicio if inicio else "(início não informado)" }}
+  — {{ fim if fim else "(fim não informado)" }}
+  {% if maquina_id %} | Máquina filtrada: {{ maquina_nome or maquina_id }}{% endif %}
+</div>
+
+{% if maquinas|length == 0 %}
+<p>Nenhum registro encontrado para os filtros informados.</p>
+{% endif %}
+
+{% for m in maquinas %}
+<div class="header-machine">
+  <span>{{ m.codigo }}</span>
+  <span class="badge">ID {{ m.id }}</span>
+</div>
+
+<div class="section-title">Resumo por turno</div>
+<div class="section-card">
+  <table>
+    <thead>
+      <tr>
+        <th>Turno</th>
+        <th>Produção do painel</th>
+        <th>Pares bons</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Dia</td>
+        <td>{{ m.painel_dia|br_numero }}</td>
+        <td>{{ m.pares_dia|br_numero }}</td>
+      </tr>
+      <tr>
+        <td>Noite</td>
+        <td>{{ m.painel_noite|br_numero }}</td>
+        <td>{{ m.pares_noite|br_numero }}</td>
+      </tr>
+    </tbody>
+    <tbody>
+      <tr>
+        <td><strong>Total</strong></td>
+        <td><strong>{{ m.painel_total|br_numero }}</strong></td>
+        <td><strong>{{ m.pares_total|br_numero }}</strong></td>
+      </tr>
+    </tbody>
+    <tfoot>
+      <tr>
+        <th>Qualidade</th>
+        <th></th>
+        {% if m.painel_total > 0 %}
+        <th>{{ ((m.pares_total / m.painel_total) * 100)|round(2) }} %</th>
+        {% else %}
+        -
+        {% endif %}
+      </tr>
+    </tfoot>
+  </table>
+</div>
+{% endfor %}
+
+{% endblock %}   
