@@ -1,0 +1,59 @@
+{% extends "base_relatorio_pdf.html" %}
+{% block content %}
+  <h2>Relatório — Produção por Setor</h2>
+
+  <p>
+    {% if nome %}<strong>Setor:</strong> {{ nome }}<br>{% endif %}
+    {% if di %}<strong>Início:</strong> {{ di.strftime('%d/%m/%Y') }}<br>{% endif %}
+    {% if df %}<strong>Fim:</strong> {{ df.strftime('%d/%m/%Y') }}<br>{% endif %}
+    {% if esteira %}<strong>Esteira:</strong> {{ esteira }}<br>{% endif %}
+    {% if item_tipo %}
+      <strong>Item:</strong> {{ 'Solado' if item_tipo=='solado' else ('Alça' if item_tipo=='alca' else 'Sem modelo') }}
+      {% if item_id %}(ID {{ item_id }}){% endif %}<br>
+    {% endif %}
+    {% if remessas_sel and remessas_sel|length %}
+      <strong>Remessas:</strong> {{ remessas_sel|join(', ') }}<br>
+    {% endif %}
+  </p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Data</th>
+        <th>Setor</th>
+        <th>Esteira</th>
+        <th>Item</th>
+        <th>Remessas</th>
+        <th>Quantidade</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for it in itens %}
+      <tr>
+        <td>{{ it.data_producao.strftime('%d/%m/%Y') }}</td>
+        <td>{{ it.setor.nome }}</td>
+        <td>{{ it.esteira or '-' }}</td>
+        <td>
+          {% if it.solado %}{{ it.solado.referencia }}
+          {% elif it.alca %}{{ it.alca.referencia }}
+          {% else %}-{% endif %}
+        </td>
+        <td>
+          {% if it.remessas %}
+            {% for r in it.remessas %}{{ r.codigo }}{% if not loop.last %}, {% endif %}{% endfor %}
+          {% else %}-{% endif %}
+        </td>
+        <td>{{ it.quantidade|br_numero }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6">Nenhum registro encontrado.</td></tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <th colspan="5" style="text-align:right">Total</th>
+        <th>{{ total|br_numero }}</th>
+      </tr>
+    </tfoot>
+  </table>
+{% endblock %}

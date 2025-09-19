@@ -10,7 +10,7 @@
                 <table class="table table-bordered">
                     <thead><tr><th>Nome</th><th>Ação</th></tr></thead>
                     <tbody>
-                        {% for f in funcionarios %}
+                        {% for f in funcionarios_solicitantes %}
                         <tr>
                             <td>{{ f.nome }}</td>
                             <td><button type="button" class="btn btn-primary btn-sm selecionar-funcionario" data-id="{{ f.id }}" data-nome="{{ f.nome }}" data-tipo="solicitante">Selecionar</button></td>
@@ -35,7 +35,7 @@
                 <table class="table table-bordered">
                     <thead><tr><th>Nome</th><th>Ação</th></tr></thead>
                     <tbody>
-                        {% for f in funcionarios %}
+                        {% for f in funcionarios_responsaveis %}
                         <tr>
                             <td>{{ f.nome }}</td>
                             <td><button type="button" class="btn btn-primary btn-sm selecionar-funcionario" data-id="{{ f.id }}" data-nome="{{ f.nome }}" data-tipo="responsavel">Selecionar</button></td>

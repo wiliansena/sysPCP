@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2><i class="fas fa-edit me-2"></i> Editar Produção (Funcionário)</h2>
+    <a class="btn btn-outline-secondary" href="{{ url_for('routes.listar_producoes_funcionarios') }}">
+      Voltar
+    </a>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <form method="POST">
+        {{ form.hidden_tag() }}
+
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label">{{ form.data_producao.label }}</label>
+            {{ form.data_producao(class="form-control") }}
+            {% for e in form.data_producao.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label">{{ form.quantidade.label }}</label>
+            {{ form.quantidade(class="form-control", min="0") }}
+            {% for e in form.quantidade.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label">{{ form.funcionario_id.label }}</label>
+            {{ form.funcionario_id(class="form-select select2") }}
+            {% for e in form.funcionario_id.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <button class="btn btn-primary" type="submit">
+            <i class="fas fa-save"></i> Salvar alterações
+          </button>
+          <a class="btn btn-light" href="{{ url_for('routes.listar_producoes_funcionarios') }}">Cancelar</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card shadow-sm mt-3">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0"><i class="fas fa-eye me-2"></i> Quebra de Produção — Alça</h5>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('routes.nova_quebra_alca') }}" class="btn btn-success">
+        <i class="fas fa-plus"></i> Nova
+      </a>
+      <a href="{{ url_for('routes.listar_quebras_alca') }}" class="btn btn-secondary">Voltar</a>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-3"><strong>Data:</strong> {{ it.data_quebra.strftime('%d/%m/%Y') }}</div>
+      <div class="col-md-5"><strong>Alça:</strong> {{ it.alca.referencia }} — {{ it.alca.descricao }}</div>
+      <div class="col-md-12"><strong>Observação:</strong> {{ it.observacao or '-' }}</div>
+    </div>
+
+    <div class="table-responsive mt-3">
+      <table class="table table-striped align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>Tamanho</th>
+            <th class="text-end" style="width:160px;">Quantidade</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for l in it.linhas %}
+          <tr>
+            <td>{{ l.tamanho_nome }}</td>
+            <td class="text-end">{{ l.quantidade }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="2" class="text-center text-muted">Sem linhas.</td></tr>
+          {% endfor %}
+        </tbody>
+        {% if it.linhas %}
+        <tfoot>
+          <tr>
+            <th class="text-end">Total</th>
+            <th class="text-end">{{ it.linhas | map(attribute='quantidade') | sum }}</th>
+          </tr>
+        </tfoot>
+        {% endif %}
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

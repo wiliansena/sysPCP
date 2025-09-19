@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+  <h2><i class="fas fa-edit me-2"></i>Editar Setor</h2>
+  <form method="POST">
+    {{ form.hidden_tag() }}
+    <div class="mb-3">
+      {{ form.nome.label(class="form-label") }}
+      {{ form.nome(class="form-control") }}
+    </div>
+    <button type="submit" class="btn btn-warning"><i class="fas fa-save"></i> Atualizar</button>
+    <a href="{{ url_for('routes.listar_setores') }}" class="btn btn-secondary">Cancelar</a>
+  </form>
+</div>
+{% endblock %}

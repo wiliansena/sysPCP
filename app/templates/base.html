@@ -124,6 +124,27 @@
             <a href="{{ url_for('routes.listar_materiais') }}"><i class="fas fa-clipboard-list"></i> Materiais</a>
         </div>
         {% endif %}
+    
+    
+        <!-- PPCP -->
+        {% if ('ppcp', 'ver') in g.permissoes %}
+        <div class="sidebar-category" onclick="toggleMenu('ppcp')">
+            <i class="bi bi-clipboard-check"></i> PPCP
+            <i class="fas fa-chevron-down"></i>
+        </div>
+        <div class="sidebar-submenu" id="ppcp">
+            <a href="{{ url_for('routes.listar_remessas') }}"><i class="fa-solid fa-clipboard-list"></i> Remessas</a>
+            <a href="{{ url_for('routes.listar_planejamentos') }}">
+                <i class="fa-solid fa-sitemap"></i> Planejamento de Produção</a>
+            <a href="{{ url_for('routes.listar_prodfat') }}">
+                <i class="fa-solid fa-calendar-check"></i> Produção Diária
+            </a>
+            <a href="{{ url_for('routes.relatorio_faltantes_remessas') }}">
+                <i class="fa-solid fa-file-lines"></i> Resumo de Produção
+            </a>
+
+        </div>
+        {% endif %}
 
 
         <!-- Controle de Produção -->
@@ -134,20 +155,19 @@
         </div>
         <div class="sidebar-submenu" id="controleproducao">
             <a href="{{ url_for('routes.listar_producoes_rotativas') }}">
-                <i class="fas fa-sync-alt"></i> Produção Rotativas</a>
-                        <a href="{{ url_for('routes.listar_producoes_convencionais') }}">
-                <i class="fas fa-dice-d6"></i> Produção Convencionais</a>
-            <a href="{{ url_for('routes.listar_maquinas') }}"><i class="fa-solid fa-industry"></i> Máquinas</a>
-            <a href="{{ url_for('routes.listar_tipos_maquina') }}"><i class="fa-solid fa-industry"></i>Tipo de Máquinas</a>
-            <a href="{{ url_for('routes.listar_matrizes') }}"><i class="fas fa-cube"></i> Matrizes</a>
-            <a href="{{ url_for('routes.listar_remessas') }}"><i class="fa-solid fa-clipboard-list"></i> Remessas</a>
-            <a href="{{ url_for('routes.listar_planejamentos') }}">
-                <i class="fa-solid fa-sitemap"></i> Planejamento de Produção</a>
-            <a href="{{ url_for('routes.listar_prodfat') }}">
-                <i class="fa-solid fa-calendar-check"></i> Produção Diária
+                <i class="fa-solid fa-industry"></i> Produção<br>- Rotativas</a>
+            <a href="{{ url_for('routes.listar_producoes_convencionais') }}">
+                <i class="fa-solid fa-industry"></i> Produção<br>- Convencionais</a>
+            <a href="{{ url_for('routes.listar_producoes_funcionarios') }}">
+                <i class="fa-solid fa-industry"></i> Produção<br>- Funcionários</a>
+            <a href="{{ url_for('routes.listar_producoes_setores') }}">
+                <i class="fa-solid fa-industry"></i> Produção<br>- Setores</a>
+            <a href="{{ url_for('routes.listar_quebras_alca') }}">
+                <i class="fas fa-bolt me-1"></i> Quebras de Produção (Alça)
             </a>
-
-
+            <a href="{{ url_for('routes.listar_quebras_solado') }}">
+                <i class="fas fa-bolt me-1"></i> Quebras de Produção (Solado)
+            </a>
         </div>
         {% endif %}
 
@@ -180,14 +200,14 @@
             <a href="{{ url_for('routes.listar_manutencoes') }}"><i class="fa-solid fa-screwdriver-wrench"></i>
                 Manutenções</a>
             <a href="{{ url_for('routes.relatorio_manutencoes') }}"><i class="fa-solid fa-clipboard-list"></i>Relatório
-                de Manutenções</a>         
-            <a href="{{ url_for('routes.relatorio_pecas_manutencao') }}"><i
-                    class="fa-solid fa-clipboard-list"></i>Peças por Manutenção</a>
+                de Manutenções</a>
+            <a href="{{ url_for('routes.relatorio_pecas_manutencao') }}"><i class="fa-solid fa-clipboard-list"></i>Peças
+                por Manutenção</a>
         </div>
 
         {% endif %}
 
-                <!-- Administrativo 
+        <!-- Administrativo 
         {% if ('administrativo', 'ver') in g.permissoes %}
         <div class="sidebar-category" onclick="toggleMenu('administrativo')">
             <i class="fa-solid fa-building"></i> Administrativo
@@ -208,7 +228,8 @@
             <i class="fas fa-chevron-down"></i>
         </div>
         <div class="sidebar-submenu" id="funcionario">
-            <a href="{{ url_for('routes.listar_funcionarios') }}"><i class="bi bi-people"></i> Pessoas e Funções</a>
+            <a href="{{ url_for('routes.listar_funcionarios') }}"><i class="bi bi-people"></i> Funcionários</a>
+            <a href="{{ url_for('routes.listar_setores') }}"><i class="fas fa-sitemap me-2"></i> Setores</a>
         </div>
         {% endif %}
 
@@ -256,35 +277,35 @@
     <script src="{{ url_for('static', filename='js/marcar_botoes_selecionados.js') }}"></script>
 
     <!--SCRIPT PARA ALTERAR A DIREÇÃO DO BOTÃO DE ESCONDER E APARECER O MENU LATERAL-->
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-        const toggleBtn = document.getElementById("toggleSidebar");
-        const toggleIcon = document.getElementById("toggleIcon");
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const toggleBtn = document.getElementById("toggleSidebar");
+            const toggleIcon = document.getElementById("toggleIcon");
 
-        // 🔹 Recupera estado salvo (true = escondida, false = visível)
-        const sidebarHidden = localStorage.getItem("sidebarHidden") === "true";
-        if (sidebarHidden) {
-            document.body.classList.add("hide-sidebar");
-            toggleIcon.classList.remove("fa-angles-left");
-            toggleIcon.classList.add("fa-angles-right");
-        }
-
-        toggleBtn.addEventListener("click", function () {
-            document.body.classList.toggle("hide-sidebar");
-
-            // Atualiza ícone
-            if (document.body.classList.contains("hide-sidebar")) {
+            // 🔹 Recupera estado salvo (true = escondida, false = visível)
+            const sidebarHidden = localStorage.getItem("sidebarHidden") === "true";
+            if (sidebarHidden) {
+                document.body.classList.add("hide-sidebar");
                 toggleIcon.classList.remove("fa-angles-left");
                 toggleIcon.classList.add("fa-angles-right");
-                localStorage.setItem("sidebarHidden", "true"); // salva estado
-            } else {
-                toggleIcon.classList.remove("fa-angles-right");
-                toggleIcon.classList.add("fa-angles-left");
-                localStorage.setItem("sidebarHidden", "false"); // salva estado
             }
+
+            toggleBtn.addEventListener("click", function () {
+                document.body.classList.toggle("hide-sidebar");
+
+                // Atualiza ícone
+                if (document.body.classList.contains("hide-sidebar")) {
+                    toggleIcon.classList.remove("fa-angles-left");
+                    toggleIcon.classList.add("fa-angles-right");
+                    localStorage.setItem("sidebarHidden", "true"); // salva estado
+                } else {
+                    toggleIcon.classList.remove("fa-angles-right");
+                    toggleIcon.classList.add("fa-angles-left");
+                    localStorage.setItem("sidebarHidden", "false"); // salva estado
+                }
+            });
         });
-    });
-</script>
+    </script>
 
     <script>
         window.addEventListener("resize", function () {
@@ -300,6 +321,13 @@
             inputs.forEach((input, index) => {
                 input.addEventListener("keydown", function (event) {
                     if (event.key === "Enter") {
+                        // Se estiver em um form de busca, deixa enviar normalmente
+                        let form = this.form;
+                        if (form && form.method.toLowerCase() === "get") {
+                            return true; // não bloqueia
+                        }
+
+                        // Caso contrário, pula para o próximo campo
                         event.preventDefault();
                         let nextInput = inputs[index + 1];
                         if (nextInput) {
@@ -309,87 +337,88 @@
                 });
             });
         });
+
     </script>
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-        // Recupera as categorias abertas do localStorage
-        let abertas = JSON.parse(localStorage.getItem("categoriasAbertas")) || [];
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // Recupera as categorias abertas do localStorage
+            let abertas = JSON.parse(localStorage.getItem("categoriasAbertas")) || [];
 
-        // Reabre as categorias salvas
-        abertas.forEach(id => {
-            const submenu = document.getElementById(id);
-            const category = submenu?.previousElementSibling;
+            // Reabre as categorias salvas
+            abertas.forEach(id => {
+                const submenu = document.getElementById(id);
+                const category = submenu?.previousElementSibling;
 
-            if (submenu) {
-                submenu.style.display = "block";
-                category?.classList.add("active");
+                if (submenu) {
+                    submenu.style.display = "block";
+                    category?.classList.add("active");
+                }
+            });
+
+            // Função para alternar um menu
+            function toggleMenu(id) {
+                const submenu = document.getElementById(id);
+                const category = submenu.previousElementSibling;
+
+                if (submenu.style.display === "block") {
+                    submenu.style.display = "none";
+                    category.classList.remove("active");
+                    abertas = abertas.filter(item => item !== id); // remove da lista
+                } else {
+                    submenu.style.display = "block";
+                    category.classList.add("active");
+                    if (!abertas.includes(id)) abertas.push(id); // adiciona se não existir
+                }
+
+                // Salva no localStorage
+                localStorage.setItem("categoriasAbertas", JSON.stringify(abertas));
             }
-        });
 
-        // Função para alternar um menu
-        function toggleMenu(id) {
-            const submenu = document.getElementById(id);
-            const category = submenu.previousElementSibling;
-
-            if (submenu.style.display === "block") {
-                submenu.style.display = "none";
-                category.classList.remove("active");
-                abertas = abertas.filter(item => item !== id); // remove da lista
-            } else {
-                submenu.style.display = "block";
-                category.classList.add("active");
-                if (!abertas.includes(id)) abertas.push(id); // adiciona se não existir
-            }
-
-            // Salva no localStorage
-            localStorage.setItem("categoriasAbertas", JSON.stringify(abertas));
-        }
-
-        // Associa o clique aos botões de categoria
-        document.querySelectorAll(".sidebar-category").forEach(category => {
-            category.addEventListener("click", function () {
-                const id = this.nextElementSibling.id;
-                toggleMenu(id);
+            // Associa o clique aos botões de categoria
+            document.querySelectorAll(".sidebar-category").forEach(category => {
+                category.addEventListener("click", function () {
+                    const id = this.nextElementSibling.id;
+                    toggleMenu(id);
+                });
             });
         });
-    });
-</script>
-<script>
-    // 🔁 Usa pagehide, que funciona mesmo com navegação instantânea
-    window.addEventListener("pagehide", function () {
-        sessionStorage.setItem("scrollY", window.scrollY);
-    });
+    </script>
+    <script>
+        // 🔁 Usa pagehide, que funciona mesmo com navegação instantânea
+        window.addEventListener("pagehide", function () {
+            sessionStorage.setItem("scrollY", window.scrollY);
+        });
 
-    // ✅ Restaura o scroll na próxima página
-    document.addEventListener("DOMContentLoaded", function () {
-        const scrollY = sessionStorage.getItem("scrollY");
-        if (scrollY !== null) {
-            window.scrollTo(0, parseInt(scrollY));
-            sessionStorage.removeItem("scrollY");
+        // ✅ Restaura o scroll na próxima página
+        document.addEventListener("DOMContentLoaded", function () {
+            const scrollY = sessionStorage.getItem("scrollY");
+            if (scrollY !== null) {
+                window.scrollTo(0, parseInt(scrollY));
+                sessionStorage.removeItem("scrollY");
+            }
+        });
+    </script>
+
+    <!--Bloco de scripts para extender em outras páginas (lucratividade,)-->
+    {% block scripts %}
+    {% endblock %}
+
+    <!--script para formatar numeros BR no java script, no jinja e html está no utils-->
+
+    <script>
+        // Funções globais disponíveis em todas as páginas
+
+        function brMoeda(valor) {
+            return valor.toLocaleString('pt-BR', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
         }
-    });
-</script>
 
-<!--Bloco de scripts para extender em outras páginas (lucratividade,)-->
-{% block scripts %}
-{% endblock %}
-
-<!--script para formatar numeros BR no java script, no jinja e html está no utils-->>
-
-<script>
-  // Funções globais disponíveis em todas as páginas
-
-  function brMoeda(valor) {
-    return valor.toLocaleString('pt-BR', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    });
-  }
-
-  function brNumero(valor) {
-    return parseInt(valor).toLocaleString('pt-BR');
-  }
-</script>
+        function brNumero(valor) {
+            return parseInt(valor).toLocaleString('pt-BR');
+        }
+    </script>
 
 
     <!-- Ativa o select2
@@ -406,29 +435,29 @@
     -->
 
 
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-    $('.select2').select2({
-        width: '100%',
-        placeholder: 'Selecione',
-        allowClear: true
-    }).on('select2:open', function () {
-        // Foca automaticamente no campo de busca
-        let busca = document.querySelector('.select2-container--open .select2-search__field');
-        if (busca) {
-            busca.focus();
-        }
-    });
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            $('.select2').select2({
+                width: '100%',
+                placeholder: 'Selecione',
+                allowClear: true
+            }).on('select2:open', function () {
+                // Foca automaticamente no campo de busca
+                let busca = document.querySelector('.select2-container--open .select2-search__field');
+                if (busca) {
+                    busca.focus();
+                }
+            });
 
-    // Permitir abrir com Enter também em selects single
-    $(document).on('keydown', '.select2-selection', function (e) {
-        if (e.key === "Enter" || e.keyCode === 13) {
-            $(this).closest('select').select2('open');
-            e.preventDefault();
-        }
-    });
-});
-</script>
+            // Permitir abrir com Enter também em selects single
+            $(document).on('keydown', '.select2-selection', function (e) {
+                if (e.key === "Enter" || e.keyCode === 13) {
+                    $(this).closest('select').select2('open');
+                    e.preventDefault();
+                }
+            });
+        });
+    </script>
 
 
 </body>

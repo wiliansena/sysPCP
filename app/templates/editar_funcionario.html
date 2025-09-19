@@ -16,6 +16,11 @@
             <label for="funcao" class="form-label">Função:</label>
             {{ form.funcao(class="form-control", value=funcionario.funcao) }}
         </div>
+        <div class="col-md-3">
+            <label class="form-label"><strong>Setor:</strong></label>
+            {{ form.setor_id(class="form-select select2") }}
+        </div>
+        <hr>
 
         <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Atualizar</button>
         <a href="{{ url_for('routes.listar_funcionarios') }}" class="btn btn-secondary">Cancelar</a>

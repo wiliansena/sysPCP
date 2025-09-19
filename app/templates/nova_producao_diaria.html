@@ -1,29 +1,60 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Nova Produção Diária</h2>
-<hr>
+<h2 class="mb-4">Nova Produção Diária</h2>
 
-<form method="post">
+<form method="POST">
     {{ form.hidden_tag() }}
 
-    <div class="mb-3">
-        {{ form.data_producao.label(class="form-label") }}
-        {{ form.data_producao(class="form-control") }}
+    <div class="row mb-3">
+        <!-- Remessa -->
+        <div class="col-md-4">
+            <label class="form-label"><strong>Remessa</strong></label>
+            <select id="sel-remessa" class="form-select select2">
+                <option value="">Selecione...</option>
+                {% for r in remessas %}
+                <option value="{{ r.id }}">{{ r.codigo }}</option>
+                {% endfor %}
+            </select>
+            <small class="text-muted">Escolha a remessa primeiro</small>
+        </div>
+
+        <!-- Planejamento / Referência (filtrado pela Remessa) -->
+        <div class="col-md-8">
+            <label class="form-label"><strong>Planejamento / Referência</strong></label>
+            <!-- Render manual: precisa manter name/id igual ao do form para o POST -->
+            <select name="{{ form.planejamento_id.name }}" id="sel-planejamento" class="form-select select2" required>
+                <option value="">Selecione...</option>
+                {% for p in planejamentos %}
+                <option value="{{ p.id }}" data-remessa-id="{{ p.remessa_id }}">
+                    {{ p.referencia }} — {{ p.setor or '' }} | plan {{ p.quantidade }}
+                    {% if p.esteira_qtd %}| est {{ p.esteira_qtd }}{% endif %} ({{ p.remessa.codigo }})
+                </option>
+                {% endfor %}
+            </select>
+
+            {% for e in form.planejamento_id.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+            <small class="text-muted">Digite para buscar a referência dentro da remessa escolhida.</small>
+        </div>
     </div>
 
-    <div class="mb-3">
-        {{ form.quantidade.label(class="form-label") }}
-        {{ form.quantidade(class="form-control") }}
+    <!-- Demais campos do seu form -->
+    <div class="row mb-3">
+        <div class="col-md-3">
+            <label class="form-label"><strong>Data da Produção</strong></label>
+            {{ form.data_producao(class="form-control") }}
+        </div>
+        <div class="col-md-3">
+            <label class="form-label"><strong>Quantidade</strong></label>
+            {{ form.quantidade(class="form-control") }}
+        </div>
     </div>
 
-    <div class="mb-3">
-        {{ form.planejamento_id.label(class="form-label") }}
-        {{ form.planejamento_id(class="form-select select2") }}
+    <div class="mt-3">
+        {{ form.submit(class="btn btn-success") }}
+        <a href="{{ url_for('routes.listar_prodfat') }}" class="btn btn-secondary">Cancelar</a>
     </div>
-
-    <button type="submit" class="btn btn-primary">{{ form.submit.label.text }}</button>
-    <a href="{{ url_for('routes.listar_prodfat') }}" class="btn btn-secondary">Cancelar</a>
 </form>
+
 <hr>
 
 <h5 class="mb-3">Importar Produção Diária</h5>
@@ -50,12 +81,47 @@
 
 </div>
 
-<!-- Select2 JS/CSS -->
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<!-- Select2 + filtro por remessa com matcher -->
 <script>
-    $(document).ready(function () {
-        $('.select2').select2({ width: '100%' });
-    });
+document.addEventListener("DOMContentLoaded", function () {
+  const $remessa = $("#sel-remessa");
+  const $plan    = $("#sel-planejamento");
+
+  // Inicializa Select2
+  $('.select2').select2({ width: '100%', allowClear: true, placeholder: 'Selecione...' });
+
+  // Guarda TODAS as opções originais do planejamento (menos a primeira "Selecione...")
+  const ALL_PLAN_OPTIONS = Array.from($plan.find("option")).map(opt => ({
+    value: opt.value,
+    text:  opt.text,
+    remessaId: opt.getAttribute("data-remessa-id") || null
+  }));
+
+  function filtrarPlanejamentosPorRemessa(remessaId) {
+    // Limpa e reconstrói as opções
+    $plan.empty().append(new Option("Selecione...", "", true, false));
+
+    if (!remessaId) {
+      $plan.prop("disabled", true).trigger("change");
+      return;
+    }
+
+    // Adiciona apenas as opções que pertencem à remessa selecionada
+    const filtradas = ALL_PLAN_OPTIONS.filter(o => o.value && o.remessaId == remessaId);
+    filtradas.forEach(o => $plan.append(new Option(o.text, o.value, false, false)));
+
+    // Habilita e reseta a seleção
+    $plan.prop("disabled", false).val(null).trigger("change");
+  }
+
+  // Ao trocar a remessa, refiltra
+  $remessa.on("change", function () {
+    filtrarPlanejamentosPorRemessa($(this).val());
+  });
+
+  // Estado inicial (se já vier remessa selecionada)
+  filtrarPlanejamentosPorRemessa($remessa.val());
+});
 </script>
+
 {% endblock %}

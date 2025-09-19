@@ -11,6 +11,7 @@
                 <th>ID</th>
                 <th>Nome</th>
                 <th>Função</th>
+                <th>Setor</th>
                 <th>Ações</th>
             </tr>
         </thead>
@@ -20,6 +21,7 @@
                 <td>{{ funcionario.id }}</td>
                 <td>{{ funcionario.nome }}</td>
                 <td>{{ funcionario.funcao }}</td>
+                <td>{{funcionario.setor.nome}}</td>
                 <td>
                     <a href="{{ url_for('routes.editar_funcionario', id=funcionario.id) }}"
                         class="btn btn-warning btn-sm me-2">

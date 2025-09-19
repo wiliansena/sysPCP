@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card shadow-sm mt-3">
+  <!-- Cabeçalho -->
+  <div class="card-header">
+    <div class="d-flex flex-wrap justify-content-between align-items-center">
+      <div class="d-flex align-items-center gap-2">
+        <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i> Relatório — Produção por Funcionário</h5>
+      </div>
+
+      <div class="d-flex flex-wrap align-items-center gap-2">
+        <!-- PDF segue padrão outline -->
+        <a href="{{ url_for('routes.relatorio_producoes_funcionarios_pdf', nome=nome, inicio=inicio, fim=fim) }}"
+          target="_blank" class="btn btn-outline-danger">
+          <i class="fas fa-file-pdf me-1"></i> Gerar PDF
+        </a>
+        <a class="btn btn-secondary" href="{{ url_for('routes.listar_producoes_funcionarios') }}">
+          Voltar
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="px-3 pt-3">
+    <form method="GET" action="{{ url_for('routes.relatorio_producoes_funcionarios') }}">
+      <div class="row g-2">
+        <div class="col-md-5">
+          <label class="form-label mb-1">Nome do Funcionário</label>
+          <input type="text" name="nome" class="form-control" placeholder="Ex.: Maria" value="{{ nome or '' }}">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label mb-1">Início</label>
+          <input type="date" name="inicio" class="form-control" value="{{ inicio or '' }}">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label mb-1">Fim</label>
+          <input type="date" name="fim" class="form-control" value="{{ fim or '' }}">
+        </div>
+      </div>
+
+      <!-- Botões dos filtros (linha separada, sem outline) -->
+      <div class="mt-3 d-flex gap-2">
+        <button class="btn btn-primary" type="submit" name="filtrar" value="1">
+          <i class="fas fa-filter"></i> Filtrar
+        </button>
+
+        <a href="{{ url_for('routes.relatorio_producoes_funcionarios') }}" class="btn btn-sm btn-secondary">
+          <i class="fas fa-eraser me-1"></i> Limpar
+        </a>
+      </div>
+    </form>
+  </div>
+
+  <!-- Tabela -->
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover table-striped align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th class="text-nowrap" style="width:120px;">Data</th>
+            <th class="text-nowrap">Funcionário</th>
+            <th class="text-end pe-4 text-nowrap" style="width:140px;">Quantidade</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for it in itens %}
+          <tr>
+            <td>{{ it.data_producao.strftime('%d/%m/%Y') }}</td>
+            <td class="text-nowrap">{{ it.funcionario.nome }}</td>
+            <td class="text-end pe-4">{{ it.quantidade|br_numero }}</td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="3" class="text-center text-muted py-4">
+              {% if nome or inicio or fim %}
+              Nenhum registro encontrado para os filtros aplicados.
+              {% else %}
+              Aplique um filtro para exibir resultados.
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+
+        {% if itens %}
+        <tfoot>
+          <tr>
+            <th colspan="2" class="text-end">Total</th>
+            <th class="text-end pe-4">{{ total|br_numero }}</th>
+          </tr>
+        </tfoot>
+        {% endif %}
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

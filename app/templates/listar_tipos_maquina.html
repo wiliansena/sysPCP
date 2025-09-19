@@ -4,15 +4,29 @@
   <h4 class="mt-3">Tipos de Máquina</h4>
 
   <form method="get" class="row g-2 mb-3">
+    <div class="d-flex flex-wrap align-items-center gap-2">
+      <a href="{{ url_for('routes.novo_tipo_maquina') }}" class="btn btn-success ms-2">
+        <i class="fa fa-plus me-1"></i> Novo Tipo
+      </a>
+            <a href="{{ url_for('routes.listar_maquinas') }}" class="btn btn-secondary ms-2">
+        <i class="fa fa-undo me-1"></i> Voltar
+      </a>
+    </div>
+    <hr>
     <div class="col-md-4">
       <input type="text" name="q" class="form-control" placeholder="Buscar por nome..." value="{{ q or '' }}">
     </div>
     <div class="col-md-3">
       <button class="btn btn-primary" type="submit"><i class="fa fa-search me-1"></i> Buscar</button>
-      <a href="{{ url_for('routes.novo_tipo_maquina') }}" class="btn btn-success ms-2">
-        <i class="fa fa-plus me-1"></i> Novo Tipo
+      <a href="{{ url_for('routes.listar_tipos_maquina') }}" class="btn btn-secondary btn-sm">
+        <i class="fas fa-sync-alt"></i>
       </a>
+
     </div>
+    <div class="col-md-3">
+
+    </div>
+
   </form>
 
   <div class="table-responsive">
@@ -66,7 +80,9 @@
           </td>
         </tr>
         {% else %}
-        <tr><td colspan="3" class="text-center text-muted">Nenhum tipo encontrado.</td></tr>
+        <tr>
+          <td colspan="3" class="text-center text-muted">Nenhum tipo encontrado.</td>
+        </tr>
         {% endfor %}
       </tbody>
     </table>

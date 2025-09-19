@@ -76,7 +76,7 @@
         {% for pc in prod_convencionais %}
         <tr>
           <td class="text-muted">{{ pc.id }}</td>
-          <td>{{ pc.data_insercao }}</td>
+          <td>{{ pc.data_insercao.strftime("%d/%m/%Y") }}</td>
           <td>{{ pc.data_producao.strftime("%d/%m/%Y") if pc.data_producao }}</td>
           <td>{{ pc.producao_geral_alca|br_numero }}</td>
           <td>{{ pc.producao_solado_turno_a|br_numero}}</td>
@@ -92,6 +92,7 @@
           </td>
           <td>{{ pc.observacao or "-" }}</td>
           <td class="text-center">
+            <div class="btn-group">
             <a href="{{ url_for('routes.editar_producao_convencional', id=pc.id) }}" class="btn btn-warning btn-sm">
               <i class="fas fa-edit"></i>
             </a>
@@ -102,6 +103,7 @@
                 <i class="fas fa-trash-alt"></i>
               </button>
             </form>
+            </div>
           </td>
         </tr>
         {% else %}

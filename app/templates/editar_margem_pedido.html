@@ -57,15 +57,15 @@
                             <td><input type="number" name="quantidade_{{ ref.referencia_id }}" class="form-control"
                                     min="1" value="{{ ref.quantidade }}"></td>
                             <td>
+                                {% set sel = (ref.embalagem_escolhida or '')|lower|trim %}
                                 <select name="embalagem_{{ ref.referencia_id }}" class="form-select">
-                                    <option value="Cartucho" {% if ref.embalagem_escolhida=='Cartucho' %}selected{%
-                                        endif %}>Cartucho</option>
-                                    <option value="Colmeia" {% if ref.embalagem_escolhida=='Colmeia' %}selected{% endif
-                                        %}>Colmeia</option>
-                                    <option value="Saco" {% if ref.embalagem_escolhida=='Saco' %}selected{% endif %}>
-                                        Saco</option>
+                                    <option value="Cartucho" {{ 'selected' if sel=='cartucho' else '' }}>Cartucho
+                                    </option>
+                                    <option value="Colmeia" {{ 'selected' if sel=='colmeia' else '' }}>Colmeia</option>
+                                    <option value="Saco" {{ 'selected' if sel=='saco' else '' }}>Saco</option>
                                 </select>
                             </td>
+
                             <td><input type="number" step="0.01" name="preco_venda_{{ ref.referencia_id }}"
                                     class="form-control" value="{{ ref.preco_venda }}"></td>
                             <td><button type="button" class="btn btn-danger btn-sm remove-referencia"
@@ -113,7 +113,7 @@
             <button type="submit" class="btn btn-success me-2"><i class="fas fa-save"></i> Salvar Alterações</button>
             <a href="{{ url_for('routes.listar_margens_pedido') }}" class="btn btn-secondary">Cancelar</a>
         </div>
-        
+
     </form>
 </div>
 

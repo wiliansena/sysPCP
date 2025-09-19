@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+  .sheet {
+    background: #fff;
+    padding: 12px;
+    border-radius: 8px;
+    box-shadow: 0 5px 18px rgba(0, 0, 0, .08);
+  }
+
+  .tbl-sheet {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+  }
+
+  .tbl-sheet th,
+  .tbl-sheet td {
+    border: 1px solid #bbb;
+    padding: 6px 8px;
+    text-align: center;
+  }
+
+  .tbl-sheet thead th {
+    background: #f3f3f3;
+    font-weight: 700;
+  }
+
+  .celula-amarela {
+    background: #ffe799;
+  }
+
+  /* amarelo suave */
+  .col-hora {
+    width: 110px;
+    font-weight: 700;
+  }
+
+  .subhead {
+    font-size: .8rem;
+    color: #666;
+    display: block;
+  }
+
+  .titulo {
+    font-weight: 800;
+    letter-spacing: .2px;
+  }
+</style>
+
+<div class="container mt-4">
+
+  <!-- Topo reorganizado sem CSS extra -->
+  <div class="mb-3">
+    <div class="row g-2 align-items-center">
+      <div class="col-12 col-lg">
+        <h5 class="titulo mb-0">
+          PRODUÇÃO DIÁRIA CONVENCIONAL — {{ dia.strftime('%d/%m/%Y') }}
+        </h5>
+      </div>
+
+      <div class="col-12 col-lg-auto">
+        <form method="get" class="row row-cols-auto g-2 justify-content-lg-end align-items-center">
+          <div class="col">
+            <input type="date" name="data" class="form-control form-control-sm" value="{{ dia.strftime('%Y-%m-%d') }}">
+          </div>
+
+          <div class="col">
+            <button class="btn btn-sm btn-primary">
+              <i class="fas fa-rotate me-1"></i>
+              <span class="d-none d-sm-inline">Filtrar</span>
+            </button>
+          </div>
+
+          <div class="col">
+            <a class="btn btn-sm btn-secondary" href="{{ url_for('routes.listar_producoes_convencionais', data=dia) }}">
+              <i class="fa fa-undo me-1"></i>
+              <span class="d-none d-sm-inline">Voltar</span>
+            </a>
+          </div>
+
+          <div class="col">
+            <a href="{{ url_for('routes.nova_folha_producao_convencional', data=(data_sel|string) if data_sel else '') }}"
+              class="btn btn-sm btn-success">
+              <i class="fa-regular fa-clipboard me-1"></i>
+              <span class="d-none d-sm-inline">Nova Produção</span>
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  {% for bloco in maquinas_blocos %}
+  <div class="sheet mb-4">
+    <table class="tbl-sheet">
+      <thead>
+        <tr>
+          <th class="col-hora">HORA</th>
+          {% for m in bloco %}
+          <th>
+            {{ m.codigo if m.codigo is not none else m.id }}<br>
+            <span class="subhead">INJ</span>
+          </th>
+          {% endfor %}
+          <th><span class="subhead">TIPO/TOTAL</span></th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {% for h in horarios %}
+        <tr>
+          <td class="col-hora">{{ h.replace('h',':') }}</td>
+
+          {% for m in bloco %}
+          {% set regs = mapa_multi.get((h, m.id), []) %}
+          <td class="celula-amarela">
+            {% if regs %}
+            {% for r in regs %}
+            <span class="d-block fw-semibold">{{ r.quantidade|br_numero }}</span>
+            <small class="d-block text-muted" style="line-height:1;">{{ r.tipo_material }}</small>
+            {% if not loop.last %}<span class="d-block" style="height:4px;"></span>{% endif %}
+            {% endfor %}
+            {% endif %}
+          </td>
+
+          {% endfor %}
+
+          {# Totais por tipo no horário (todas as máquinas) #}
+          {% set ti = totais_por_intervalo.get(h, {}) %}
+          <td class="fw-semibold text-start" style="background:#eaf3ff">
+            {% set ordem_tipos = ['ALCA','SOLADO','MICRO'] %}
+            {% for t in ordem_tipos %}
+            {% if ti.get(t, 0) %}
+            <span class="badge bg-primary-subtle text-dark d-block mb-1">
+              {{ t }}: <strong>{{ ti.get(t) }}</strong>
+            </span>
+            {% endif %}
+            {% endfor %}
+          </td>
+        </tr>
+        {% endfor %}
+
+      </tbody>
+    </table>
+  </div>
+  {% endfor %}
+</div>
+<hr>
+<div class="sheet mb-4">
+  <table class="tbl-sheet" style="max-width:540px">
+    <thead>
+      <tr>
+        <th colspan="2" style="background:#004085; color:#fff">TOTAL DO DIA</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% set ordem_tipos = ['ALCA','SOLADO','MICRO'] %}
+      {% for t in ordem_tipos %}
+      {% if totais_dia.get(t, 0) %}
+      <tr>
+        <td class="text-start" style="background:#f0f8ff">{{ t }}</td>
+        <td class="fw-bold text-primary" style="background:#f0f8ff">{{ totais_dia.get(t) }}</td>
+      </tr>
+      {% endif %}
+      {% endfor %}
+      {% if not (totais_dia.get('ALCA') or totais_dia.get('SOLADO') or totais_dia.get('MICRO')) %}
+      <tr>
+        <td colspan="2" class="text-muted">Sem lançamentos para o dia.</td>
+      </tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+
+
+{% endblock %}

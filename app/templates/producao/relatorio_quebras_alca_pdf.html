@@ -1,0 +1,44 @@
+{% extends "base_relatorio_pdf.html" %}
+{% block content %}
+  <h2>Relatório — Quebras de Produção (Alça)</h2>
+
+  <div style="font-size:11px; margin-bottom:6px;">
+    {% if di %}<strong>Início:</strong> {{ di.strftime('%d/%m/%Y') }} · {% endif %}
+    {% if df %}<strong>Fim:</strong> {{ df.strftime('%d/%m/%Y') }} · {% endif %}
+    {% if alca %}<strong>Alça:</strong> {{ alca.referencia }} — {{ alca.descricao }}{% endif %}
+    {% if not (di or df or alca) %}Sem filtros aplicados{% endif %}
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width:90px;">Data</th>
+        <th>Alça</th>
+        <th>Tamanho</th>
+        <th style="width:90px;">Qtd</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for cab in itens %}
+        {% for lin in cab.linhas %}
+        <tr>
+          <td>{{ cab.data_quebra.strftime('%d/%m/%Y') }}</td>
+          <td>{{ cab.alca.referencia }} — {{ cab.alca.descricao }}</td>
+          <td>{{ lin.tamanho_nome }}</td>
+          <td>{{ lin.quantidade }}</td>
+        </tr>
+        {% endfor %}
+      {% else %}
+        <tr><td colspan="4">Nenhum registro.</td></tr>
+      {% endfor %}
+    </tbody>
+    {% if itens %}
+    <tfoot>
+      <tr>
+        <th colspan="3" style="text-align:right;">Total</th>
+        <th>{{ total }}</th>
+      </tr>
+    </tfoot>
+    {% endif %}
+  </table>
+{% endblock %}

@@ -17,6 +17,12 @@
             {{ form.funcao(class="form-control") }}
         </div>
 
+        <div class="col-md-3">
+            <label class="form-label"><strong>Setor:</strong></label>
+            {{ form.setor_id(class="form-select select2") }}
+        </div>
+        <hr>
+
         <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Salvar</button>
         <a href="{{ url_for('routes.listar_funcionarios') }}" class="btn btn-secondary">Cancelar</a>
     </form>

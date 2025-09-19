@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card shadow-sm mt-3">
+    <!-- Cabeçalho -->
+    <div class="card-header">
+        <div class="d-flex flex-wrap justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-2">
+                <h5 class="mb-0"><i class="fas fa-user-check me-2"></i> Produção por Funcionário</h5>
+                {% if pagination %}<span class="badge bg-secondary">{{ pagination.total }}</span>{% endif %}
+            </div>
+
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <a href="{{ url_for('routes.nova_producao_funcionario') }}" class="btn btn-success">
+                    <i class="fas fa-plus"></i> Novo
+                </a>
+                <a href="{{ url_for('routes.relatorio_producoes_funcionarios',
+                             nome=nome, inicio=inicio, fim=fim) }}" class="btn btn-outline-danger">
+                    <i class="fa fa-file-alt me-1"></i> Relatório
+                </a>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="px-3 pt-3">
+        <form method="GET" action="{{ url_for('routes.listar_producoes_funcionarios') }}">
+            <div class="row g-2">
+        <div class="col-md-4">
+          <label class="form-label mb-1">Funcionário</label>
+          <select name="funcionario_id" class="form-select select2">
+            <option value="">Todos</option>
+            {% for fid, fnome in funcionarios %}
+              <option value="{{ fid }}" {{ 'selected' if funcionario_id==fid else '' }}>{{ fnome }}</option>
+            {% endfor %}
+          </select>
+        </div>
+                <div class="col-md-3">
+                    <label class="form-label mb-1">Início</label>
+                    <input type="date" name="inicio" class="form-control" value="{{ inicio or '' }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label mb-1">Fim</label>
+                    <input type="date" name="fim" class="form-control" value="{{ fim or '' }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label mb-1">Por página</label>
+                    <select name="per_page" class="form-select" onchange="this.form.submit()">
+                        {% for n in [10,20,30,50,100] %}
+                        <option value="{{ n }}" {{ 'selected' if per_page==n else '' }}>{{ n }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="mt-3 d-flex gap-2">
+                <button type="submit" class="btn btn-sm btn-primary">
+                    <i class="fas fa-filter me-1"></i> Filtrar
+                </button>
+                <a href="{{ url_for('routes.listar_producoes_funcionarios') }}" class="btn btn-sm btn-secondary">
+                    Limpar
+                </a>
+            </div>
+        </form>
+    </div>
+    <hr>
+    <!-- Tabela -->
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="text-nowrap">Data</th>
+                        <th class="text-nowrap">Funcionário</th>
+                        <th class="text-end pe-4 text-nowrap" style="min-width:90px;">Quantidade</th>
+                        <th class="text-center text-nowrap" style="width:120px">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for it in itens %}
+                    <tr>
+                        <td>{{ it.data_producao.strftime('%d/%m/%Y') }}</td>
+                        <td class="text-nowrap">{{ it.funcionario.nome }}</td>
+                        <td class="text-end pe-4">{{ it.quantidade|br_numero }}</td>
+                        <td class="text-end">
+                            <div class="btn-group">
+                                <a href="{{ url_for('routes.editar_producao_funcionario', id=it.id) }}"
+                                    class="btn btn-warning btn-sm">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <form action="{{ url_for('routes.excluir_producao_funcionario', id=it.id) }}"
+                                    method="post" onsubmit="return confirm('Tem certeza que deseja excluir?')"
+                                    class="d-inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-danger btn-sm">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted py-4">
+                            Nenhum registro encontrado.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Rodapé de paginação -->
+    {% if pagination and pagination.pages > 1 %}
+    <div class="card-footer d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div class="small text-muted">
+            Página {{ pagination.page }} de {{ pagination.pages }}
+            — exibindo {{ itens|length }} de {{ pagination.total }} registros
+        </div>
+        <nav aria-label="Paginação">
+            <ul class="pagination mb-0">
+                <li class="page-item {{ 'disabled' if not pagination.has_prev }}">
+                    <a class="page-link"
+                        href="{{ url_for('routes.listar_producoes_funcionarios') }}?{{ qs_no_page }}{% if qs_no_page %}&{% endif %}page=1"
+                        aria-label="Primeira">«</a>
+                </li>
+                <li class="page-item {{ 'disabled' if not pagination.has_prev }}">
+                    <a class="page-link"
+                        href="{{ url_for('routes.listar_producoes_funcionarios') }}?{{ qs_no_page }}{% if qs_no_page %}&{% endif %}page={{ pagination.prev_num or 1 }}"
+                        aria-label="Anterior">‹</a>
+                </li>
+                {% set start = pagination.page - 2 if pagination.page - 2 > 1 else 1 %}
+                {% set end = pagination.page + 2 if pagination.page + 2 < pagination.pages else pagination.pages %} {%
+                    for p in range(start, end + 1) %} <li class="page-item {{ 'active' if p == pagination.page }}">
+                    <a class="page-link"
+                        href="{{ url_for('routes.listar_producoes_funcionarios') }}?{{ qs_no_page }}{% if qs_no_page %}&{% endif %}page={{ p }}">{{
+                        p }}</a>
+                    </li>
+                    {% endfor %}
+                    <li class="page-item {{ 'disabled' if not pagination.has_next }}">
+                        <a class="page-link"
+                            href="{{ url_for('routes.listar_producoes_funcionarios') }}?{{ qs_no_page }}{% if qs_no_page %}&{% endif %}page={{ pagination.next_num or pagination.pages }}"
+                            aria-label="Próxima">›</a>
+                    </li>
+                    <li class="page-item {{ 'disabled' if not pagination.has_next }}">
+                        <a class="page-link"
+                            href="{{ url_for('routes.listar_producoes_funcionarios') }}?{{ qs_no_page }}{% if qs_no_page %}&{% endif %}page={{ pagination.pages }}"
+                            aria-label="Última">»</a>
+                    </li>
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

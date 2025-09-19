@@ -1,0 +1,39 @@
+{% extends "base_relatorio_pdf.html" %}
+{% block content %}
+  <h2>Relatório — Produção por Funcionário</h2>
+
+  <p>
+    {% if nome %}<strong>Funcionário:</strong> {{ nome }}<br>{% endif %}
+    {% if di %}<strong>Início:</strong> {{ di.strftime('%d/%m/%Y') }}<br>{% endif %}
+    {% if df %}<strong>Fim:</strong> {{ df.strftime('%d/%m/%Y') }}<br>{% endif %}
+  </p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Data</th>
+        <th>Funcionário</th>
+        <th>Quantidade</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for it in itens %}
+      <tr>
+        <td>{{ it.data_producao.strftime('%d/%m/%Y') }}</td>
+        <td>{{ it.funcionario.nome }}</td>
+        <td>{{ it.quantidade|br_numero }}</td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="3">Nenhum registro encontrado.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <th colspan="2" style="text-align:right">Total</th>
+        <th>{{ total|br_numero }}</th>
+      </tr>
+    </tfoot>
+  </table>
+{% endblock %}

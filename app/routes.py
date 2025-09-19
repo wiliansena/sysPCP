@@ -4,8 +4,8 @@ from flask import Blueprint, jsonify, render_template, redirect, url_for, flash,
 from flask_login import current_user, login_required
 import pytz
 from app import db, csrf
-from app.models import Colaborador, ComponenteCor, ComponentePrecoHistorico, Cor, Estado, FormulacaoSolado, FormulacaoSoladoFriso, Funcionario, Grade, Linha, LogAcao, Manutencao, ManutencaoMaquina, ManutencaoPeca, Maquina, MargemPorPedido, MargemPorPedidoReferencia, Material, MaterialCor, Matriz, MovimentacaoComponente, MovimentacaoMaterial, MovimentacaoMatriz, Municipio, OrdemCompra, Peca, Permissao, PlanejamentoProducao, ProducaoConvencional, ProducaoDiaria, ProducaoRotativa, Referencia, Componente, CustoOperacional, ReferenciaAlca, ReferenciaComponentes, ReferenciaCustoOperacional, ReferenciaEmbalagem1, ReferenciaEmbalagem2, ReferenciaEmbalagem3, ReferenciaMaoDeObra, ReferenciaSolado, Remessa, Salario, MaoDeObra, Margem, TamanhoGrade, TamanhoMatriz, TamanhoMovimentacao, Tipo, TipoColaborador, TipoMaquina, TrocaHorario, TrocaMatriz, Usuario, hora_brasilia
-from app.forms import ColaboradorForm, CorForm, DeleteForm, EstadoForm, ExcluirProducaoPorDataForm, FuncionarioForm, GradeForm, LinhaForm, ManutencaoForm, MaquinaForm, MargemForm, MargemPorPedidoForm, MargemPorPedidoReferenciaForm, MaterialForm, MatrizForm, MovimentacaoMatrizForm, OrdemCompraForm, PecaForm, PlanejamentoProducaoForm, ProducaoConvencionalForm, ProducaoDiariaForm, ProducaoRotativaForm, ReferenciaForm, ComponenteForm, CustoOperacionalForm, RemessaForm, SalarioForm, MaoDeObraForm, TipoForm, TipoMaquinaForm, TrocaMatrizForm, UsuarioForm
+from app.models import Colaborador, ComponenteCor, ComponentePrecoHistorico, Cor, Estado, FormulacaoSolado, FormulacaoSoladoFriso, Funcionario, Grade, Linha, LogAcao, Manutencao, ManutencaoMaquina, ManutencaoPeca, Maquina, MargemPorPedido, MargemPorPedidoReferencia, Material, MaterialCor, Matriz, MovimentacaoComponente, MovimentacaoMaterial, MovimentacaoMatriz, Municipio, OrdemCompra, Peca, Permissao, PlanejamentoProducao, ProducaoConvencional, ProducaoDiaria, ProducaoFuncionario, ProducaoRotativa, ProducaoSetor, QuebraAlca, QuebraAlcaLinha, QuebraSolado, QuebraSoladoLinha, Referencia, Componente, CustoOperacional, ReferenciaAlca, ReferenciaComponentes, ReferenciaCustoOperacional, ReferenciaEmbalagem1, ReferenciaEmbalagem2, ReferenciaEmbalagem3, ReferenciaMaoDeObra, ReferenciaSolado, Remessa, Salario, MaoDeObra, Margem, Setor, TamanhoGrade, TamanhoMatriz, TamanhoMovimentacao, Tipo, TipoColaborador, TipoMaquina, TrocaHorario, TrocaMatriz, Usuario, hora_brasilia
+from app.forms import ColaboradorForm, CorForm, DeleteForm, EstadoForm, ExcluirProducaoPorDataForm, FuncionarioForm, GradeForm, LinhaForm, ManutencaoForm, MaquinaForm, MargemForm, MargemPorPedidoForm, MargemPorPedidoReferenciaForm, MaterialForm, MatrizForm, MovimentacaoMatrizForm, OrdemCompraForm, PecaForm, PlanejamentoProducaoForm, ProducaoConvencionalForm, ProducaoDiariaForm, ProducaoFuncionarioForm, ProducaoRotativaForm, ProducaoSetorForm, QuebraAlcaForm, QuebraSoladoForm, ReferenciaForm, ComponenteForm, CustoOperacionalForm, RemessaForm, SalarioForm, MaoDeObraForm, SetorForm, TipoForm, TipoMaquinaForm, TrocaMatrizForm, UsuarioForm
 import os
 from flask import render_template, redirect, url_for, flash, request
 from app.models import Solado, Tamanho, Componente, FormulacaoSolado, Alca, TamanhoAlca, FormulacaoAlca, Colecao
@@ -33,6 +33,7 @@ from sqlalchemy import func
 from flask_wtf.csrf import validate_csrf, CSRFError
 from sqlalchemy import asc, desc
 from flask import Response
+from datetime import date, datetime
 
 
 bp = Blueprint('routes', __name__)
@@ -145,7 +146,7 @@ def gerenciar_permissoes(id):
 
     categorias = ["cadastro","comercial","financeiro","administrativo","desenvolvimento","manutencao","margens",
                   "custoproducao", "componentes",
-                  "controleproducao",
+                  "ppcp","controleproducao",
                   "funcionario", "usuarios", "trocar_senha"]
     acoes = ["criar", "ver", "editar", "excluir"]
 
@@ -2669,7 +2670,7 @@ def editar_margem_pedido(id):
 
         for ref_id in referencias_ids:
             quantidade = request.form.get(f"quantidade_{ref_id}", type=int)
-            embalagem_escolhida = request.form.get(f"embalagem_{ref_id}")
+            embalagem_escolhida = (request.form.get(f"embalagem_{ref_id}") or "").strip().lower()
             preco_venda = Decimal(request.form.get(f"preco_venda_{ref_id}", "0.00"))
 
             referencia = Referencia.query.get(ref_id)
@@ -3980,10 +3981,13 @@ def listar_funcionarios():
 @requer_permissao('funcionario', 'criar')
 def novo_funcionario():
     form = FuncionarioForm()
+    form.setor_id.choices = [(s.id, s.nome) for s in Setor.query.order_by(Setor.nome).all()]
+    
     if form.validate_on_submit():
         novo_funcionario = Funcionario(
             nome=form.nome.data,
-            funcao=form.funcao.data
+            funcao=form.funcao.data,
+            setor_id = form.setor_id.data
         )
         db.session.add(novo_funcionario)
         db.session.commit()
@@ -3999,10 +4003,12 @@ def novo_funcionario():
 def editar_funcionario(id):
     funcionario = Funcionario.query.get_or_404(id)
     form = FuncionarioForm(obj=funcionario)
+    form.setor_id.choices = [(s.id, s.nome) for s in Setor.query.order_by(Setor.nome).all()]
 
     if form.validate_on_submit():
         funcionario.nome = form.nome.data
         funcionario.funcao = form.funcao.data
+        funcionario.setor_id = form.setor_id.data
         db.session.commit()
         flash("Funcionário atualizado!", "success")
         return redirect(url_for('routes.listar_funcionarios'))
@@ -4018,6 +4024,54 @@ def excluir_funcionario(id):
     db.session.commit()
     flash("Funcionário removido!", "success")
     return redirect(url_for('routes.listar_funcionarios'))
+
+
+# Listar
+@bp.route('/setores')
+@login_required
+@requer_permissao('controleproducao', 'ver')
+def listar_setores():
+    setores = Setor.query.order_by(Setor.id.asc()).all()
+    return render_template('listar_setores.html', setores=setores)
+
+# Criar
+@bp.route('/setores/novo', methods=['GET', 'POST'])
+@login_required
+@requer_permissao('controleproducao', 'criar')
+def novo_setor():
+    form = SetorForm()
+    if form.validate_on_submit():
+        setor = Setor(nome=form.nome.data)
+        db.session.add(setor)
+        db.session.commit()
+        flash('Setor criado com sucesso!', 'success')
+        return redirect(url_for('routes.listar_setores'))
+    return render_template('novo_setor.html', form=form)
+
+# Editar
+@bp.route('/setores/editar/<int:id>', methods=['GET', 'POST'])
+@login_required
+@requer_permissao('controleproducao', 'editar')
+def editar_setor(id):
+    setor = Setor.query.get_or_404(id)
+    form = SetorForm(obj=setor)
+    if form.validate_on_submit():
+        setor.nome = form.nome.data
+        db.session.commit()
+        flash('Setor atualizado com sucesso!', 'success')
+        return redirect(url_for('routes.listar_setores'))
+    return render_template('editar_setor.html', form=form, setor=setor)
+
+# Excluir
+@bp.route('/setores/excluir/<int:id>', methods=['POST'])
+@login_required
+@requer_permissao('controleproducao', 'excluir')
+def excluir_setor(id):
+    setor = Setor.query.get_or_404(id)
+    db.session.delete(setor)
+    db.session.commit()
+    flash('Setor excluído com sucesso!', 'success')
+    return redirect(url_for('routes.listar_setores'))
 
 
 
@@ -4220,31 +4274,66 @@ def excluir_ordemCompra(id):
     return redirect(url_for('routes.listar_ordemCompras'))
 
 
+from sqlalchemy import func, or_
 
-
-@bp.route('/manutencoes')
+@bp.route("/manutencoes", methods=["GET"])
 @login_required
-@requer_permissao('manutencao', 'ver')
+@requer_permissao('controleproducao', 'ver')
 def listar_manutencoes():
-    manutencoes_query = Manutencao.query.options(
-        db.joinedload(Manutencao.solicitante)
-    ).all()
+    from app.models import Manutencao, Funcionario, Setor  # ajuste import
 
-    manutencoes = {"Aberto": [], "Verificando": [], "Finalizado": []}
-    prioridades = {"Aberto": {}, "Verificando": {}, "Finalizado": {}}
+    # Responsáveis SOMENTE do setor MANUTENÇÃO (por nome) OU setor_id == 2
+    responsaveis = (
+        Funcionario.query
+        .join(Setor, Funcionario.setor_id == Setor.id)
+        .filter(
+            or_(
+                func.upper(Setor.nome) == 'MANUTENCAO',  # ou 'MANUTENÇÃO' se preferir com acento
+                Setor.id == 2
+            )
+        )
+        .order_by(Funcionario.nome.asc())
+        .all()
+    )
 
-    for status in manutencoes:
-        prioridades[status] = {"Baixa": 0, "Normal": 0, "Alta": 0, "Urgente": 0}
+    # ids válidos (para evitar filtrar por alguém fora do setor Manutenção)
+    ids_responsaveis_validos = {r.id for r in responsaveis}
 
-    for m in manutencoes_query:
-        manutencoes[m.status].append(m)
-        prioridades[m.status][m.prioridade] += 1
+    responsavel_id = request.args.get("responsavel_id", type=int)
 
-    # ✅ Ordenar dentro de cada status pela ordem decrescente de ID (mais recente primeiro)
-    for status in manutencoes:
-        manutencoes[status] = sorted(manutencoes[status], key=lambda x: x.id, reverse=True)
+    # Base query
+    q = Manutencao.query
 
-    return render_template('listar_manutencoes.html', manutencoes=manutencoes, prioridades=prioridades)
+    # Só aplica o filtro se o id estiver dentro do conjunto permitido
+    if responsavel_id and responsavel_id in ids_responsaveis_validos:
+        q = q.filter(Manutencao.responsavel_id == responsavel_id)
+
+    # Carrega já filtradas/ordenadas
+    itens = q.order_by(Manutencao.id.desc()).all()
+
+    # Agrupa por status
+    grupos = {"Aberto": [], "Verificando": [], "Finalizado": []}
+    for m in itens:
+        grupos.setdefault(m.status, []).append(m)
+
+    # Contadores de prioridades por status
+    prioridades = {}
+    for status, lista in grupos.items():
+        cont = {"Urgente": 0, "Alta": 0, "Normal": 0, "Baixa": 0}
+        for m in lista:
+            if m.prioridade in cont:
+                cont[m.prioridade] += 1
+        prioridades[status] = cont
+
+    return render_template(
+        "listar_manutencoes.html",
+        manutencoes=grupos,
+        prioridades=prioridades,
+        responsaveis=responsaveis,  # <-- já filtrados
+        responsavel_id_selecionado=responsavel_id if responsavel_id in ids_responsaveis_validos else None
+    )
+
+
 
 
 
@@ -4266,6 +4355,7 @@ def ver_manutencao(id):
 
 
 # ROTA nova_manutencao
+from sqlalchemy import func, or_
 
 @bp.route('/manutencao/nova', methods=['GET', 'POST'])
 @login_required
@@ -4273,9 +4363,26 @@ def ver_manutencao(id):
 def nova_manutencao():
     form = ManutencaoForm()
 
-    maquinas = Maquina.query.all()
-    funcionarios = Funcionario.query.all()
-    pecas = Peca.query.all()
+    # Máquinas e peças (sem filtro)
+    maquinas = Maquina.query.order_by(Maquina.codigo).all()
+    pecas = Peca.query.order_by(Peca.descricao).all()
+
+    # Solicitante: todos os funcionários (sem filtro)
+    funcionarios_solicitantes = Funcionario.query.order_by(Funcionario.nome).all()
+
+    # Responsável: SOMENTE quem é do setor MANUTENÇÃO (por nome) OU setor_id == 2
+    funcionarios_responsaveis = (
+        Funcionario.query
+        .join(Setor, Funcionario.setor_id == Setor.id)
+        .filter(
+            or_(
+                func.upper(Setor.nome) == 'MANUTENCAO',   # compara pelo nome (em maiúsculas)
+                Setor.id == 2                             # ou pelo id 2
+            )
+        )
+        .order_by(Funcionario.nome)
+        .all()
+    )
 
     if form.validate_on_submit():
         manutencao = Manutencao(
@@ -4287,19 +4394,17 @@ def nova_manutencao():
             responsavel_id=request.form.get("responsavel_id") or None,
             descricao=form.descricao.data
         )
-
-
         db.session.add(manutencao)
-        db.session.flush()  # 🔹 Garante o ID da manutenção antes de associar as outras tabelas
+        db.session.flush()  # garante ID para vinculações
 
-        # 🔹 Vincula máquinas selecionadas
+        # Vincula máquinas
         for maquina_id in request.form.getlist('maquina_id[]'):
             db.session.add(ManutencaoMaquina(
                 manutencao_id=manutencao.id,
                 maquina_id=int(maquina_id)
             ))
 
-        # 🔹 Vincula peças selecionados
+        # Vincula peças
         for peca_id in request.form.getlist('peca_id[]'):
             db.session.add(ManutencaoPeca(
                 manutencao_id=manutencao.id,
@@ -4314,9 +4419,11 @@ def nova_manutencao():
         'nova_manutencao.html',
         form=form,
         maquinas=maquinas,
-        funcionarios=funcionarios, # 🔹 Passa os funcionários pro template
-        pecas = pecas
+        pecas=pecas,
+        funcionarios_solicitantes=funcionarios_solicitantes,  # todos
+        funcionarios_responsaveis=funcionarios_responsaveis    # filtrados (MANUTENÇÃO)
     )
+
 
 # rota de editar manutenção com carregamento de máquinas, componentes e funcionários corretamente
 @bp.route('/manutencao/editar/<int:id>', methods=['GET', 'POST'])
@@ -4327,8 +4434,24 @@ def editar_manutencao(id):
     form = ManutencaoForm()
 
     maquinas = Maquina.query.all()
-    funcionarios = Funcionario.query.all()
     pecas = Peca.query.all()
+
+    # Solicitante: todos os funcionários (sem filtro)
+    funcionarios_solicitantes = Funcionario.query.order_by(Funcionario.nome).all()
+
+    # Responsável: SOMENTE quem é do setor MANUTENÇÃO (por nome) OU setor_id == 2
+    funcionarios_responsaveis = (
+        Funcionario.query
+        .join(Setor, Funcionario.setor_id == Setor.id)
+        .filter(
+            or_(
+                func.upper(Setor.nome) == 'MANUTENCAO',   # compara pelo nome (em maiúsculas)
+                Setor.id == 2                             # ou pelo id 2
+            )
+        )
+        .order_by(Funcionario.nome)
+        .all()
+    )
 
     if form.validate_on_submit():
         
@@ -4391,7 +4514,8 @@ def editar_manutencao(id):
         form=form,
         manutencao=manutencao,
         maquinas=maquinas,
-        funcionarios=funcionarios,
+        funcionarios_solicitantes=funcionarios_solicitantes, #todos
+        funcionarios_responsaveis=funcionarios_responsaveis, #filtrados pela manutencao
         pecas = pecas
     )
 
@@ -4711,7 +4835,7 @@ def excluir_grade(id):
 
 @bp.route('/remessas')
 @login_required
-@requer_permissao('controleproducao', 'editar')
+@requer_permissao('ppcp', 'ver')
 def listar_remessas():
     remessas = Remessa.query.order_by(Remessa.data_criacao.desc()).all()
     delete_form = DeleteForm()
@@ -4720,7 +4844,7 @@ def listar_remessas():
 
 @bp.route('/remessa/nova', methods=['GET', 'POST'])
 @login_required
-@requer_permissao('controleproducao', 'criar')
+@requer_permissao('ppcp', 'criar')
 def nova_remessa():
     form = RemessaForm()
     if form.validate_on_submit():
@@ -4736,7 +4860,7 @@ def nova_remessa():
 
 @bp.route('/remessa/editar/<int:id>', methods=['GET', 'POST'])
 @login_required
-@requer_permissao('controleproducao', 'editar')
+@requer_permissao('ppcp', 'editar')
 def editar_remessa(id):
     remessa = Remessa.query.get_or_404(id)
     form = RemessaForm(obj=remessa)
@@ -4775,7 +4899,7 @@ def editar_remessa(id):
 
 @bp.route('/remessa/excluir/<int:id>', methods=['POST'])
 @login_required
-@requer_permissao('controleproducao', 'excluir')
+@requer_permissao('ppcp', 'excluir')
 def excluir_remessa(id):
     form = DeleteForm()
     
@@ -4812,14 +4936,14 @@ def excluir_remessa(id):
 
 
 
-
+### PLANEJAMENTOS ######
 
 @bp.route('/planejamentos')
 @login_required
-@requer_permissao('controleproducao', 'ver')
+@requer_permissao('ppcp', 'ver')
 def listar_planejamentos():
-    remessa_ids = request.args.getlist('remessa_id')  # agora não força int logo aqui
-    status = request.args.get('status')  # ← continua igual
+    remessa_ids = request.args.getlist('remessa_id')
+    status = request.args.get('status')
 
     planejamentos = []
     grupos = {
@@ -4868,7 +4992,7 @@ def listar_planejamentos():
 
 @bp.route('/relatorio_planejamentos_pdf')
 @login_required
-@requer_permissao('controleproducao', 'ver')
+@requer_permissao('ppcp', 'ver')
 def relatorio_planejamentos_pdf():
     remessa_ids = request.args.getlist('remessa_id')
     status = request.args.get('status')
@@ -4924,7 +5048,7 @@ def relatorio_planejamentos_pdf():
 
 @bp.route('/relatorio_planejamentos')
 @login_required
-@requer_permissao('controleproducao', 'ver')
+@requer_permissao('ppcp', 'ver')
 def relatorio_planejamentos():
     remessa_ids = request.args.getlist('remessa_id')
     status = request.args.get('status')
@@ -4976,7 +5100,7 @@ def relatorio_planejamentos():
 
 @bp.route('/planejamento/ver/<int:id>')
 @login_required
-@requer_permissao('controleproducao', 'ver')
+@requer_permissao('ppcp', 'ver')
 def ver_planejamento(id):
     planejamento = PlanejamentoProducao.query.get_or_404(id)
     return render_template('ver_planejamento.html', planejamento=planejamento)
@@ -4995,6 +5119,7 @@ def novo_planejamento():
             remessa_id = form.remessa_id.data,
             referencia=form.referencia.data,
             quantidade=form.quantidade.data,
+            preco_medio=form.preco_medio.data,
             setor=form.setor.data,
             linha_id=form.linha_id.data,
             esteira=form.esteira.data,
@@ -5015,7 +5140,7 @@ def novo_planejamento():
 
 @bp.route('/planejamento/editar/<int:id>', methods=['GET', 'POST'])
 @login_required
-@requer_permissao('controleproducao', 'editar')
+@requer_permissao('ppcp', 'editar')
 def editar_planejamento(id):
     planejamento = PlanejamentoProducao.query.get_or_404(id)
     form = PlanejamentoProducaoForm(obj=planejamento)
@@ -5033,6 +5158,7 @@ def editar_planejamento(id):
     if form.validate_on_submit():
         planejamento.referencia = form.referencia.data
         planejamento.quantidade = form.quantidade.data
+        planejamento.preco_medio = form.preco_medio.data
         planejamento.setor = form.setor.data
         planejamento.linha_id = form.linha_id.data
         planejamento.remessa_id = form.remessa_id.data
@@ -5056,7 +5182,7 @@ def editar_planejamento(id):
 
 @bp.route('/planejamento/atualizar_campo', methods=['POST'])
 @login_required
-@requer_permissao('controleproducao', 'editar')
+@requer_permissao('ppcp', 'editar')
 def atualizar_campo_planejamento():
     from flask import request, jsonify
     from app.models import PlanejamentoProducao  # Import correto!
@@ -5094,7 +5220,7 @@ def atualizar_campo_planejamento():
 
 @bp.route('/planejamento/excluir/<int:id>', methods=['POST'])
 @login_required
-@requer_permissao('controleproducao', 'excluir')
+@requer_permissao('ppcp', 'excluir')
 def excluir_planejamento(id):
     planejamento = PlanejamentoProducao.query.get_or_404(id)
     db.session.delete(planejamento)
@@ -5105,14 +5231,14 @@ def excluir_planejamento(id):
 
 @bp.route('/planejamento/importacao/novo', methods=['GET', 'POST'])
 @login_required
-@requer_permissao('controleproducao', 'criar')
+@requer_permissao('ppcp', 'criar')
 def nova_importacao_planejamentos():
     return render_template('importar_planejamentos.html')
 
 
 @bp.route('/planejamento/importar', methods=['POST'])
 @login_required
-@requer_permissao('controleproducao', 'criar')
+@requer_permissao('ppcp', 'criar')
 def importar_planejamentos():
     arquivo = request.files.get('arquivo')
     if not arquivo:
@@ -5191,7 +5317,7 @@ def importar_planejamentos():
 
 @bp.route('/planejamento/prodfat', methods=['GET'])
 @login_required
-@requer_permissao('controleproducao', 'ver')
+@requer_permissao('ppcp', 'ver')
 def listar_prodfat():
     resultados = []
     total_faturado = 0
@@ -5253,7 +5379,7 @@ def listar_prodfat():
 
 @bp.route('/planejamento/importar_prodfat', methods=['GET', 'POST'])
 @login_required
-@requer_permissao('controleproducao', 'criar')
+@requer_permissao('ppcp', 'criar')
 def importar_producao_faturamento():
     if request.method == 'POST':
         arquivo = request.files.get('arquivo')
@@ -5351,7 +5477,7 @@ def importar_producao_faturamento():
 
 @bp.route('/planejamento/relatorio_prodxfat_pdf')
 @login_required
-@requer_permissao('controleproducao', 'ver')
+@requer_permissao('ppcp', 'ver')
 def relatorio_prodxfat_pdf():
     data_inicio = request.args.get('data_inicio')
     data_fim = request.args.get('data_fim')
@@ -5416,7 +5542,7 @@ def relatorio_prodxfat_pdf():
 
 @bp.route('/planejamento/grafico_prodfat')
 @login_required
-@requer_permissao('controleproducao', 'ver')
+@requer_permissao('ppcp', 'ver')
 def grafico_prodfat():
     data_inicio = request.args.get('data_inicio')
     data_fim = request.args.get('data_fim')
@@ -5435,7 +5561,7 @@ def grafico_prodfat():
 
 @bp.route('/planejamento/grafico_prodfat_img')
 @login_required
-@requer_permissao('controleproducao', 'ver')
+@requer_permissao('ppcp', 'ver')
 def grafico_prodfat_img():
     from matplotlib.figure import Figure
     from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
@@ -5536,32 +5662,41 @@ def grafico_prodfat_img():
 
 @bp.route('/producao_diaria/ver/<int:id>')
 @login_required
+@requer_permissao('ppcp', 'ver')
 def ver_producao_diaria(id):
     producao = ProducaoDiaria.query.get_or_404(id)
     form = DeleteForm()
     return render_template('ver_producao_diaria.html', producao=producao, form=form)
 
+
 @bp.route('/producao_diaria/nova', methods=['GET', 'POST'])
 @login_required
+@requer_permissao('ppcp', 'criar')
 def nova_producao_diaria():
     form = ProducaoDiariaForm()
 
-    # Preenche as opções do SelectField
+    # choices (mantém assim para validação do WTForms)
     form.planejamento_id.choices = [
         (p.id, f"{p.referencia} - Rem: ({p.remessa.codigo}) - {p.quantidade} pares")
         for p in PlanejamentoProducao.query.all()
     ]
 
+    # 👇 adições leves para o template
+    remessas = Remessa.query.order_by(Remessa.codigo).all()
+    planejamentos = (PlanejamentoProducao.query
+                     .join(PlanejamentoProducao.remessa)
+                     .add_entity(Remessa)  # opcional
+                     .all())
+
     if form.validate_on_submit():
         planejamento = PlanejamentoProducao.query.get(form.planejamento_id.data)
-
         if not planejamento:
             flash('Planejamento não encontrado.', 'danger')
-            return render_template('nova_producao_diaria.html', form=form)
+            return render_template('nova_producao_diaria.html', form=form,
+                                   remessas=remessas, planejamentos=[p for p, _ in planejamentos])
 
-        # Garante que o preco_medio não seja None
-        preco = planejamento.preco_medio if planejamento.preco_medio else 0.0
-        faturamento = form.quantidade.data * preco
+        preco = float(planejamento.preco_medio or 0)
+        faturamento = (form.quantidade.data or 0) * preco
 
         producao = ProducaoDiaria(
             data_producao=form.data_producao.data,
@@ -5574,12 +5709,16 @@ def nova_producao_diaria():
         flash('Produção diária cadastrada com sucesso.', 'success')
         return redirect(url_for('routes.listar_prodfat'))
 
-    return render_template('nova_producao_diaria.html', form=form)
+    # importante: enviar listas na primeira renderização
+    return render_template('nova_producao_diaria.html', form=form,
+                           remessas=remessas,
+                           planejamentos=[p for p, _ in planejamentos])
 
 
 
 @bp.route('/producao_diaria/editar/<int:id>', methods=['GET', 'POST'])
 @login_required
+@requer_permissao('ppcp', 'editar')
 def editar_producao_diaria(id):
     producao = ProducaoDiaria.query.get_or_404(id)
     form = ProducaoDiariaForm(obj=producao)
@@ -5618,6 +5757,7 @@ def editar_producao_diaria(id):
 # Excluir produção diária
 @bp.route('/producao_diaria/excluir/<int:id>', methods=['POST'])
 @login_required
+@requer_permissao('ppcp', 'excluir')
 def excluir_producao_diaria(id):
     producao = ProducaoDiaria.query.get_or_404(id)
     db.session.delete(producao)
@@ -5628,6 +5768,7 @@ def excluir_producao_diaria(id):
 
 @bp.route('/excluir_producao_por_data', methods=['GET', 'POST'])
 @login_required
+@requer_permissao('ppcp', 'excluir')
 @requer_permissao('controleproducao', 'editar')
 def excluir_producao_por_data():
     form = ExcluirProducaoPorDataForm()
@@ -7065,3 +7206,1721 @@ def excluir_producao_convencional(id):
         flash(f"Erro inesperado ao excluir a produção Convencional: {str(e)}", "danger")
 
     return redirect(url_for('routes.listar_producoes_convencionais'))
+
+
+
+### PRODUCAO FUNCIONARIOS #####
+# ========== LISTAGEM (com paginação) ==========
+# ------- LISTAR (Funcionários) -------
+@bp.route('/producao_funcionario', methods=['GET'])
+@login_required
+@requer_permissao('controleproducao', 'ver')
+def listar_producoes_funcionarios():
+    from urllib.parse import urlencode
+    from datetime import datetime
+
+    funcionarios = [(f.id, f.nome) for f in Funcionario.query.order_by(Funcionario.nome).all()]
+
+    # filtros
+    funcionario_id   = request.args.get('funcionario_id', type=int)   
+    f_inicio = (request.args.get('inicio') or '').strip()     # 'YYYY-MM-DD'
+    f_fim    = (request.args.get('fim') or '').strip()        # 'YYYY-MM-DD'
+    page     = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 20, type=int)
+    per_page = max(5, min(per_page, 200))
+
+    # base query
+    q = (ProducaoFuncionario.query
+         .join(Funcionario)
+         .order_by(
+            ProducaoFuncionario.data_producao.desc(),
+            ProducaoFuncionario.id.desc()
+         ))
+
+
+    if funcionario_id:
+        q = q.filter(ProducaoFuncionario.funcionario_id == funcionario_id)
+
+    di = df = None
+    if f_inicio:
+        try:
+            di = datetime.strptime(f_inicio, '%Y-%m-%d').date()
+            q = q.filter(ProducaoFuncionario.data_producao >= di)
+        except Exception:
+            di = None  # opcional: flash('Data inicial inválida.', 'warning')
+
+    if f_fim:
+        try:
+            df = datetime.strptime(f_fim, '%Y-%m-%d').date()
+            q = q.filter(ProducaoFuncionario.data_producao <= df)
+        except Exception:
+            df = None  # opcional: flash('Data final inválida.', 'warning')
+
+    # paginação compatível com Flask-SQLAlchemy 2.x e 3.x
+    try:
+        pagination = q.paginate(page=page, per_page=per_page, error_out=False)
+    except AttributeError:
+        from app import db
+        pagination = db.paginate(q, page=page, per_page=per_page, error_out=False)
+
+    itens = pagination.items
+
+    # monta querystring SEM o parâmetro page (para construir os links)
+    qs_dict = request.args.to_dict(flat=True)
+    qs_dict.pop('page', None)
+    qs_no_page = urlencode(qs_dict)
+
+    return render_template(
+        'producao/listar_producoes_funcionarios.html',
+        itens=itens,
+        pagination=pagination,
+        per_page=per_page,
+        funcionarios=funcionarios,
+        funcionario_id=funcionario_id,
+        inicio=f_inicio,
+        fim=f_fim,
+        qs_no_page=qs_no_page
+    )
+
+
+
+# ========== CRUD (novo/editar/excluir)
+@bp.route('/producao_funcionario/nova', methods=['GET', 'POST'])
+@login_required
+@requer_permissao('controleproducao', 'criar')
+def nova_producao_funcionario():
+    form = ProducaoFuncionarioForm()
+    form.funcionario_id.choices = [(f.id, f.nome) for f in Funcionario.query.order_by(Funcionario.nome).all()]
+
+    # Pré-seleciona data de hoje no GET (ou se o campo vier vazio)
+    if request.method == 'GET' and not form.data_producao.data:
+        form.data_producao.data = date.today()
+
+    if form.validate_on_submit():
+        # --- Checagem anti-duplicidade: (funcionario_id, data_producao) ---
+        existe = (ProducaoFuncionario.query
+                  .filter(
+                      ProducaoFuncionario.funcionario_id == form.funcionario_id.data,
+                      ProducaoFuncionario.data_producao == form.data_producao.data
+                  )
+                  .first())
+
+        if existe:
+            # Marca erro de validação e não insere
+            form.data_producao.errors.append('Já existe produção para este funcionário nessa data.')
+            # (Opcional) Link para editar o registro existente:
+            flash('Já existe produção cadastrada para este funcionário nessa DATA!', 'warning')
+            return render_template('producao/nova_producao_funcionario.html', form=form)
+
+        # Se passou, cria normalmente
+        pf = ProducaoFuncionario(
+            data_producao=form.data_producao.data,
+            quantidade=form.quantidade.data,
+            funcionario_id=form.funcionario_id.data
+        )
+        db.session.add(pf)
+        db.session.commit()
+        flash('Produção do funcionário cadastrada!', 'success')
+        return redirect(url_for('routes.listar_producoes_funcionarios'))
+
+    return render_template('producao/nova_producao_funcionario.html', form=form)
+
+
+
+@bp.route('/producao_funcionario/editar/<int:id>', methods=['GET', 'POST'])
+@login_required
+@requer_permissao('controleproducao', 'editar')
+def editar_producao_funcionario(id):
+    pf = ProducaoFuncionario.query.get_or_404(id)
+    form = ProducaoFuncionarioForm(obj=pf)
+    form.funcionario_id.choices = [(f.id, f.nome) for f in Funcionario.query.order_by(Funcionario.nome).all()]
+
+    # Pré-seleciona data de hoje no GET (ou se o campo vier vazio)
+    if request.method == 'GET' and not form.data_producao.data:
+        form.data_producao.data = date.today()
+
+    if form.validate_on_submit():
+        pf.data_producao  = form.data_producao.data
+        pf.quantidade     = form.quantidade.data
+        pf.funcionario_id = form.funcionario_id.data
+        db.session.commit()
+        flash('Produção do funcionário atualizada!', 'success')
+        return redirect(url_for('routes.listar_producoes_funcionarios'))
+
+    return render_template('producao/editar_producao_funcionario.html', form=form, item=pf)
+
+
+@bp.route('/producao_funcionario/excluir/<int:id>', methods=['POST'])
+@login_required
+@requer_permissao('controleproducao', 'excluir')
+def excluir_producao_funcionario(id):
+    pf = ProducaoFuncionario.query.get_or_404(id)
+
+    token = request.form.get('csrf_token', '')
+    confirm_text = (request.form.get('confirm_text') or '').strip().lower()
+
+    try:
+        validate_csrf(token)
+    except CSRFError:
+        flash('Token CSRF inválido. Recarregue a página e tente novamente.', 'danger')
+        return redirect(url_for('routes.listar_producoes_funcionarios'))
+
+    db.session.delete(pf)
+    db.session.commit()
+    flash('Registro excluído com sucesso.', 'success')
+    return redirect(url_for('routes.listar_producoes_funcionarios'))
+
+
+
+# RELATÓRIO (com cálculo)
+# =========================
+@bp.route('/producao_funcionario/relatorio', methods=['GET'])
+@login_required
+@requer_permissao('controleproducao', 'ver')
+def relatorio_producoes_funcionarios():
+    """
+    Regras:
+      - Só mostra dados se o usuário clicar em Filtrar (filtrar=1) OU se houver filtros na URL.
+      - Se clicar Filtrar com tudo vazio, traz tudo.
+    """
+    from datetime import datetime
+
+    nome        = (request.args.get('nome') or '').strip()
+    inicio      = (request.args.get('inicio') or '').strip()
+    fim         = (request.args.get('fim') or '').strip()
+    clicou_filtrar = (request.args.get('filtrar') == '1')
+    tem_filtros    = any([nome, inicio, fim])
+
+    q = (ProducaoFuncionario.query.join(Funcionario))
+
+    if nome:
+        q = q.filter(Funcionario.nome.ilike(f'%{nome}%'))
+
+    di = df = None
+    if inicio:
+        try:
+            di = datetime.strptime(inicio, '%Y-%m-%d').date()
+            q = q.filter(ProducaoFuncionario.data_producao >= di)
+        except Exception:
+            di = None
+
+    if fim:
+        try:
+            df = datetime.strptime(fim, '%Y-%m-%d').date()
+            q = q.filter(ProducaoFuncionario.data_producao <= df)
+        except Exception:
+            df = None
+
+    q = q.order_by(
+        ProducaoFuncionario.data_producao.asc(),
+        Funcionario.nome.asc(),
+        ProducaoFuncionario.id.asc()
+    )
+
+    # 👉 Só carrega itens se clicou Filtrar OU se já vieram filtros
+    if clicou_filtrar or tem_filtros:
+        itens = q.all()
+        total = sum(i.quantidade or 0 for i in itens)
+    else:
+        itens = []
+        total = 0
+
+    return render_template(
+        'producao/relatorio_producoes_funcionarios.html',
+        itens=itens,
+        total=total,
+        nome=nome,
+        inicio=inicio or '',
+        fim=fim or ''
+    )
+
+
+
+@bp.route('/producao_funcionario/relatorio/pdf', methods=['GET'])
+@login_required
+@requer_permissao('controleproducao', 'ver')
+def relatorio_producoes_funcionarios_pdf():
+    from datetime import datetime
+    from flask import make_response, request, render_template, current_app
+    from weasyprint import HTML
+
+    nome   = (request.args.get('nome') or '').strip()
+    inicio = request.args.get('inicio')
+    fim    = request.args.get('fim')
+
+    q = ProducaoFuncionario.query.join(Funcionario)
+    di = df = None
+
+    if nome:
+        q = q.filter(Funcionario.nome.ilike(f'%{nome}%'))
+
+    if inicio:
+        try:
+            di = datetime.strptime(inicio, '%Y-%m-%d').date()
+            q = q.filter(ProducaoFuncionario.data_producao >= di)
+        except Exception:
+            di = None
+
+    if fim:
+        try:
+            df = datetime.strptime(fim, '%Y-%m-%d').date()
+            q = q.filter(ProducaoFuncionario.data_producao <= df)
+        except Exception:
+            df = None
+
+    itens = (q.order_by(ProducaoFuncionario.data_producao.asc(),
+                        Funcionario.nome.asc(),
+                        ProducaoFuncionario.id.asc())
+               .all())
+    total = sum(i.quantidade or 0 for i in itens)
+
+    html = render_template(
+        "producao/relatorio_producoes_funcionarios_pdf.html",
+        itens=itens, total=total, nome=nome, di=di, df=df
+    )
+
+    # ✅ Fundamental para a logo via url_for('static', ...)
+    pdf_bytes = HTML(string=html, base_url=request.url_root).write_pdf()
+
+    resp = make_response(pdf_bytes)
+    resp.headers['Content-Type'] = 'application/pdf'
+    resp.headers['Content-Disposition'] = 'inline; filename=relatorio_producao_funcionarios.pdf'
+    return resp
+
+#### PRODUCAO SETOR  #####
+# ------- LISTAR (com paginação, padrão Convencionais) -------
+@bp.route('/producao_setor', methods=['GET'])
+@login_required
+@requer_permissao('controleproducao', 'ver')
+def listar_producoes_setores():
+
+    setores   = [(s.id, s.nome) for s in Setor.query.order_by(Setor.nome).all()]
+
+    # filtros
+    setor_id   = request.args.get('setor_id', type=int)   
+    s_nome   = (request.args.get('nome') or '').strip()
+    f_inicio = (request.args.get('inicio') or '').strip()
+    f_fim    = (request.args.get('fim') or '').strip()
+    page     = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 20, type=int)
+    per_page = max(5, min(per_page, 200))
+
+    q = (ProducaoSetor.query
+         .join(Setor)
+         .order_by(ProducaoSetor.data_producao.desc(),
+                   ProducaoSetor.id.desc()))
+
+    if setor_id:
+        q = q.filter(ProducaoSetor.setor_id == setor_id)
+
+    di = df = None
+    if f_inicio:
+        try:
+            di = datetime.strptime(f_inicio, '%Y-%m-%d').date()
+            q = q.filter(ProducaoSetor.data_producao >= di)
+        except Exception:
+            di = None
+    if f_fim:
+        try:
+            df = datetime.strptime(f_fim, '%Y-%m-%d').date()
+            q = q.filter(ProducaoSetor.data_producao <= df)
+        except Exception:
+            df = None
+
+    # paginação compatível 2.x/3.x
+    try:
+        pagination = q.paginate(page=page, per_page=per_page, error_out=False)
+    except AttributeError:
+        pagination = db.paginate(q, page=page, per_page=per_page, error_out=False)
+
+    itens = pagination.items
+
+    # querystring sem "page"
+    qs_dict = request.args.to_dict(flat=True)
+    qs_dict.pop('page', None)
+    qs_no_page = urlencode(qs_dict)
+
+    return render_template('producao/listar_producoes_setores.html',
+                           setor_id=setor_id or '',
+                           setores=setores,
+                           itens=itens,
+                           pagination=pagination,
+                           per_page=per_page,
+                           nome=s_nome,
+                           inicio=f_inicio,
+                           fim=f_fim,
+                           qs_no_page=qs_no_page)
+
+
+# ------- VER (Produção Setor) -------
+@bp.route('/producao_setor/ver/<int:id>', methods=['GET'])
+@login_required
+@requer_permissao('controleproducao', 'ver')
+def ver_producao_setor(id):
+    from app.models import ProducaoSetor
+    item = ProducaoSetor.query.get_or_404(id)
+    return render_template('producao/ver_producao_setor.html', item=item)
+
+
+# ------- NOVO -------
+@bp.route('/producao_setor/novo', methods=['GET','POST'])
+@login_required
+@requer_permissao('controleproducao','criar')
+def nova_producao_setor():
+    from datetime import date
+    from app.models import (
+        Setor, Solado, Alca, Remessa,
+        ProducaoSetor, producao_setor_remessa
+    )
+
+    form = ProducaoSetorForm()
+
+    # Choices
+    form.setor_id.choices  = [(s.id, s.nome) for s in Setor.query.order_by(Setor.nome).all()]
+    form.solado_id.choices = [(0, "-- Nenhum --")] + [(s.id, s.referencia) for s in Solado.query.order_by(Solado.referencia).all()]
+    form.alca_id.choices   = [(0, "-- Nenhum --")] + [(a.id, a.referencia) for a in Alca.query.order_by(Alca.referencia).all()]
+    form.remessas.choices  = [(r.id, r.codigo) for r in Remessa.query.order_by(Remessa.codigo).all()]
+
+    # Data padrão = hoje
+    if request.method == 'GET' and not form.data_producao.data:
+        form.data_producao.data = date.today()
+
+    if form.validate_on_submit():
+        # Normaliza 0 -> None
+        solado_val = form.solado_id.data or 0
+        alca_val   = form.alca_id.data or 0
+        solado_id  = None if solado_val == 0 else solado_val
+        alca_id    = None if alca_val   == 0 else alca_val
+
+        # Exclusividade: somente um dos dois
+        if solado_id and alca_id:
+            flash('Escolha apenas um modelo: Solado OU Alça (não ambos).', 'warning')
+            return render_template("producao/nova_producao_setor.html", form=form)
+
+        dt       = form.data_producao.data
+        esteira  = form.esteira.data or None
+        setor_id = form.setor_id.data
+        rem_ids  = set(form.remessas.data or [])
+
+        # ---------- Verificação de duplicidade ----------
+        # Candidatos com mesma base (data/esteira/setor) e mesmo "lado" (solado vs alça)
+        base_q = ProducaoSetor.query.filter(
+            ProducaoSetor.data_producao == dt,
+            ProducaoSetor.esteira == esteira,
+            ProducaoSetor.setor_id == setor_id,
+        )
+        if solado_id is not None:
+            base_q = base_q.filter(
+                ProducaoSetor.solado_id == solado_id,
+                ProducaoSetor.alca_id.is_(None)
+            )
+        elif alca_id is not None:
+            base_q = base_q.filter(
+                ProducaoSetor.alca_id == alca_id,
+                ProducaoSetor.solado_id.is_(None)
+            )
+        else:
+            # nenhum modelo selecionado: exige também que o existente não tenha modelo
+            base_q = base_q.filter(
+                ProducaoSetor.solado_id.is_(None),
+                ProducaoSetor.alca_id.is_(None)
+            )
+
+        # Compara o CONJUNTO de remessas (ordem independente)
+        candidatos = base_q.all()
+        for cand in candidatos:
+            cand_rem_ids = {r.id for r in (cand.remessas or [])}
+            if cand_rem_ids == rem_ids:
+                # duplicado 100%
+                modelo_txt = "solado" if solado_id else ("alça" if alca_id else "sem modelo")
+                flash(
+                    f'Já existe uma produção idêntica (data/esteira/setor/{modelo_txt}/remessas).',
+                    'warning'
+                )
+                return render_template("producao/nova_producao_setor.html", form=form)
+        # ---------- fim verificação ----------
+
+        # Cria
+        novo = ProducaoSetor(
+            data_producao = dt,
+            quantidade    = form.quantidade.data,
+            esteira       = esteira,
+            setor_id      = setor_id,
+            solado_id     = solado_id,
+            alca_id       = alca_id,
+        )
+        db.session.add(novo)
+        db.session.flush()  # obter novo.id
+
+        # Associação N:N com Remessas
+        if rem_ids:
+            for rid in rem_ids:
+                db.session.execute(
+                    producao_setor_remessa.insert().values(
+                        producao_setor_id=novo.id,
+                        remessa_id=rid
+                    )
+                )
+
+        db.session.commit()
+        flash("Produção por setor registrada!", "success")
+        return redirect(url_for('routes.listar_producoes_setores'))
+
+    return render_template("producao/nova_producao_setor.html", form=form)
+
+
+
+# ------- EDITAR -------
+@bp.route('/producao_setor/editar/<int:id>', methods=['GET', 'POST'])
+@login_required
+@requer_permissao('controleproducao', 'editar')
+def editar_producao_setor(id):
+    from app.models import (
+        Setor, Solado, Alca, Remessa,
+        ProducaoSetor
+    )
+
+    item = ProducaoSetor.query.get_or_404(id)
+    form = ProducaoSetorForm(obj=item)
+
+    # Choices
+    form.setor_id.choices  = [(s.id, s.nome) for s in Setor.query.order_by(Setor.nome).all()]
+    form.solado_id.choices = [(0, "-- Nenhum --")] + [(s.id, s.referencia) for s in Solado.query.order_by(Solado.referencia).all()]
+    form.alca_id.choices   = [(0, "-- Nenhum --")] + [(a.id, a.referencia) for a in Alca.query.order_by(Alca.referencia).all()]
+    form.remessas.choices  = [(r.id, r.codigo) for r in Remessa.query.order_by(Remessa.codigo).all()]
+
+    # Preenche multiselect com remessas atuais
+    if request.method == 'GET':
+        form.remessas.data = [r.id for r in item.remessas]
+
+        # Normaliza selects de modelo para exibir "-- Nenhum --" quando None
+        if item.solado_id is None:
+            form.solado_id.data = 0
+        if item.alca_id is None:
+            form.alca_id.data = 0
+
+    if form.validate_on_submit():
+        # Normaliza 0 -> None
+        solado_val = form.solado_id.data or 0
+        alca_val   = form.alca_id.data or 0
+        solado_id  = None if solado_val == 0 else solado_val
+        alca_id    = None if alca_val   == 0 else alca_val
+
+        # Exclusividade: só um dos dois
+        if solado_id and alca_id:
+            flash('Escolha apenas um modelo: Solado OU Alça (não ambos).', 'warning')
+            return render_template('producao/editar_producao_setor.html', form=form, item=item)
+
+        dt       = form.data_producao.data
+        esteira  = form.esteira.data or None
+        setor_id = form.setor_id.data
+        rem_ids  = set(form.remessas.data or [])
+
+        # ---------- Anti-duplicidade (ignora o próprio id) ----------
+        base_q = ProducaoSetor.query.filter(
+            ProducaoSetor.id != item.id,
+            ProducaoSetor.data_producao == dt,
+            ProducaoSetor.esteira == esteira,
+            ProducaoSetor.setor_id == setor_id,
+        )
+        if solado_id is not None:
+            base_q = base_q.filter(
+                ProducaoSetor.solado_id == solado_id,
+                ProducaoSetor.alca_id.is_(None)
+            )
+        elif alca_id is not None:
+            base_q = base_q.filter(
+                ProducaoSetor.alca_id == alca_id,
+                ProducaoSetor.solado_id.is_(None)
+            )
+        else:
+            base_q = base_q.filter(
+                ProducaoSetor.solado_id.is_(None),
+                ProducaoSetor.alca_id.is_(None)
+            )
+
+        candidatos = base_q.all()
+        for cand in candidatos:
+            cand_rem_ids = {r.id for r in (cand.remessas or [])}
+            if cand_rem_ids == rem_ids:
+                modelo_txt = "solado" if solado_id else ("alça" if alca_id else "sem modelo")
+                flash(f'Já existe uma produção idêntica (data/esteira/setor/{modelo_txt}/remessas).', 'warning')
+                return render_template('producao/editar_producao_setor.html', form=form, item=item)
+        # ---------- fim anti-duplicidade ----------
+
+        # Atualiza registro
+        item.data_producao = dt
+        item.quantidade    = form.quantidade.data
+        item.esteira       = esteira
+        item.setor_id      = setor_id
+        item.solado_id     = solado_id
+        item.alca_id       = alca_id
+
+        # Atualiza remessas (N:N)
+        item.remessas = []
+        if rem_ids:
+            item.remessas = Remessa.query.filter(Remessa.id.in_(rem_ids)).all()
+
+        db.session.commit()
+        flash('Produção do setor atualizada!', 'success')
+        return redirect(url_for('routes.listar_producoes_setores'))
+
+    return render_template('producao/editar_producao_setor.html', form=form, item=item)
+
+
+
+
+# ------- EXCLUIR -------
+@bp.route('/producao_setor/excluir/<int:id>', methods=['POST'])
+@login_required
+@requer_permissao('controleproducao', 'excluir')
+def excluir_producao_setor(id):
+    item = ProducaoSetor.query.get_or_404(id)
+    db.session.delete(item)
+    db.session.commit()
+    flash('Registro excluído com sucesso.', 'success')
+    return redirect(url_for('routes.listar_producoes_setores'))
+
+# ------- RELATÓRIO (HTML)
+@bp.route('/producao_setor/relatorio', methods=['GET'])
+@login_required
+@requer_permissao('controleproducao', 'ver')
+def relatorio_producoes_setores():
+    from datetime import datetime
+    from sqlalchemy.orm import selectinload
+    from app.models import ProducaoSetor, Setor, Remessa, Solado, Alca
+
+    # --- Filtros vindos da UI ---
+    setor_id   = request.args.get('setor_id', type=int)                # SELECT de setor
+    inicio     = (request.args.get('inicio') or '').strip()
+    fim        = (request.args.get('fim') or '').strip()
+    esteira    = (request.args.get('esteira') or '').strip()
+    item_tipo  = (request.args.get('item_tipo') or '').strip()         # 'solado'|'alca'|'sem'|''
+    item_id    = request.args.get('item_id', type=int)                 # id conforme item_tipo
+    rem_ids    = request.args.getlist('remessa_id', type=int)          # múltiplas remessas
+
+    # Flag do clique do botão "Filtrar"
+    clicou_filtrar = (request.args.get('filtrar') == '1')
+    tem_filtros = any([setor_id, inicio, fim, esteira, item_tipo, item_id, rem_ids])
+
+    # --- Query base (sem joins que multiplicam linhas) ---
+    q = (ProducaoSetor.query
+         .join(Setor)
+         .options(
+             selectinload(ProducaoSetor.setor),
+             selectinload(ProducaoSetor.solado),
+             selectinload(ProducaoSetor.alca),
+             selectinload(ProducaoSetor.remessas),
+         ))
+
+    di = df = None
+
+    # --- Filtros ---
+    # prioridade para setor_id (select); se não vier, usa 'nome' (texto)
+    if setor_id:
+        q = q.filter(ProducaoSetor.setor_id == setor_id)
+
+    if inicio:
+        try:
+            di = datetime.strptime(inicio, '%Y-%m-%d').date()
+            q = q.filter(ProducaoSetor.data_producao >= di)
+        except Exception:
+            di = None
+
+    if fim:
+        try:
+            df = datetime.strptime(fim, '%Y-%m-%d').date()
+            q = q.filter(ProducaoSetor.data_producao <= df)
+        except Exception:
+            df = None
+
+    if esteira:
+        q = q.filter(ProducaoSetor.esteira == esteira)
+
+    if item_tipo == 'solado':
+        q = q.filter(ProducaoSetor.solado_id.isnot(None),
+                     ProducaoSetor.alca_id.is_(None))
+        if item_id:
+            q = q.filter(ProducaoSetor.solado_id == item_id)
+    elif item_tipo == 'alca':
+        q = q.filter(ProducaoSetor.alca_id.isnot(None),
+                     ProducaoSetor.solado_id.is_(None))
+        if item_id:
+            q = q.filter(ProducaoSetor.alca_id == item_id)
+    elif item_tipo == 'sem':
+        q = q.filter(ProducaoSetor.solado_id.is_(None),
+                     ProducaoSetor.alca_id.is_(None))
+    # item_tipo vazio => não filtra por modelo
+
+    if rem_ids:
+        q = q.filter(ProducaoSetor.remessas.any(Remessa.id.in_(rem_ids)))
+
+    q = q.order_by(
+        ProducaoSetor.data_producao.asc(),
+        Setor.nome.asc(),
+        ProducaoSetor.esteira.asc().nullsfirst(),
+        ProducaoSetor.id.asc()
+    )
+
+    # --- Regra: só lista se clicou ou se há filtros; se clicou vazio, traz tudo ---
+    if clicou_filtrar or tem_filtros:
+        itens = q.all()
+        total_geral = sum(i.quantidade or 0 for i in itens)
+    else:
+        itens = []
+        total_geral = 0
+
+    # --- Choices para selects ---
+    setores   = [(s.id, s.nome) for s in Setor.query.order_by(Setor.nome).all()]   # << necessário pro select
+    solados   = [(s.id, s.referencia) for s in Solado.query.order_by(Solado.referencia).all()]
+    alcas     = [(a.id, a.referencia) for a in Alca.query.order_by(Alca.referencia).all()]
+    remessas_choices = [(r.id, r.codigo) for r in Remessa.query.order_by(Remessa.codigo).all()]
+
+    return render_template(
+        'producao/relatorio_producoes_setores.html',
+        itens=itens,
+        # filtros atuais
+        setor_id=setor_id or '',
+        inicio=inicio, fim=fim, esteira=esteira,
+        item_tipo=item_tipo, item_id=item_id or '',
+        remessas_sel=rem_ids,
+        # choices
+        setores=setores, solados=solados, alcas=alcas, remessas=remessas_choices,
+        # datas parseadas e total
+        di=di, df=df, total_geral=total_geral
+    )
+
+
+
+
+# ------- RELATÓRIO (PDF) -------
+@bp.route('/producao_setor/relatorio/pdf', methods=['GET'])
+@login_required
+@requer_permissao('controleproducao', 'ver')
+def relatorio_producoes_setores_pdf():
+    from weasyprint import HTML
+    from datetime import datetime
+    from sqlalchemy.orm import selectinload
+    from app.models import ProducaoSetor, Setor, Remessa
+    # Se seu template usa nomes dos itens, não precisa join; selectinload cuida.
+
+    nome      = (request.args.get('nome') or '').strip()
+    inicio    = (request.args.get('inicio') or '').strip()
+    fim       = (request.args.get('fim') or '').strip()
+    esteira   = (request.args.get('esteira') or '').strip()
+    item_tipo = (request.args.get('item_tipo') or '').strip()
+    item_id   = request.args.get('item_id', type=int)
+    rem_ids   = request.args.getlist('remessa_id', type=int)
+
+    # Flag do clique (link do PDF deve enviar ?filtrar=1)
+    clicou_filtrar = (request.args.get('filtrar') == '1')
+    tem_filtros = any([nome, inicio, fim, esteira, item_tipo, item_id, rem_ids])
+
+    q = (ProducaoSetor.query
+         .join(Setor)
+         .options(
+             selectinload(ProducaoSetor.setor),
+             selectinload(ProducaoSetor.solado),
+             selectinload(ProducaoSetor.alca),
+             selectinload(ProducaoSetor.remessas),
+         ))
+
+    di = df = None
+    if nome:
+        q = q.filter(Setor.nome.ilike(f'%{nome}%'))
+    if inicio:
+        try:
+            di = datetime.strptime(inicio, '%Y-%m-%d').date()
+            q = q.filter(ProducaoSetor.data_producao >= di)
+        except Exception:
+            di = None
+    if fim:
+        try:
+            df = datetime.strptime(fim, '%Y-%m-%d').date()
+            q = q.filter(ProducaoSetor.data_producao <= df)
+        except Exception:
+            df = None
+    if esteira:
+        q = q.filter(ProducaoSetor.esteira == esteira)
+
+    if item_tipo == 'solado':
+        q = q.filter(ProducaoSetor.solado_id.isnot(None),
+                     ProducaoSetor.alca_id.is_(None))
+        if item_id:
+            q = q.filter(ProducaoSetor.solado_id == item_id)
+    elif item_tipo == 'alca':
+        q = q.filter(ProducaoSetor.alca_id.isnot(None),
+                     ProducaoSetor.solado_id.is_(None))
+        if item_id:
+            q = q.filter(ProducaoSetor.alca_id == item_id)
+    elif item_tipo == 'sem':
+        q = q.filter(ProducaoSetor.solado_id.is_(None),
+                     ProducaoSetor.alca_id.is_(None))
+
+    if rem_ids:
+        q = q.filter(ProducaoSetor.remessas.any(Remessa.id.in_(rem_ids)))
+
+    q = q.order_by(
+        ProducaoSetor.data_producao.asc(),
+        Setor.nome.asc(),
+        ProducaoSetor.esteira.asc().nullsfirst(),
+        ProducaoSetor.id.asc()
+    )
+
+    # Mesma regra: só sai PDF se clicou (ou se há filtros); se clicou vazio, traz tudo
+    if clicou_filtrar or tem_filtros:
+        itens = q.all()
+    else:
+        itens = []
+
+    total = sum(i.quantidade or 0 for i in itens)
+
+    html = render_template('producao/relatorio_producoes_setores_pdf.html',
+                           itens=itens, total=total,
+                           nome=nome, di=di, df=df,
+                           esteira=esteira,
+                           item_tipo=item_tipo, item_id=item_id,
+                           remessas_sel=rem_ids)
+    pdf_bytes = HTML(string=html, base_url=request.url_root).write_pdf()
+
+    resp = make_response(pdf_bytes)
+    resp.headers['Content-Type'] = 'application/pdf'
+    resp.headers['Content-Disposition'] = 'inline; filename=relatorio_producao_setores.pdf'
+    return resp
+
+### QUEBRA DE PRODUCAO  ##
+# ------- LISTAR (Quebras de Alça) -------
+@bp.route('/quebras_alca', methods=['GET'])
+@login_required
+@requer_permissao('controleproducao', 'ver')
+def listar_quebras_alca():
+    from urllib.parse import urlencode
+    from sqlalchemy.orm import selectinload
+    from app.models import QuebraAlca, Alca
+
+    # filtros
+    f_data    = (request.args.get('data') or '').strip()       # 'YYYY-MM-DD'
+    f_alca_id = request.args.get('alca_id', type=int)          # id da alça
+    page      = request.args.get('page', 1, type=int)
+    per_page  = request.args.get('per_page', 20, type=int)
+    per_page  = max(5, min(per_page, 200))
+
+    # choices alças
+    alcas = [(a.id, f'{a.referencia} — {a.descricao}') for a in Alca.query.order_by(Alca.referencia).all()]
+
+    # base query
+    q = (QuebraAlca.query
+         .options(selectinload(QuebraAlca.alca), selectinload(QuebraAlca.linhas))
+         .order_by(QuebraAlca.data_quebra.desc(), QuebraAlca.id.desc()))
+
+    data_sel = None
+    if f_data:
+        try:
+            data_sel = datetime.strptime(f_data, '%Y-%m-%d').date()
+            q = q.filter(QuebraAlca.data_quebra == data_sel)
+        except Exception:
+            flash('Data inválida.', 'warning')
+
+    if f_alca_id:
+        q = q.filter(QuebraAlca.alca_id == f_alca_id)
+
+    # paginação compatível 2.x/3.x
+    try:
+        pagination = q.paginate(page=page, per_page=per_page, error_out=False)
+    except AttributeError:
+        from app import db
+        pagination = db.paginate(q, page=page, per_page=per_page, error_out=False)
+
+    itens = pagination.items
+
+    # soma por cabeçalho (evita subquery; já veio com selectinload)
+    totais = {it.id: sum(l.quantidade or 0 for l in it.linhas) for it in itens}
+
+    # querystring sem page
+    qs_dict = request.args.to_dict(flat=True)
+    qs_dict.pop('page', None)
+    qs_no_page = urlencode(qs_dict)
+
+    return render_template(
+        'producao/listar_quebras_alca.html',
+        itens=itens,
+        pagination=pagination,
+        per_page=per_page,
+        alcas=alcas,
+        f_alca_id=f_alca_id or '',
+        data_sel=data_sel,
+        qs_no_page=qs_no_page,
+        totais=totais
+    )
+
+
+@bp.route('/quebra_alca/nova', methods=['GET', 'POST'])
+@login_required
+@requer_permissao('controleproducao', 'criar')
+def nova_quebra_alca():
+    from app.models import Alca, TamanhoAlca
+    form = QuebraAlcaForm()
+
+    # Popular select de Alças
+    form.alca_id.choices = [(0, '-- Selecione --')] + [
+        (a.id, f'{a.referencia} — {a.descricao}') for a in Alca.query.order_by(Alca.referencia).all()
+    ]
+
+    # Data padrão hoje
+    if request.method == 'GET' and not form.data_quebra.data:
+        form.data_quebra.data = date.today()
+
+    if form.validate_on_submit():
+        if not form.alca_id.data:
+            form.alca_id.errors.append('Selecione uma alça.')
+            return render_template('producao/nova_quebra_alca.html', form=form)
+
+        # Anti-duplicidade: mesma data + mesma alça
+        ja_existe = (QuebraAlca.query
+                     .filter(QuebraAlca.data_quebra == form.data_quebra.data,
+                             QuebraAlca.alca_id == form.alca_id.data)
+                     .first())
+        if ja_existe:
+            flash('Já existe quebra cadastrada para esta alça nesta data.', 'warning')
+            return render_template('producao/nova_quebra_alca.html', form=form), 409
+
+        # Coletar quantidades dos inputs dinamicamente gerados: qtd_<tamanho_alca_id>
+        linhas = []
+        for key, val in request.form.items():
+            if key.startswith('qtd_'):
+                try:
+                    tam_id = int(key.replace('qtd_', ''))
+                    qtd = int(val or 0)
+                except ValueError:
+                    continue
+                if qtd > 0:
+                    t = TamanhoAlca.query.get(tam_id)
+                    if t and t.alca_id == form.alca_id.data:
+                        linhas.append((t.id, t.nome, qtd))
+
+        if not linhas:
+            flash('Informe pelo menos uma quantidade de quebra em algum tamanho.', 'warning')
+            return render_template('producao/nova_quebra_alca.html', form=form)
+
+        # Persistir
+        cab = QuebraAlca(
+            data_quebra=form.data_quebra.data,
+            observacao=form.observacao.data or None,
+            alca_id=form.alca_id.data
+        )
+        db.session.add(cab)
+        db.session.flush()
+
+        for tam_id, nome, qtd in linhas:
+            db.session.add(QuebraAlcaLinha(
+                quebra_id=cab.id,
+                tamanho_alca_id=tam_id,
+                tamanho_nome=nome,
+                quantidade=qtd
+            ))
+
+        db.session.commit()
+        flash('Quebra de produção (Alça) registrada!', 'success')
+        return redirect(url_for('routes.listar_quebras_alca', id=cab.id))
+
+    return render_template('producao/nova_quebra_alca.html', form=form)
+
+## API PARA PEGAR OS TAMANHOS DAS ALCAS
+@bp.route('/quebra_alca/tamanhos', methods=['GET'])
+@login_required
+def api_quebra_alca_tamanhos():
+    from app.models import Alca
+    alca_id = request.args.get('alca_id', type=int)
+    if not alca_id:
+        return jsonify({'ok': False, 'msg': 'Parâmetro alca_id ausente.'}), 400
+
+    alca = Alca.query.get(alca_id)
+    if not alca:
+        return jsonify({'ok': False, 'msg': 'Alça não encontrada.'}), 404
+
+    tamanhos = [{'id': t.id, 'nome': t.nome} for t in (alca.tamanhos or [])]
+    return jsonify({'ok': True, 'tamanhos': tamanhos})
+
+@bp.route('/quebra_alca/<int:id>', methods=['GET'])
+@login_required
+@requer_permissao('controleproducao', 'ver')
+def ver_quebra_alca(id):
+    qp = (QuebraAlca.query
+          .options(db.selectinload(QuebraAlca.linhas), db.joinedload(QuebraAlca.alca))
+          .get_or_404(id))
+    return render_template('producao/ver_quebra_alca.html', it=qp)
+
+# ------- EDITAR (Quebra de Alça) -------
+@bp.route('/quebra_alca/<int:id>/editar', methods=['GET', 'POST'])
+@login_required
+@requer_permissao('controleproducao', 'editar')
+def editar_quebra_alca(id):
+    from sqlalchemy.orm import selectinload
+    from app.models import QuebraAlca, QuebraAlcaLinha, Alca, TamanhoAlca
+    qp = (QuebraAlca.query
+          .options(selectinload(QuebraAlca.linhas))
+          .get_or_404(id))
+
+    form = QuebraAlcaForm(obj=qp)
+    form.alca_id.choices = [(0, '-- Selecione --')] + [
+        (a.id, f'{a.referencia} — {a.descricao}') for a in Alca.query.order_by(Alca.referencia).all()
+    ]
+
+    # Mapa de qtd atual por tamanho (para preencher inputs)
+    qtd_por_tam = {l.tamanho_alca_id: (l.quantidade or 0) for l in qp.linhas}
+
+    # lista de tamanhos da alça selecionada (GET mostra a atual)
+    alca_id_atual = form.alca_id.data or qp.alca_id
+    tamanhos = []
+    if alca_id_atual:
+        tamanhos = [(t.id, t.nome) for t in TamanhoAlca.query.filter_by(alca_id=alca_id_atual).order_by(TamanhoAlca.nome).all()]
+
+    # GET
+    if request.method == 'GET':
+        return render_template('producao/editar_quebra_alca.html', form=form, it=qp,
+                               tamanhos=tamanhos, qtd_por_tam=qtd_por_tam)
+
+    # POST
+    if form.validate_on_submit():
+        # checagem anti-duplicidade (mesma data + mesma alça), ignorando o próprio id
+        ja_existe = (QuebraAlca.query
+                     .filter(QuebraAlca.id != qp.id,
+                             QuebraAlca.data_quebra == form.data_quebra.data,
+                             QuebraAlca.alca_id == form.alca_id.data)
+                     .first())
+        if ja_existe:
+            flash('Já existe quebra cadastrada para esta alça nesta data.', 'warning')
+            return render_template('producao/editar_quebra_alca.html', form=form, it=qp,
+                                   tamanhos=tamanhos, qtd_por_tam=qtd_por_tam), 409
+
+        # Atualiza cabeçalho
+        qp.data_quebra = form.data_quebra.data
+        qp.alca_id     = form.alca_id.data
+        qp.observacao  = form.observacao.data or None
+
+        # Recarregar tamanhos conforme alça (pode ter trocado)
+        tamanhos_db = TamanhoAlca.query.filter_by(alca_id=qp.alca_id).all()
+
+        # Substituir linhas (mais simples e seguro)
+        # Remove antigas
+        for l in list(qp.linhas):
+            db.session.delete(l)
+        db.session.flush()
+
+        # Adiciona as novas com base no POST: qtd_<tamanho_alca_id>
+        adicionou = False
+        for t in tamanhos_db:
+            qtd = request.form.get(f'qtd_{t.id}', '').strip()
+            if qtd == '':
+                continue
+            try:
+                v = int(qtd)
+            except ValueError:
+                v = 0
+            if v > 0:
+                adicionou = True
+                db.session.add(QuebraAlcaLinha(
+                    quebra_id=qp.id,
+                    tamanho_alca_id=t.id,
+                    tamanho_nome=t.nome,
+                    quantidade=v
+                ))
+
+        if not adicionou:
+            flash('Informe pelo menos uma quantidade de quebra em algum tamanho.', 'warning')
+            db.session.rollback()
+            # re-render mantendo a grade
+            tamanhos = [(t.id, t.nome) for t in tamanhos_db]
+            qtd_por_tam = {}  # após falha, zera
+            return render_template('producao/editar_quebra_alca.html', form=form, it=qp,
+                                   tamanhos=tamanhos, qtd_por_tam=qtd_por_tam)
+
+        db.session.commit()
+        flash('Quebra de produção (Alça) atualizada!', 'success')
+        return redirect(url_for('routes.ver_quebra_alca', id=qp.id))
+
+    # se falhar validação
+    return render_template('producao/editar_quebra_alca.html', form=form, it=qp,
+                           tamanhos=tamanhos, qtd_por_tam=qtd_por_tam)
+
+# ------- EXCLUIR (Quebra de Alça) -------
+@bp.route('/quebra_alca/<int:id>/excluir', methods=['POST'])
+@login_required
+@requer_permissao('controleproducao', 'excluir')
+def excluir_quebra_alca(id):
+    from app.models import QuebraAlca
+    qp = QuebraAlca.query.get_or_404(id)
+
+    db.session.delete(qp)
+    db.session.commit()
+    flash('Quebra de produção (Alça) excluída com sucesso!', 'success')
+    return redirect(url_for('routes.listar_quebras_alca'))
+
+
+# ------- RELATÓRIO (HTML) -------
+@bp.route('/quebras_alca/relatorio', methods=['GET'])
+@login_required
+@requer_permissao('controleproducao', 'ver')
+def relatorio_quebras_alca():
+    from sqlalchemy.orm import selectinload
+    from app.models import QuebraAlca, Alca
+
+    # Filtros
+    alca_id = request.args.get('alca_id', type=int)
+    inicio  = (request.args.get('inicio') or '').strip()  # YYYY-MM-DD
+    fim     = (request.args.get('fim') or '').strip()     # YYYY-MM-DD
+
+    # Flag para só mostrar dados após clique em Filtrar
+    aplicou = request.args.get('aplicar') == '1'
+    di = df = None
+
+    # Choices de alças
+    alcas = [(a.id, f'{a.referencia} — {a.descricao}')
+             for a in Alca.query.order_by(Alca.referencia).all()]
+
+    q = (QuebraAlca.query
+         .options(selectinload(QuebraAlca.alca),
+                  selectinload(QuebraAlca.linhas))
+         .order_by(QuebraAlca.data_quebra.asc(), QuebraAlca.id.asc()))
+
+    # Se usuário clicou em "Filtrar":
+    if aplicou:
+        # Data início
+        if inicio:
+            try:
+                di = datetime.strptime(inicio, '%Y-%m-%d').date()
+                q = q.filter(QuebraAlca.data_quebra >= di)
+            except Exception:
+                flash('Data inicial inválida.', 'warning')
+
+        # Data fim
+        if fim:
+            try:
+                df = datetime.strptime(fim, '%Y-%m-%d').date()
+                q = q.filter(QuebraAlca.data_quebra <= df)
+            except Exception:
+                flash('Data final inválida.', 'warning')
+
+        # Alça
+        if alca_id:
+            q = q.filter(QuebraAlca.alca_id == alca_id)
+
+        itens = q.all()
+    else:
+        itens = []  # Não mostrar nada até clicar em Filtrar
+
+    # Total geral (somatório de todas as linhas)
+    total = 0
+    for cab in itens:
+        total += sum(l.quantidade or 0 for l in cab.linhas)
+
+    return render_template(
+        'producao/relatorio_quebras_alca.html',
+        itens=itens,
+        total=total,
+        alcas=alcas,
+        alca_id=alca_id or '',
+        inicio=inicio,
+        fim=fim,
+        di=di, df=df,
+        aplicou=aplicou
+    )
+
+
+# ------- RELATÓRIO (PDF) -------
+@bp.route('/quebras_alca/relatorio/pdf', methods=['GET'])
+@login_required
+@requer_permissao('controleproducao', 'ver')
+def relatorio_quebras_alca_pdf():
+    from sqlalchemy.orm import selectinload
+    from app.models import QuebraAlca, Alca
+
+    alca_id = request.args.get('alca_id', type=int)
+    inicio  = (request.args.get('inicio') or '').strip()
+    fim     = (request.args.get('fim') or '').strip()
+
+    di = df = None
+
+    q = (QuebraAlca.query
+         .options(selectinload(QuebraAlca.alca),
+                  selectinload(QuebraAlca.linhas))
+         .order_by(QuebraAlca.data_quebra.asc(), QuebraAlca.id.asc()))
+
+    if inicio:
+        try:
+            di = datetime.strptime(inicio, '%Y-%m-%d').date()
+            q = q.filter(QuebraAlca.data_quebra >= di)
+        except Exception:
+            pass
+
+    if fim:
+        try:
+            df = datetime.strptime(fim, '%Y-%m-%d').date()
+            q = q.filter(QuebraAlca.data_quebra <= df)
+        except Exception:
+            pass
+
+    if alca_id:
+        q = q.filter(QuebraAlca.alca_id == alca_id)
+
+    itens = q.all()
+
+    total = 0
+    for cab in itens:
+        total += sum(l.quantidade or 0 for l in cab.linhas)
+
+    # Renderiza HTML base e transforma em PDF
+    html = render_template(
+        'producao/relatorio_quebras_alca_pdf.html',
+        itens=itens, total=total,
+        di=di, df=df,
+        alca=Alca.query.get(alca_id) if alca_id else None
+    )
+
+    # WeasyPrint
+    from weasyprint import HTML
+    pdf = HTML(string=html, base_url=request.url_root).write_pdf()
+
+    filename = 'relatorio_quebras_alca.pdf'
+    return Response(
+        pdf,
+        mimetype='application/pdf',
+        headers={'Content-Disposition': f'inline; filename={filename}'}
+    )
+
+
+
+# =========================
+#   QUEBRA DE SOLADO
+# =========================
+
+# ------- LISTAR (Quebras de Solado) -------
+@bp.route('/quebras_solado', methods=['GET'])
+@login_required
+@requer_permissao('controleproducao', 'ver')
+def listar_quebras_solado():
+    from urllib.parse import urlencode
+    from sqlalchemy.orm import selectinload
+    from app.models import QuebraSolado, Solado
+
+    # filtros
+    f_data     = (request.args.get('data') or '').strip()      # 'YYYY-MM-DD'
+    f_solado_id = request.args.get('solado_id', type=int)      # id do solado
+    page       = request.args.get('page', 1, type=int)
+    per_page   = request.args.get('per_page', 20, type=int)
+    per_page   = max(5, min(per_page, 200))
+
+    # choices solados
+    solados = [(s.id, f'{s.referencia} — {s.descricao}') for s in Solado.query.order_by(Solado.referencia).all()]
+
+    # base query
+    q = (QuebraSolado.query
+         .options(selectinload(QuebraSolado.solado), selectinload(QuebraSolado.linhas))
+         .order_by(QuebraSolado.data_quebra.desc(), QuebraSolado.id.desc()))
+
+    data_sel = None
+    if f_data:
+        try:
+            data_sel = datetime.strptime(f_data, '%Y-%m-%d').date()
+            q = q.filter(QuebraSolado.data_quebra == data_sel)
+        except Exception:
+            flash('Data inválida.', 'warning')
+
+    if f_solado_id:
+        q = q.filter(QuebraSolado.solado_id == f_solado_id)
+
+    # paginação compatível 2.x/3.x
+    try:
+        pagination = q.paginate(page=page, per_page=per_page, error_out=False)
+    except AttributeError:
+        from app import db
+        pagination = db.paginate(q, page=page, per_page=per_page, error_out=False)
+
+    itens = pagination.items
+
+    # soma por cabeçalho
+    totais = {it.id: sum(l.quantidade or 0 for l in it.linhas) for it in itens}
+
+    # querystring sem page
+    qs_dict = request.args.to_dict(flat=True)
+    qs_dict.pop('page', None)
+    qs_no_page = urlencode(qs_dict)
+
+    return render_template(
+        'producao/listar_quebras_solado.html',
+        itens=itens,
+        pagination=pagination,
+        per_page=per_page,
+        solados=solados,
+        f_solado_id=f_solado_id or '',
+        data_sel=data_sel,
+        qs_no_page=qs_no_page,
+        totais=totais
+    )
+
+
+# ------- NOVA (Quebra de Solado) -------
+@bp.route('/quebra_solado/nova', methods=['GET', 'POST'])
+@login_required
+@requer_permissao('controleproducao', 'criar')
+def nova_quebra_solado():
+    from app.models import Solado, Tamanho
+    form = QuebraSoladoForm()
+
+    # Select de Solados
+    form.solado_id.choices = [(0, '-- Selecione --')] + [
+        (s.id, f'{s.referencia} — {s.descricao}') for s in Solado.query.order_by(Solado.referencia).all()
+    ]
+
+    # Data padrão hoje
+    if request.method == 'GET' and not form.data_quebra.data:
+        form.data_quebra.data = date.today()
+
+    if form.validate_on_submit():
+        if not form.solado_id.data:
+            form.solado_id.errors.append('Selecione um solado.')
+            return render_template('producao/nova_quebra_solado.html', form=form)
+
+        # Anti-duplicidade: mesma data + mesmo solado
+        ja_existe = (QuebraSolado.query
+                     .filter(QuebraSolado.data_quebra == form.data_quebra.data,
+                             QuebraSolado.solado_id == form.solado_id.data)
+                     .first())
+        if ja_existe:
+            flash('Já existe quebra cadastrada para este solado nesta data.', 'warning')
+            return render_template('producao/nova_quebra_solado.html', form=form), 409
+
+        # Coletar quantidades: qtd_<tamanho_id>
+        linhas = []
+        for key, val in request.form.items():
+            if key.startswith('qtd_'):
+                try:
+                    tam_id = int(key.replace('qtd_', ''))
+                    qtd = int(val or 0)
+                except ValueError:
+                    continue
+                if qtd > 0:
+                    t = Tamanho.query.get(tam_id)
+                    if t and t.solado_id == form.solado_id.data:
+                        linhas.append((t.id, t.nome, qtd))
+
+        if not linhas:
+            flash('Informe pelo menos uma quantidade de quebra em algum tamanho.', 'warning')
+            return render_template('producao/nova_quebra_solado.html', form=form)
+
+        # Persistir
+        cab = QuebraSolado(
+            data_quebra=form.data_quebra.data,
+            observacao=form.observacao.data or None,
+            solado_id=form.solado_id.data
+        )
+        db.session.add(cab)
+        db.session.flush()
+
+        for tam_id, nome, qtd in linhas:
+            db.session.add(QuebraSoladoLinha(
+                quebra_id=cab.id,
+                tamanho_solado_id=tam_id,
+                tamanho_nome=nome,
+                quantidade=qtd
+            ))
+
+        db.session.commit()
+        flash('Quebra de produção (Solado) registrada!', 'success')
+        return redirect(url_for('routes.listar_quebras_solado'))
+
+    return render_template('producao/nova_quebra_solado.html', form=form)
+
+
+# ------- API: tamanhos do Solado (AJAX) -------
+@bp.route('/quebra_solado/tamanhos', methods=['GET'])
+@login_required
+def api_quebra_solado_tamanhos():
+    from app.models import Solado
+    solado_id = request.args.get('solado_id', type=int)
+    if not solado_id:
+        return jsonify({'ok': False, 'msg': 'Parâmetro solado_id ausente.'}), 400
+
+    solado = Solado.query.get(solado_id)
+    if not solado:
+        return jsonify({'ok': False, 'msg': 'Solado não encontrado.'}), 404
+
+    # mesma estratégia de ordenação usada na Alça: numéricos primeiro, '--' por último
+    def ordena_chave(nome):
+        # retorna tupla para sort: (flag_non_numeric, numero_int_ou_grande, nome)
+        import re
+        if nome == '--':
+            return (2, 10**9, nome)
+        m = re.match(r'^\D*(\d+)\D*$', nome or '')
+        if m:
+            return (0, int(m.group(1)), nome)
+        return (1, 10**9, nome or '')
+    tamanhos = sorted(solado.tamanhos or [], key=lambda t: ordena_chave(t.nome))
+
+    payload = [{'id': t.id, 'nome': t.nome} for t in tamanhos]
+    return jsonify({'ok': True, 'tamanhos': payload})
+
+
+
+# ------- VER (Quebra de Solado) -------
+@bp.route('/quebra_solado/<int:id>', methods=['GET'])
+@login_required
+@requer_permissao('controleproducao', 'ver')
+def ver_quebra_solado(id):
+    from sqlalchemy.orm import selectinload
+    from app.models import QuebraSolado
+
+    qp = (QuebraSolado.query
+          .options(selectinload(QuebraSolado.linhas), selectinload(QuebraSolado.solado))
+          .get_or_404(id))
+
+    # 🔹 total geral (somatório das linhas)
+    total_geral = sum((l.quantidade or 0) for l in (qp.linhas or []))
+
+    return render_template('producao/ver_quebra_solado.html', it=qp, total_geral=total_geral)
+
+
+
+# ------- EDITAR (Quebra de Solado) -------
+@bp.route('/quebra_solado/<int:id>/editar', methods=['GET', 'POST'])
+@login_required
+@requer_permissao('controleproducao', 'editar')
+def editar_quebra_solado(id):
+    from sqlalchemy.orm import selectinload
+    from sqlalchemy import case, func, cast, Integer
+    from app.models import QuebraSolado, QuebraSoladoLinha, Solado, Tamanho
+
+    # ordenação equivalente à da Alça
+    def ordenacao_tamanhos():
+        return (
+            case((Tamanho.nome == '--', 1), else_=0).asc(),
+            case((Tamanho.nome.op('~')(r'^\d'), 0), else_=1).asc(),
+            cast(func.nullif(func.regexp_replace(Tamanho.nome, r'\D', '', 'g'), ''), Integer).asc(),
+            Tamanho.nome.asc()
+        )
+
+    qp = (QuebraSolado.query
+          .options(selectinload(QuebraSolado.linhas))
+          .get_or_404(id))
+
+    form = QuebraSoladoForm(obj=qp)
+    form.solado_id.choices = [(0, '-- Selecione --')] + [
+        (s.id, f'{s.referencia} — {s.descricao}') for s in Solado.query.order_by(Solado.referencia).all()
+    ]
+
+    qtd_por_tam = {l.tamanho_solado_id: (l.quantidade or 0) for l in qp.linhas}
+
+    solado_id_atual = form.solado_id.data or qp.solado_id
+    tamanhos = []
+    if solado_id_atual:
+        tamanhos = [(t.id, t.nome) for t in
+                    Tamanho.query
+                    .filter_by(solado_id=solado_id_atual)
+                    .order_by(*ordenacao_tamanhos())
+                    .all()]
+
+    if request.method == 'GET':
+        return render_template('producao/editar_quebra_solado.html', form=form, it=qp,
+                               tamanhos=tamanhos, qtd_por_tam=qtd_por_tam)
+
+    if form.validate_on_submit():
+        # anti-duplicidade (mesma data + mesmo solado), ignorando o próprio id
+        ja_existe = (QuebraSolado.query
+                     .filter(QuebraSolado.id != qp.id,
+                             QuebraSolado.data_quebra == form.data_quebra.data,
+                             QuebraSolado.solado_id == form.solado_id.data)
+                     .first())
+        if ja_existe:
+            flash('Já existe quebra cadastrada para este solado nesta data.', 'warning')
+            return render_template('producao/editar_quebra_solado.html', form=form, it=qp,
+                                   tamanhos=tamanhos, qtd_por_tam=qtd_por_tam), 409
+
+        # atualiza cabeçalho
+        qp.data_quebra = form.data_quebra.data
+        qp.solado_id   = form.solado_id.data
+        qp.observacao  = form.observacao.data or None
+
+        # recarrega tamanhos do solado escolhido
+        tamanhos_db = (Tamanho.query
+                       .filter_by(solado_id=qp.solado_id)
+                       .order_by(*ordenacao_tamanhos())
+                       .all())
+
+        # substitui as linhas
+        for l in list(qp.linhas):
+            db.session.delete(l)
+        db.session.flush()
+
+        adicionou = False
+        for t in tamanhos_db:
+            qtd = (request.form.get(f'qtd_{t.id}', '') or '').strip()
+            if qtd == '':
+                continue
+            try:
+                v = int(qtd)
+            except ValueError:
+                v = 0
+            if v > 0:
+                adicionou = True
+                db.session.add(QuebraSoladoLinha(
+                    quebra_id=qp.id,
+                    tamanho_solado_id=t.id,
+                    tamanho_nome=t.nome,
+                    quantidade=v
+                ))
+
+        if not adicionou:
+            flash('Informe pelo menos uma quantidade de quebra em algum tamanho.', 'warning')
+            db.session.rollback()
+            tamanhos = [(t.id, t.nome) for t in tamanhos_db]
+            qtd_por_tam = {}
+            return render_template('producao/editar_quebra_solado.html', form=form, it=qp,
+                                   tamanhos=tamanhos, qtd_por_tam=qtd_por_tam)
+
+        db.session.commit()
+        flash('Quebra de produção (Solado) atualizada!', 'success')
+        return redirect(url_for('routes.ver_quebra_solado', id=qp.id))
+
+    return render_template('producao/editar_quebra_solado.html', form=form, it=qp,
+                           tamanhos=tamanhos, qtd_por_tam=qtd_por_tam)
+
+
+# ------- EXCLUIR (Quebra de Solado) -------
+@bp.route('/quebra_solado/<int:id>/excluir', methods=['POST'])
+@login_required
+@requer_permissao('controleproducao', 'excluir')
+def excluir_quebra_solado(id):
+    from app.models import QuebraSolado
+    qp = QuebraSolado.query.get_or_404(id)
+
+    db.session.delete(qp)
+    db.session.commit()
+    flash('Quebra de produção (Solado) excluída com sucesso!', 'success')
+    return redirect(url_for('routes.listar_quebras_solado'))
+
+# ------- RELATÓRIO (HTML) — Quebra de Solado -------
+@bp.route('/quebras_solado/relatorio', methods=['GET'])
+@login_required
+@requer_permissao('controleproducao', 'ver')
+def relatorio_quebras_solado():
+    from sqlalchemy.orm import selectinload
+    from app.models import QuebraSolado, Solado
+
+    # Filtros
+    solado_id = request.args.get('solado_id', type=int)
+    inicio    = (request.args.get('inicio') or '').strip()  # YYYY-MM-DD
+    fim       = (request.args.get('fim') or '').strip()     # YYYY-MM-DD
+
+    # Só mostra após clicar em Filtrar
+    aplicou = request.args.get('aplicar') == '1'
+    di = df = None
+
+    # Choices de solados
+    solados = [(s.id, f'{s.referencia} — {s.descricao}')
+               for s in Solado.query.order_by(Solado.referencia).all()]
+
+    q = (QuebraSolado.query
+         .options(selectinload(QuebraSolado.solado),
+                  selectinload(QuebraSolado.linhas))
+         .order_by(QuebraSolado.data_quebra.asc(), QuebraSolado.id.asc()))
+
+    itens = []
+    if aplicou:
+        # Data início
+        if inicio:
+            try:
+                di = datetime.strptime(inicio, '%Y-%m-%d').date()
+                q = q.filter(QuebraSolado.data_quebra >= di)
+            except Exception:
+                flash('Data inicial inválida.', 'warning')
+        # Data fim
+        if fim:
+            try:
+                df = datetime.strptime(fim, '%Y-%m-%d').date()
+                q = q.filter(QuebraSolado.data_quebra <= df)
+            except Exception:
+                flash('Data final inválida.', 'warning')
+        # Solado
+        if solado_id:
+            q = q.filter(QuebraSolado.solado_id == solado_id)
+
+        itens = q.all()
+
+    # Total geral
+    total = sum(
+        sum(l.quantidade or 0 for l in cab.linhas)
+        for cab in itens
+    )
+
+    return render_template(
+        'producao/relatorio_quebras_solado.html',
+        itens=itens,
+        total=total,
+        solados=solados,
+        solado_id=solado_id or '',
+        inicio=inicio,
+        fim=fim,
+        di=di, df=df,
+        aplicou=aplicou
+    )
+
+
+# ------- RELATÓRIO (PDF) — Quebra de Solado -------
+@bp.route('/quebras_solado/relatorio/pdf', methods=['GET'])
+@login_required
+@requer_permissao('controleproducao', 'ver')
+def relatorio_quebras_solado_pdf():
+    from sqlalchemy.orm import selectinload
+    from app.models import QuebraSolado, Solado
+
+    solado_id = request.args.get('solado_id', type=int)
+    inicio    = (request.args.get('inicio') or '').strip()
+    fim       = (request.args.get('fim') or '').strip()
+
+    di = df = None
+
+    q = (QuebraSolado.query
+         .options(selectinload(QuebraSolado.solado),
+                  selectinload(QuebraSolado.linhas))
+         .order_by(QuebraSolado.data_quebra.asc(), QuebraSolado.id.asc()))
+
+    if inicio:
+        try:
+            di = datetime.strptime(inicio, '%Y-%m-%d').date()
+            q = q.filter(QuebraSolado.data_quebra >= di)
+        except Exception:
+            pass
+
+    if fim:
+        try:
+            df = datetime.strptime(fim, '%Y-%m-%d').date()
+            q = q.filter(QuebraSolado.data_quebra <= df)
+        except Exception:
+            pass
+
+    if solado_id:
+        q = q.filter(QuebraSolado.solado_id == solado_id)
+
+    itens = q.all()
+
+    total = sum(
+        sum(l.quantidade or 0 for l in cab.linhas)
+        for cab in itens
+    )
+
+    html = render_template(
+        'producao/relatorio_quebras_solado_pdf.html',
+        itens=itens, total=total,
+        di=di, df=df,
+        solado=Solado.query.get(solado_id) if solado_id else None
+    )
+
+    from weasyprint import HTML
+    pdf = HTML(string=html, base_url=request.url_root).write_pdf()
+
+    filename = 'relatorio_quebras_solado.pdf'
+    return Response(
+        pdf,
+        mimetype='application/pdf',
+        headers={'Content-Disposition': f'inline; filename={filename}'}
+    )
+
+
+### REMESSAS FALTANTES  - SALDO   ####
+@bp.route("/relatorios/remessas/faltantes", methods=["GET"])
+@login_required
+@requer_permissao('controleproducao', 'ver')
+def relatorio_faltantes_remessas():
+    remessa_ids = request.args.getlist("remessa_id", type=int)
+    ref_query   = (request.args.get("referencia") or "").strip()
+    fonte       = (request.args.get("fonte") or "diaria").lower()  # 'esteira' | 'diaria'
+    somente_fechados = request.args.get("somente_fechados") == "1"
+
+    # Carrega remessas para o filtro
+    todas_remessas = (Remessa.query.order_by(Remessa.id.desc()).limit(300).all())
+
+    # 🚫 Sem remessas selecionadas: não busca nada
+    if not remessa_ids:
+        return render_template(
+            "relatorios/relatorio_faltantes_remessas.html",
+            remessa_data={},
+            todas_remessas=todas_remessas,
+            filtros={
+                "remessa_ids": remessa_ids,
+                "referencia": ref_query,
+                "fonte": fonte,
+                "somente_fechados": somente_fechados
+            }
+        )
+
+    # Planejamentos filtrados
+    qp = (PlanejamentoProducao.query
+          .options(joinedload(PlanejamentoProducao.remessa))
+          .join(PlanejamentoProducao.remessa)
+          .filter(PlanejamentoProducao.remessa_id.in_(remessa_ids)))
+
+    if ref_query:
+        qp = qp.filter(PlanejamentoProducao.referencia.ilike(f"%{ref_query}%"))
+
+    if somente_fechados:
+        qp = qp.filter(PlanejamentoProducao.fechado.is_(True))
+
+    planejamentos = qp.all()
+
+    # Agrega Produção Diária só quando for a fonte
+    producao_por_planejamento = {}
+    if fonte == "diaria" and planejamentos:
+        pl_ids = [p.id for p in planejamentos]
+        rows = (db.session.query(
+                    ProducaoDiaria.planejamento_id,
+                    func.coalesce(func.sum(ProducaoDiaria.quantidade), 0).label("qtd")
+                )
+                .filter(ProducaoDiaria.planejamento_id.in_(pl_ids))
+                .group_by(ProducaoDiaria.planejamento_id)
+                .all())
+        producao_por_planejamento = {r.planejamento_id: int(r.qtd or 0) for r in rows}
+
+    remessa_data = {}
+    for p in planejamentos:
+        rid = p.remessa_id
+        if rid not in remessa_data:
+            remessa_data[rid] = {
+                "remessa": p.remessa,
+                "total_planejado": 0,
+                "total_produzido": 0,
+                "faltantes": []
+            }
+
+        planejado = int(p.quantidade or 0)
+        produzido = int(p.esteira_qtd or 0) if fonte == "esteira" else int(producao_por_planejamento.get(p.id, 0))
+        faltando  = max(planejado - produzido, 0)
+
+        remessa_data[rid]["total_planejado"] += planejado
+        remessa_data[rid]["total_produzido"] += produzido
+
+        # ✅ SEM FILTRO: adicionar SEMPRE, mesmo faltando = 0
+        remessa_data[rid]["faltantes"].append({
+            "referencia": p.referencia,
+            "setor": p.setor,
+            "fechado": bool(p.fechado),
+            "planejado": planejado,
+            "produzido": produzido,
+            "faltando": faltando,
+        })
+
+    for rid, data in remessa_data.items():
+        data["total_restante"] = max(data["total_planejado"] - data["total_produzido"], 0)
+        # mantém as que faltam primeiro, depois as completas
+        data["faltantes"].sort(key=lambda x: x["faltando"], reverse=True)
+
+    return render_template(
+        "relatorios/relatorio_faltantes_remessas.html",
+        remessa_data=remessa_data,
+        todas_remessas=todas_remessas,
+        filtros={
+            "remessa_ids": remessa_ids,
+            "referencia": ref_query,
+            "fonte": fonte,
+            "somente_fechados": somente_fechados
+        }
+    )

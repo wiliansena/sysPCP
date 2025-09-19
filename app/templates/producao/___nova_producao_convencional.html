@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+  <h2>Nova Produção Convencional</h2>
+  <form method="POST">
+    {{ form.hidden_tag() }}
+    <div class="row mb-3">
+      <div class="col-md-3">{{ form.data_producao.label }} {{ form.data_producao(class="form-control") }}</div>
+      <div class="col-md-3">{{ form.intervalo.label }} {{ form.intervalo(class="form-select") }}</div>
+      <div class="col-md-3">{{ form.tipo_material.label }} {{ form.tipo_material(class="form-select") }}</div>
+    </div>
+
+    <table class="table table-bordered">
+      <thead>
+        <tr>
+          <th>Máquina</th>
+          <th>Quantidade</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in maquinas %}
+        <tr>
+          <td>{{ m.codigo }}</td>
+          <td>
+            <input type="number" min="0" name="qtd_{{ m.id }}" class="form-control" placeholder="0">
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div class="d-flex justify-content-between">
+      <a href="{{ url_for('routes.listar_producoes_convencionais') }}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left"></i> Cancelar
+      </a>
+      <button type="submit" class="btn btn-success">
+        <i class="fas fa-save"></i> {{ form.submit.label }}
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

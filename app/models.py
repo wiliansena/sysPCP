@@ -4,7 +4,7 @@ from sqlalchemy.orm import relationship
 from app import db
 from decimal import Decimal, ROUND_HALF_UP, ROUND_CEILING
 from datetime import datetime
-
+from sqlalchemy.orm import backref
 from app.utils_horas import hora_brasilia
 
 
@@ -1123,7 +1123,17 @@ matriz_cor = db.Table('matriz_cor',
 class Funcionario(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100), nullable=False)
-    funcao = db.Column(db.String(50), nullable=False)  # Exemplo: Operador, Trocador, Técnico
+    funcao = db.Column(db.String(50), nullable=False)
+    setor_id = db.Column(db.Integer, db.ForeignKey('setor.id'))
+
+    # Troque back_populates por backref # cria Setor.funcionarios automaticamente
+    #  e não precisa colocar a relação na outra tabela setor
+    setor = db.relationship("Setor",backref=backref("funcionarios", lazy="dynamic")
+    )
+
+class Setor(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(50), nullable=False)
 
 # Modelo correto
 
@@ -1512,3 +1522,138 @@ class ProducaoConvencional(db.Model):
             + (self.producao_solado_turno_b or 0)
             + (self.producao_solado_turno_c or 0)
         )
+
+
+class ProducaoFuncionario(db.Model):
+    __tablename__ = 'producao_funcionario'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    data_producao = db.Column(db.Date, nullable=False)
+    data_insercao = db.Column(db.DateTime, default=hora_brasilia, nullable=False)
+    quantidade = db.Column(db.Integer, nullable=False)
+
+    funcionario_id = db.Column(db.Integer, db.ForeignKey('funcionario.id'), nullable=False, index=True)
+    funcionario = db.relationship('Funcionario', backref=db.backref('producoes_funcionarios', lazy='dynamic'))
+
+    # Constraint unico para DATA, FUNCIONARIO
+    __table_args__ = (
+        db.UniqueConstraint('funcionario_id', 'data_producao', name='uq_pf_func_data'),
+    )
+
+
+
+
+# -------- Associação simples (many-to-many) entre ProducaoSetor e Remessa --------
+producao_setor_remessa = db.Table(
+    'producao_setor_remessa',
+    db.Column('producao_setor_id', db.Integer,
+              db.ForeignKey('producao_setor.id', ondelete='CASCADE'), primary_key=True),
+    db.Column('remessa_id', db.Integer,
+              db.ForeignKey('remessa.id', ondelete='RESTRICT'), primary_key=True)
+)
+
+class ProducaoSetor(db.Model):
+    __tablename__ = 'producao_setor'
+
+    id            = db.Column(db.Integer, primary_key=True)
+    data_producao = db.Column(db.Date, nullable=False, index=True)
+    data_insercao = db.Column(db.DateTime, default=hora_brasilia, nullable=False)
+    quantidade    = db.Column(db.Integer, nullable=False)
+
+    # Setor (obrigatório, sem constraint adicional/unique)
+    setor_id = db.Column(db.Integer, db.ForeignKey('setor.id'), nullable=False, index=True)
+    setor    = db.relationship('Setor', backref=db.backref('producoes_setores', lazy='dynamic'))
+
+    # Esteira (opcional) — livre
+    esteira  = db.Column(db.String(10), nullable=True)
+
+    # Modelo opcional: pode vir de Solado OU de Alça (ambos opcionais)
+    solado_id = db.Column(db.Integer, db.ForeignKey('solado.id'), nullable=True, index=True)
+    solado    = db.relationship('Solado', lazy='joined')   # ajuste o nome/classe se necessário
+
+    alca_id   = db.Column(db.Integer, db.ForeignKey('alca.id'), nullable=True, index=True)
+    alca      = db.relationship('Alca', lazy='joined')     # ajuste o nome/classe se necessário
+
+    # Remessas (0..N) — associação simples
+    remessas = db.relationship(
+        'Remessa',
+        secondary=producao_setor_remessa,
+        lazy='selectin',
+        backref=db.backref('producoes_setor', lazy='dynamic')
+    )
+
+    # Índices úteis (não são constraints)
+    __table_args__ = (
+        db.Index('ix_producao_setor_data_setor', 'data_producao', 'setor_id'),
+    )
+
+
+### QUEBRA DE PRODUCAO   ######
+
+class QuebraAlca(db.Model):
+    __tablename__ = 'quebra_alca'
+
+    id          = db.Column(db.Integer, primary_key=True)
+    data_quebra = db.Column(db.Date, nullable=False)
+    observacao  = db.Column(db.Text, nullable=True)
+
+    alca_id = db.Column(db.Integer, db.ForeignKey('alca.id'), nullable=False, index=True)
+    alca    = db.relationship('Alca')
+
+    linhas = db.relationship('QuebraAlcaLinha', backref='quebra',
+                             cascade='all, delete-orphan', lazy='selectin')
+
+    __table_args__ = (
+        # Evita duplicidade de quebra para a mesma alça na mesma data
+        db.UniqueConstraint('data_quebra', 'alca_id', name='uq_quebra_alca_data_alca'),
+    )
+
+
+class QuebraAlcaLinha(db.Model):
+    __tablename__ = 'quebra_alca_linha'
+
+    id         = db.Column(db.Integer, primary_key=True)
+    quebra_id  = db.Column(db.Integer, db.ForeignKey('quebra_alca.id', ondelete='CASCADE'), nullable=False, index=True)
+
+    tamanho_alca_id = db.Column(db.Integer, db.ForeignKey('tamanho_alca.id'), nullable=False, index=True)
+    tamanho_nome    = db.Column(db.String(50), nullable=False)  # snapshot do nome
+    quantidade      = db.Column(db.Integer, nullable=False, default=0)
+
+    __table_args__ = (
+        # Não repetir o mesmo tamanho dentro da mesma quebra
+        db.UniqueConstraint('quebra_id', 'tamanho_alca_id', name='uq_quebra_alca_tamanho'),
+    )
+
+class QuebraSolado(db.Model):
+    __tablename__ = 'quebra_solado'
+
+    id          = db.Column(db.Integer, primary_key=True)
+    data_quebra = db.Column(db.Date, nullable=False)
+    observacao  = db.Column(db.Text, nullable=True)
+
+    solado_id = db.Column(db.Integer, db.ForeignKey('solado.id'), nullable=False, index=True)
+    solado    = db.relationship('Solado')
+
+    linhas = db.relationship('QuebraSoladoLinha', backref='quebra',
+                             cascade='all, delete-orphan', lazy='selectin')
+
+    __table_args__ = (
+        # Evita duplicidade de quebra para o mesmo solado na mesma data
+        db.UniqueConstraint('data_quebra', 'solado_id', name='uq_quebra_solado_data_solado'),
+    )
+
+
+class QuebraSoladoLinha(db.Model):
+    __tablename__ = 'quebra_solado_linha'
+
+    id         = db.Column(db.Integer, primary_key=True)
+    quebra_id  = db.Column(db.Integer, db.ForeignKey('quebra_solado.id', ondelete='CASCADE'), nullable=False, index=True)
+
+    tamanho_solado_id = db.Column(db.Integer, db.ForeignKey('tamanho.id'), nullable=False, index=True)#tabela de relação dos tamanhos de solado é só TAMANHO
+    tamanho_nome    = db.Column(db.String(50), nullable=False)  # snapshot do nome
+    quantidade      = db.Column(db.Integer, nullable=False, default=0)
+
+    __table_args__ = (
+        # Não repetir o mesmo tamanho dentro da mesma quebra
+        db.UniqueConstraint('quebra_id', 'tamanho_solado_id', name='uq_quebra_solado_tamanho'),
+    )

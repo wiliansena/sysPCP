@@ -378,7 +378,12 @@ class FuncionarioForm(FlaskForm):
                                             ("Operador", "Operador"),
                                             ("Trocador", "Trocador")
                                             ])
+    setor_id = SelectField('Setor', coerce=int, validators=[DataRequired()])
     submit = SubmitField("Salvar")
+
+class SetorForm(FlaskForm):
+    nome = StringField('Nome', validators=[DataRequired(), Length(max=50)])
+    submit = SubmitField('Salvar')
 
 
 
@@ -494,6 +499,7 @@ class PlanejamentoProducaoForm(FlaskForm):
     remessa_id = SelectField('Remessa', coerce=int, validators=[DataRequired()])
     referencia = StringField('Referência', validators=[DataRequired()])
     quantidade = IntegerField('Quantidade de Pares', validators=[DataRequired(), NumberRange(min=0)])
+    preco_medio = DecimalField('Preço Médio', places=2, default=Decimal('0.00'))
     setor = SelectField('Setor', choices=[
                                             ('-', '-'),
                                             ('1', '1'),
@@ -627,11 +633,13 @@ class ProducaoRotativaForm(FlaskForm):
     data_producao = DateField('Data', format='%Y-%m-%d', validators=[DataRequired()])
     producao_painel = IntegerField('Quantidade', validators=[Optional()])
     pares_bons = IntegerField('Pares_bons', validators=[DataRequired()])
-    imagem = FileField('Imagem Produção', validators=[DataRequired()])
+    imagem = FileField('Imagem Produção', validators=[Optional()])
     observacao = TextAreaField('Observação', validators=[Optional(), Length(max=500)])
     maquina_id = SelectField('Maquina', coerce=int, validators=[DataRequired()])
     submit = SubmitField('Salvar')
 
+
+### PRODUCAO CONVENCIONAL
 class ProducaoConvencionalForm(FlaskForm):
     data_producao = DateField('Data', format='%Y-%m-%d', validators=[DataRequired()])
     producao_geral_alca = IntegerField('PRODUÇÃO GERAL ALÇA', validators=[Optional()])
@@ -640,3 +648,42 @@ class ProducaoConvencionalForm(FlaskForm):
     producao_solado_turno_c = IntegerField('SOLADO TURNO_C', validators=[Optional()])
     imagem = imagem = FileField('Imagem (FOLHA DE PRODUÇÃO)', validators=[DataRequired()])
     observacao = TextAreaField('Observação', validators=[Optional(), Length(max=500)])
+
+
+
+### 
+
+class ProducaoFuncionarioForm(FlaskForm):
+    data_producao = DateField('Data', format='%Y-%m-%d', validators=[DataRequired()])
+    quantidade    = IntegerField('Quantidade', validators=[DataRequired(), NumberRange(min=0)])
+    funcionario_id = SelectField('Funcionário', coerce=int, validators=[DataRequired()])
+
+    submit = SubmitField('Salvar')
+
+class ProducaoSetorForm(FlaskForm):
+    data_producao = DateField("Data", format="%Y-%m-%d", validators=[DataRequired()])
+    quantidade    = IntegerField("Quantidade", validators=[DataRequired(), NumberRange(min=0)])
+
+    esteira = SelectField("Esteira", choices=[("1","1"),("2","2"),("3","3"),("4","4"),("5","5")],
+                          validators=[Optional()])
+
+    setor_id  = SelectField("Setor", coerce=int, validators=[DataRequired()])
+    solado_id = SelectField("Solado", coerce=int, validators=[Optional()])
+    alca_id   = SelectField("Alça", coerce=int, validators=[Optional()])
+    remessas  = SelectMultipleField("Remessas", coerce=int, validators=[Optional()])
+
+    submit = SubmitField("Salvar")
+
+### QUEBRA DE PRODUCAO  ####
+
+class QuebraAlcaForm(FlaskForm):
+    data_quebra = DateField('Data da quebra', format='%Y-%m-%d', validators=[DataRequired()])
+    alca_id     = SelectField('Alça', coerce=int, choices=[], validators=[DataRequired()])
+    observacao  = TextAreaField('Observação', validators=[Optional()])
+    submit      = SubmitField('Salvar')
+
+class QuebraSoladoForm(FlaskForm):
+    data_quebra = DateField('Data da Quebra', format='%Y-%m-%d', validators=[DataRequired()])
+    solado_id   = SelectField('Solado', coerce=int, validators=[DataRequired()])
+    observacao  = TextAreaField('Observação')
+    submit      = SubmitField('Salvar')

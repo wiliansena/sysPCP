@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card shadow-sm mt-3">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0"><i class="fas fa-eye me-2"></i> Quebra — Solado</h5>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('routes.editar_quebra_solado', id=it.id) }}" class="btn btn-warning">
+        <i class="fas fa-edit"></i> Editar
+      </a>
+      <a href="{{ url_for('routes.listar_quebras_solado') }}" class="btn btn-secondary">
+        Voltar
+      </a>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <div class="row g-3 mb-3">
+      <div class="col-md-3">
+        <label class="form-label mb-1">Data</label>
+        <div class="form-control-plaintext">{{ it.data_quebra.strftime('%d/%m/%Y') }}</div>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label mb-1">Solado</label>
+        <div class="form-control-plaintext">{{ it.solado.referencia }} — {{ it.solado.descricao }}</div>
+      </div>
+      <div class="col-12">
+        <label class="form-label mb-1">Observação</label>
+        <div class="form-control-plaintext">{{ it.observacao or '-' }}</div>
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-striped align-middle">
+        <thead class="table-light">
+          <tr>
+            <th class="text-nowrap">Tamanho</th>
+            <th class="text-end text-nowrap" style="min-width:90px;">Quantidade</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% set total = 0 %}
+          {% for l in it.linhas %}
+            {% set total = total + (l.quantidade or 0) %}
+            <tr>
+              <td>{{ l.tamanho_nome }}</td>
+              <td class="text-end">{{ l.quantidade }}</td>
+            </tr>
+          {% else %}
+            <tr><td colspan="2" class="text-center text-muted">Sem linhas.</td></tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr>
+            <th class="text-end">Total</th>
+            <th class="text-end">{{ total_geral }}</th>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
@@ -15,23 +16,66 @@
 
   <style>
     /* Ajustes finos específicos desta tela (mantendo o css global do margens_mobile.css) */
-    .app-header h4 { margin: .25rem 0 0; letter-spacing:.5px; }
-    .card-status { border-width: 2px; }
-    .status-summary small { display:block; opacity:.9; }
-    .list-group-item { border: 0; border-bottom: 1px solid rgba(0,0,0,.05); padding: .75rem .25rem; }
-    .badge-prio { min-width: 70px; text-align: center; }
-    .meta-line { font-size: .85rem; color: #555; }
-    .btn-ghost {
-      background: #fff; border:1px solid rgba(0,0,0,.1); box-shadow: 0 2px 6px rgba(0,0,0,.06);
+    .app-header h4 {
+      margin: .25rem 0 0;
+      letter-spacing: .5px;
     }
-    .btn-3d { box-shadow: 0 6px 0 rgba(0,0,0,.15); border:0; transform: translateY(0); transition: transform .05s ease, box-shadow .05s ease; }
-    .btn-3d:active { transform: translateY(2px); box-shadow: 0 4px 0 rgba(0,0,0,.15); }
-    .section-toggle { cursor: pointer; }
-    @media (min-width: 768px){
-      .list-group-item { padding: 1rem .5rem; }
+
+    .card-status {
+      border-width: 2px;
+    }
+
+    .status-summary small {
+      display: block;
+      opacity: .9;
+    }
+
+    .list-group-item {
+      border: 0;
+      border-bottom: 1px solid rgba(0, 0, 0, .05);
+      padding: .75rem .25rem;
+    }
+
+    .badge-prio {
+      min-width: 70px;
+      text-align: center;
+    }
+
+    .meta-line {
+      font-size: .85rem;
+      color: #555;
+    }
+
+    .btn-ghost {
+      background: #fff;
+      border: 1px solid rgba(0, 0, 0, .1);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, .06);
+    }
+
+    .btn-3d {
+      box-shadow: 0 6px 0 rgba(0, 0, 0, .15);
+      border: 0;
+      transform: translateY(0);
+      transition: transform .05s ease, box-shadow .05s ease;
+    }
+
+    .btn-3d:active {
+      transform: translateY(2px);
+      box-shadow: 0 4px 0 rgba(0, 0, 0, .15);
+    }
+
+    .section-toggle {
+      cursor: pointer;
+    }
+
+    @media (min-width: 768px) {
+      .list-group-item {
+        padding: 1rem .5rem;
+      }
     }
   </style>
 </head>
+
 <body>
 
   <!-- Cabeçalho estilo app -->
@@ -56,13 +100,35 @@
       </div>
     </div>
 
-    <!-- Dica: se quiser filtro/busca depois, colocamos aqui como no Margens -->
+    <!-- Filtros -->
+    <form method="GET" action="{{ url_for('routes.listar_manutencoes') }}" class="row g-2 mb-3">
+      <div class="col-12 col-sm-6 col-md-4">
+        <label class="form-label mb-1">Responsável</label>
+        <select name="responsavel_id" class="form-select select2">
+          <option value="">Todos</option>
+          {% for r in responsaveis %}
+          <option value="{{ r.id }}" {{ 'selected' if responsavel_id_selecionado==r.id else '' }}>
+            {{ r.nome }}
+          </option>
+          {% endfor %}
+        </select>
+
+      </div>
+
+      <div class="col-12 col-sm-6 col-md-4 d-flex align-items-end gap-2">
+        <button type="submit" class="btn btn-primary w-100"><i class="fa fa-filter me-1"></i> Filtrar</button>
+        <a href="{{ url_for('routes.listar_manutencoes') }}" class="btn btn-secondary">
+          Limpar
+        </a>
+      </div>
+    </form>
+
 
     <!-- Seções por Status (colapsáveis para mobile) -->
     {% set blocos = [
-      ('Aberto',    'primary',   'text-white', 'fa-circle-exclamation'),
-      ('Verificando','warning',  'text-dark',  'fa-hourglass-half'),
-      ('Finalizado','success',   'text-white', 'fa-circle-check')
+    ('Aberto', 'primary', 'text-white', 'fa-circle-exclamation'),
+    ('Verificando','warning', 'text-dark', 'fa-hourglass-half'),
+    ('Finalizado','success', 'text-white', 'fa-circle-check')
     ] %}
 
     <div class="accordion" id="accManutencoes">
@@ -70,19 +136,16 @@
       {% for status, tone, texttone, icon in blocos %}
       <div class="accordion-item mb-3 border-0">
         <h2 class="accordion-header" id="h-{{ status }}">
-          <button class="accordion-button section-toggle {{ 'collapsed' if not loop.first }}"
-                  type="button" data-bs-toggle="collapse"
-                  data-bs-target="#c-{{ status }}" aria-expanded="{{ 'true' if loop.first else 'false' }}"
-                  aria-controls="c-{{ status }}"
-                  style="gap:.5rem;">
+          <button class="accordion-button section-toggle collapsed" type="button" data-bs-toggle="collapse"
+            data-bs-target="#c-{{ status }}" aria-expanded="false" aria-controls="c-{{ status }}" style="gap:.5rem;">
             <span class="badge bg-{{ tone }}"><i class="fa {{ icon }}"></i></span>
             <strong>{{ status }}</strong>
             <span class="ms-2 text-muted">({{ manutencoes[status]|length }})</span>
           </button>
         </h2>
 
-        <div id="c-{{ status }}" class="accordion-collapse collapse {{ 'show' if loop.first }}"
-             aria-labelledby="h-{{ status }}" data-bs-parent="#accManutencoes">
+        <div id="c-{{ status }}" class="accordion-collapse collapse" aria-labelledby="h-{{ status }}"
+          data-bs-parent="#accManutencoes">
           <div class="accordion-body pt-3">
 
             <!-- Resumo de prioridades -->
@@ -103,7 +166,8 @@
                 </div>
               </div>
 
-              <div class="card-body {% if status=='Aberto' %}bg-primary bg-opacity-10{% elif status=='Verificando' %}bg-warning bg-opacity-25{% else %}bg-success bg-opacity-10{% endif %}">
+              <div
+                class="card-body {% if status=='Aberto' %}bg-primary bg-opacity-10{% elif status=='Verificando' %}bg-warning bg-opacity-25{% else %}bg-success bg-opacity-10{% endif %}">
                 {% if manutencoes[status] %}
                 <ul class="list-group list-group-flush">
                   {% for m in manutencoes[status] %}
@@ -117,7 +181,10 @@
                         <div class="meta-line">
                           <strong>Solicitante:</strong> {{ m.solicitante.nome if m.solicitante else '-' }}
                           &nbsp;|&nbsp;
-                          <strong>Responsável:</strong> {{ m.responsavel.nome if m.responsavel else '-' }}
+                          <div class="alert alert-primary p-2 m-0 text-center fw-bold">
+                            <i class="fas fa-user-cog me-1"></i>
+                            {{ m.responsavel.nome if m.responsavel else '-' }}
+                          </div>
                         </div>
                         <div class="meta-line">
                           <strong>Início:</strong>
@@ -144,7 +211,8 @@
                         </a>
                       </div>
                       <div class="col-6">
-                        <a href="{{ url_for('routes.editar_manutencao', id=m.id) }}" class="btn btn-primary w-100 btn-3d">
+                        <a href="{{ url_for('routes.editar_manutencao', id=m.id) }}"
+                          class="btn btn-primary w-100 btn-3d">
                           <i class="fa fa-pen-to-square me-1"></i>
                         </a>
                       </div>
@@ -153,7 +221,7 @@
                   {% endfor %}
                 </ul>
                 {% else %}
-                  <p class="text-muted mb-0">Nenhuma manutenção.</p>
+                <p class="text-muted mb-0">Nenhuma manutenção.</p>
                 {% endif %}
               </div>
             </div>
@@ -166,7 +234,7 @@
     </div>
 
     <!-- Opcional: auto-refresh (comente/descomente se quiser) -->
-    {# 
+    {#
     <script>
       setInterval(() => { location.reload(); }, 30000);
     </script>
@@ -178,4 +246,5 @@
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+
 </html>

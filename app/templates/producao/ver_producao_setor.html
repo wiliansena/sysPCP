@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card shadow-sm mt-3">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">
+      <i class="fas fa-eye me-2"></i> Detalhes da Produção por Setor
+    </h5>
+    <a href="{{ url_for('routes.listar_producoes_setores') }}" class="btn btn-secondary btn-sm">
+      <i class="fas fa-arrow-left"></i> Voltar
+    </a>
+  </div>
+
+  <div class="card-body">
+    <table class="table table-sm table-striped">
+      <tbody>
+        <tr>
+          <th>Setor</th>
+          <td>{{ item.setor.nome if item.setor else '-' }}</td>
+        </tr>
+        <tr>
+          <th style="width:200px;">Data</th>
+          <td>{{ item.data_producao.strftime('%d/%m/%Y') }}</td>
+        </tr>
+        <tr>
+          <th>Esteira</th>
+          <td>{{ item.esteira or '-' }}</td>
+        </tr>
+        <tr>
+          <th>Quantidade</th>
+          <td>{{ item.quantidade|br_numero }}</td>
+        </tr>
+        <tr>
+          <th>Solado</th>
+          <td>{{ item.solado.referencia if item.solado else '-' }}</td>
+        </tr>
+        <tr>
+          <th>Alça</th>
+          <td>{{ item.alca.referencia if item.alca else '-' }}</td>
+        </tr>
+        <tr>
+          <th>Remessas</th>
+          <td>
+            {% if item.remessas %}
+              {% for r in item.remessas %}
+                <span class="badge bg-warning text-dark">{{ r.codigo }}</span>
+              {% endfor %}
+            {% else %}
+              -
+            {% endif %}
+          </td>
+        </tr>
+        <tr>
+          <th>Data de Inserção</th>
+          <td>{{ item.data_insercao.strftime('%d/%m/%Y %H:%M') }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

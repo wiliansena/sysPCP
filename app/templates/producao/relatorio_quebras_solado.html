@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2><i class="fas fa-chart-bar me-2"></i> Relatório — Quebras de Produção (Solado)</h2>
+    <a class="btn btn-secondary" href="{{ url_for('routes.listar_quebras_solado') }}">Voltar</a>
+  </div>
+
+  <!-- Filtros -->
+  <form method="GET" class="row g-3 mb-2">
+    <input type="hidden" name="aplicar" value="1">
+    <div class="col-md-5">
+      <label class="form-label mb-1">Solado</label>
+      <select name="solado_id" class="form-select select2">
+        <option value="">Todos</option>
+        {% for sid, snome in solados %}
+          <option value="{{ sid }}" {{ 'selected' if solado_id|string==sid|string else '' }}>{{ snome }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label mb-1">Início</label>
+      <input type="date" name="inicio" class="form-control" value="{{ inicio or '' }}">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label mb-1">Fim</label>
+      <input type="date" name="fim" class="form-control" value="{{ fim or '' }}">
+    </div>
+
+    <!-- Botões -->
+    <div class="col-12 d-flex justify-content-end gap-2 mt-2">
+      <button class="btn btn-primary" type="submit">
+        <i class="fas fa-filter"></i> Filtrar
+      </button>
+      <a href="{{ url_for('routes.relatorio_quebras_solado') }}" class="btn btn-secondary">
+        <i class="fas fa-eraser"></i> Limpar
+      </a>
+    </div>
+
+    <!-- PDF -->
+    <div class="col-12 d-flex justify-content-end mb-2">
+      <a href="{{ url_for('routes.relatorio_quebras_solado_pdf', solado_id=solado_id, inicio=inicio, fim=fim) }}"
+         target="_blank" class="btn btn-outline-danger">
+        <i class="fas fa-file-pdf"></i> Gerar PDF
+      </a>
+    </div>
+  </form>
+
+  <!-- Resultados -->
+  <div class="card shadow-sm">
+    <div class="card-body table-responsive">
+      <table class="table table-striped align-middle">
+        <thead class="table-light">
+          <tr>
+            <th style="width:110px;">Data</th>
+            <th>Solado</th>
+            <th>Tamanho</th>
+            <th class="text-end" style="width:140px;">Qtd Quebra</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if aplicou and itens %}
+            {% for cab in itens %}
+              {% for lin in cab.linhas %}
+              <tr>
+                <td>{{ cab.data_quebra.strftime('%d/%m/%Y') }}</td>
+                <td>{{ cab.solado.referencia }} — {{ cab.solado.descricao }}</td>
+                <td>{{ lin.tamanho_nome }}</td>
+                <td class="text-end">{{ lin.quantidade }}</td>
+              </tr>
+              {% endfor %}
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="4" class="text-center text-muted">
+                {% if not aplicou %}
+                  Aplique um filtro para exibir resultados.
+                {% else %}
+                  Nenhum registro encontrado para os filtros aplicados.
+                {% endif %}
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+
+        {% if aplicou and itens %}
+        <tfoot>
+          <tr>
+            <th colspan="3" class="text-end">Total</th>
+            <th class="text-end">{{ total }}</th>
+          </tr>
+        </tfoot>
+        {% endif %}
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  $(function(){
+    $('.select2').select2({ width:'100%', placeholder:'Selecione...', allowClear:true });
+  });
+</script>
+{% endblock %}

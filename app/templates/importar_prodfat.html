@@ -11,7 +11,12 @@
     <a href="{{ url_for('routes.listar_prodfat') }}" class="btn btn-secondary">Cancelar</a>
 </form>
 
-<div class="mt-4 alert alert-info">
-    A planilha deve conter colunas: <code>DATA, REMESSA, REF, QTD</code><br>
+<hr>
+<div class="alert alert-info">
+    <strong>Layout da Planilha:</strong><br>
+    A primeira linha deve conter os seguintes cabeçalhos:<br>
+    <code>SETOR | DATA | REMESSA | LINHA | REF | QTD </code><br>
+    A coluna <code> SETOR </code> é opicional.<br>
+
 </div>
 {% endblock %}

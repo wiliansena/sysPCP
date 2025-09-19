@@ -1,0 +1,324 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+    .sheet {
+        background: #fff;
+        padding: 12px;
+        border-radius: 8px;
+        box-shadow: 0 5px 18px rgba(0, 0, 0, .08);
+    }
+
+    .tbl-sheet {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: .95rem;
+    }
+
+    .tbl-sheet th,
+    .tbl-sheet td {
+        border: 1px solid #bbb;
+        padding: 6px 8px;
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    .tbl-sheet thead th {
+        background: #f3f3f3;
+        font-weight: 700;
+    }
+
+    .col-hora {
+        width: 110px;
+        font-weight: 700;
+    }
+
+    .celula {
+        background: #fffbe6;
+    }
+
+    /* amarelinho leve */
+    .qtd-input {
+        width: 86px;
+        text-align: center;
+    }
+
+    .tipo-input {
+        min-width: 140px;
+    }
+</style>
+
+<div class="container-fluid container-xl mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h5 class="m-0">Folha de Produção Convencional</h5>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('routes.listar_producoes_convencionais') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Cancelar
+            </a>
+
+            <!-- NOVO: copiar TIPO -->
+            <button type="button" id="btnCopiarTipo" class="btn btn-outline-primary">
+                <i class="fa-regular fa-clone"></i> Copiar TIPO
+            </button>
+
+            <button form="folhaForm" type="submit" class="btn btn-success">
+                <i class="fas fa-save"></i> Salvar
+            </button>
+        </div>
+
+    </div>
+
+    <form id="folhaForm" method="POST" class="sheet">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="row g-2 mb-3">
+            <div class="col-auto">
+                <label class="form-label mb-1">Data</label>
+                <input type="date" name="data_producao" class="form-control" value="{{ dia.strftime('%Y-%m-%d') }}">
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <div class="row">
+                <!-- Bloco 1: máquinas 1 a 5 -->
+                <div class="col-md-6">
+                    <div class="sheet mb-4">
+                        <table class="tbl-sheet">
+                            <thead>
+                                <tr>
+                                    <th class="col-hora">HORA</th>
+                                    {% for m in maquinas[:4] %}
+                                    <th>
+                                        {{ m.codigo.upper() if m.codigo else 'CONV' ~ m.id }}<br>
+                                        <small class="text-muted">INJ</small>
+                                    </th>
+                                    {% endfor %}
+                                    <th><small class="text-muted">TIPO</small></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for h in horarios %}
+                                <tr>
+                                    <td class="col-hora">{{ h }}</td>
+                                    {% for m in maquinas[:4] %}
+                                    <td class="celula">
+                                        <input type="number" min="0" class="form-control form-control-sm qtd-input"
+                                            name="q_{{ h }}_{{ m.id }}" placeholder="0">
+                                    </td>
+                                    {% endfor %}
+                                    <td>
+                                        <select name="tipo_{{ h }}" class="form-select form-select-sm tipo-input">
+                                            <option value="">—</option>
+                                            {% for val, lbl in tipos %}
+                                            <option value="{{ val }}">{{ lbl }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </td>
+
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <hr>
+                <!-- Bloco 2: máquinas 5 a 8 -->
+                <div class="col-md-6">
+                    <div class="sheet mb-4">
+                        <table class="tbl-sheet">
+                            <thead>
+                                <tr>
+                                    <th class="col-hora">HORA</th>
+                                    {% for m in maquinas[4:8] %}
+                                    <th>
+                                        {{ m.codigo.upper() if m.codigo else 'CONV' ~ m.id }}<br>
+                                        <small class="text-muted">INJ</small>
+                                    </th>
+                                    {% endfor %}
+                                    <th><small class="text-muted">TIPO</small></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for h in horarios %}
+                                <tr>
+                                    <td class="col-hora">{{ h }}</td>
+                                    {% for m in maquinas[4:8] %}
+                                    <td class="celula">
+                                        <input type="number" min="0" class="form-control form-control-sm qtd-input"
+                                            name="q_{{ h }}_{{ m.id }}" placeholder="0">
+                                    </td>
+                                    {% endfor %}
+                                    <td>
+                                        <select name="tipo_{{ h }}" class="form-select form-select-sm tipo-input">
+                                            <option value="">—</option>
+                                            {% for val, lbl in tipos %}
+                                            <option value="{{ val }}">{{ lbl }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </td>
+
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <hr>
+                <!-- Bloco 3: máquinas 9 a 12 -->
+                <div class="col-md-6">
+                    <div class="sheet mb-4">
+                        <table class="tbl-sheet">
+                            <thead>
+                                <tr>
+                                    <th class="col-hora">HORA</th>
+                                    {% for m in maquinas[8:12] %}
+                                    <th>
+                                        {{ m.codigo.upper() if m.codigo else 'CONV' ~ m.id }}<br>
+                                        <small class="text-muted">INJ</small>
+                                    </th>
+                                    {% endfor %}
+                                    <th><small class="text-muted">TIPO</small></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for h in horarios %}
+                                <tr>
+                                    <td class="col-hora">{{ h }}</td>
+                                    {% for m in maquinas[8:12] %}
+                                    <td class="celula">
+                                        <input type="number" min="0" class="form-control form-control-sm qtd-input"
+                                            name="q_{{ h }}_{{ m.id }}" placeholder="0">
+                                    </td>
+                                    {% endfor %}
+                                    <td>
+                                        <select name="tipo_{{ h }}" class="form-select form-select-sm tipo-input">
+                                            <option value="">—</option>
+                                            {% for val, lbl in tipos %}
+                                            <option value="{{ val }}">{{ lbl }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </td>
+
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <hr>
+                <!-- Bloco 4: máquinas 13 a 15 -->
+                <div class="col-md-6">
+                    <div class="sheet mb-4">
+                        <table class="tbl-sheet">
+                            <thead>
+                                <tr>
+                                    <th class="col-hora">HORA</th>
+                                    {% for m in maquinas[12:16] %}
+                                    <th>
+                                        {{ m.codigo.upper() if m.codigo else 'CONV' ~ m.id }}<br>
+                                        <small class="text-muted">INJ</small>
+                                    </th>
+                                    {% endfor %}
+                                    <th><small class="text-muted">TIPO</small></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for h in horarios %}
+                                <tr>
+                                    <td class="col-hora">{{ h }}</td>
+                                    {% for m in maquinas[12:16] %}
+                                    <td class="celula">
+                                        <input type="number" min="0" class="form-control form-control-sm qtd-input"
+                                            name="q_{{ h }}_{{ m.id }}" placeholder="0">
+                                    </td>
+                                    {% endfor %}
+                                    <td>
+                                        <select name="tipo_{{ h }}" class="form-select form-select-sm tipo-input">
+                                            <option value="">—</option>
+                                            {% for val, lbl in tipos %}
+                                            <option value="{{ val }}">{{ lbl }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </td>
+
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <hr>
+                <!-- Bloco 5: máquinas 17 a 21 -->
+                <div class="col-md-6">
+                    <div class="sheet mb-4">
+                        <table class="tbl-sheet">
+                            <thead>
+                                <tr>
+                                    <th class="col-hora">HORA</th>
+                                    {% for m in maquinas[16:] %}
+                                    <th>
+                                        {{ m.codigo.upper() if m.codigo else 'CONV' ~ m.id }}<br>
+                                        <small class="text-muted">INJ</small>
+                                    </th>
+                                    {% endfor %}
+                                    <th><small class="text-muted">TIPO</small></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for h in horarios %}
+                                <tr>
+                                    <td class="col-hora">{{ h }}</td>
+                                    {% for m in maquinas[16:] %}
+                                    <td class="celula">
+                                        <input type="number" min="0" class="form-control form-control-sm qtd-input"
+                                            name="q_{{ h }}_{{ m.id }}" placeholder="0">
+                                    </td>
+                                    {% endfor %}
+                                    <td>
+                                        <select name="tipo_{{ h }}" class="form-select form-select-sm tipo-input">
+                                            <option value="">—</option>
+                                            {% for val, lbl in tipos %}
+                                            <option value="{{ val }}">{{ lbl }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </td>
+
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div> <!-- row -->
+        </div> <!-- table-responsive -->
+
+        <div class="d-flex justify-content-between mt-3">
+            <a href="{{ url_for('routes.listar_producoes_convencionais') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Cancelar
+            </a>
+            <button type="submit" class="btn btn-success">
+                <i class="fas fa-save"></i> Salvar
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+    // anti-duplo-clique (já estava no seu código)
+    document.getElementById('folhaForm').addEventListener('submit', function () {
+        const btns = this.querySelectorAll('button[type="submit"]');
+        btns.forEach(b => { b.disabled = true; b.innerHTML = 'Salvando...'; });
+    });
+
+    // 🔹 Copiar TIPO da primeira linha para todos
+    document.getElementById('btnCopiarTipo').addEventListener('click', function () {
+        const selects = document.querySelectorAll('select[name^="tipo_"]');
+        if (!selects.length) return;
+
+        const valor = selects[0].value; // pega o primeiro select
+        if (!valor) return;             // se estiver vazio, não faz nada
+
+        selects.forEach(s => s.value = valor);
+    });
+</script>
+
+
+{% endblock %}
